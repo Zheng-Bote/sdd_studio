@@ -1,0 +1,57 @@
+version: "1.0.0"
+rules:
+  - id: SDD-070
+    title: Jede Regel ist im Handbuch dokumentiert
+    severity:
+      default: error
+    profile: minimal
+    check: catalog_handbook_section
+    gate_default: [pre-implementation, pre-merge, pre-release]
+    baseline: forbidden
+    contract: handbuch/03-mechanismen.md#sdd-070-vertrag
+    rationale: >
+      Eine Regel ohne Erklärung ist für Menschen nicht nachvollziehbar. Regel und
+      Handbuchabschnitt entstehen deshalb im selben Commit.
+    handbook: handbuch/03-mechanismen.md#sdd-070
+
+  - id: SDD-071
+    title: Jede Regel ist im Prüfkern implementiert
+    severity:
+      default: error
+    profile: minimal
+    check: catalog_check_registered
+    gate_default: [pre-implementation, pre-merge, pre-release]
+    baseline: forbidden
+    contract: handbuch/03-mechanismen.md#sdd-071-vertrag
+    rationale: >
+      Eine Regel im Katalog ohne registrierte Prüffunktion im Kern ist ein leeres
+      Versprechen und täuscht Prüfabdeckung vor.
+    handbook: handbuch/03-mechanismen.md#sdd-071
+
+  - id: SDD-072
+    title: Jede aktive Regel ist in mindestens einem Gate aktiv
+    severity:
+      default: error
+    profile: minimal
+    check: catalog_gate_coverage
+    gate_default: [pre-implementation, pre-merge, pre-release]
+    baseline: forbidden
+    contract: handbuch/03-mechanismen.md#sdd-072-vertrag
+    rationale: >
+      Eine Regel, die in keinem effektiven Gate Eff(g) läuft, wird in CI niemals
+      durchgesetzt und bleibt unsichtbar.
+    handbook: handbuch/03-mechanismen.md#sdd-072
+
+  - id: SDD-073
+    title: Jede error-Regel besitzt einen Prüfvertrag im Handbuch
+    severity:
+      default: error
+    profile: minimal
+    check: catalog_error_contract
+    gate_default: [pre-implementation, pre-merge, pre-release]
+    baseline: forbidden
+    contract: handbuch/03-mechanismen.md#sdd-073-vertrag
+    rationale: >
+      Blockierende Regeln (error) müssen deterministisch prüfbar sein. Ohne
+      dokumentierten Prüfvertrag ist eine Regel höchstens warn.
+    handbook: handbuch/03-mechanismen.md#sdd-073

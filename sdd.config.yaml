@@ -1,0 +1,40 @@
+version: 1
+profile: standard
+language: de
+base_ref: ""
+
+artifacts:
+  constitution: constitution.md
+  adr: docs/adr
+  prd: docs/prd
+  design: docs/design
+  plans: docs/plans
+  archive: docs/archive
+  docs:
+    - docs
+    - handbuch
+
+tests:
+  include:
+    - "**/*_test.go"
+
+thresholds:
+  layers:
+    - internal/sddcore/catalog/**
+    - internal/sddcore/config/**
+    - internal/sddcore/scan/**
+    - internal/sddcore/rules/**
+    - internal/sddcore/baseline/**
+    - internal/sddcore/report/**
+  feature_artifacts_required_when:
+    min_layers_touched: 2
+    touched_paths:
+      - "cmd/**"
+      - "catalog/**"
+      - "constitution.md"
+      - "go.mod"
+
+exclude:
+  - vendor/**
+  - node_modules/**
+  - .git/**
