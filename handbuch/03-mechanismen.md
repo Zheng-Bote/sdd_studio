@@ -4,9 +4,9 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
-## Projektanlage und Artefakt-Templates (`sdd init`, `sdd new`)
+## Projektanlage, Templates und Übernahme (`sdd init`, `sdd new`, `sdd adopt`)
 
-Beide Befehle schreiben ausschließlich **additiv**: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
+Alle drei Befehle schreiben ausschließlich **additiv**: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
 
 ### `sdd init` {#sdd-init}
 
@@ -39,6 +39,23 @@ sdd new --type adr|doc --title <text> [--slug <slug>]
 - Die ADR-Nummer ist die größte vierstellige Präfixnummer im ADR-Verzeichnis plus eins; der Slug wird aus dem Titel abgeleitet (Umlaute transliteriert).
 - Das PRD-Template enthält `AC-1` als Platzhalter: Es erfüllt `SDD-021`, verlangt nach `SDD-022` aber einen Test — bei mehreren PRDs mit Slug im Testkommentar (`// <slug> AC-1: …`).
 - Ohne `sdd.config.yaml` verwendet `sdd new` die Standardpfade von `sdd init` und weist darauf hin.
+
+### `sdd adopt` {#sdd-adopt}
+
+```text
+sdd adopt [--profile minimal|standard|regulated] [--apply] [--branch sdd/adopt]
+```
+
+Übernimmt ein bestehendes Projekt. Ohne `--apply` ist es ein **Probelauf**: Der Adopt-Bericht erscheint auf der Standardausgabe, geschrieben wird nichts.
+
+1. **Inventar** — alle Markdown-Dateien (ohne `exclude` und `.sdd/`), CI-Workflows (`.github/workflows/*.yml|yaml`, `.gitlab-ci.yml`), vorhandene Konfiguration, Verfassung und Baseline. Ohne `sdd.config.yaml` wird eine vorgeschlagen: Spec-Kit-Layout, wenn `specs/features/*/spec.md` existiert, sonst die Pfade von `sdd init`; der ADR-Ordner ist der erste aus `docs/adr`, `docs/architecture/adr`, `doc/adr`, `adr` mit einer `NNNN-*.md`.
+2. **Klassifikation** — jede Datei genau ein Artefakttyp, erste passende Regel: Verfassung, ADR (`NNNN-*.md` im ADR-Ordner), PRD/Tech Spec/Plan nach `artifacts.*`, Archiv, sonst Doku/Exploration („kein Muster“).
+3. **Reifegrad** — L1 Verfassung ohne Befunde; L2 PRD und Tech Spec getrennt, AC-Kennungen ohne `SDD-021`-Befunde; L3 CI ruft `sdd gate` auf, Baseline vorhanden; L4 Feature-Artefakte tragen `feature:` und `status`, Archiv konfiguriert, keine `SDD-050`-Befunde. Vorgeschlagen wird genau das erste nicht erfüllte Kriterium der nächsten Stufe.
+4. **Schritte** — je Schritt ein Commit, Schritte ohne Änderung entfallen: *Konfiguration* (falls keine vorhanden), *Verfassung* (aus dem Template, falls keine vorhanden), *Frontmatter* (`feature: <slug>` und `status: active` vor den Inhalt aktiver Feature-Artefakte ohne Frontmatter; der Slug ist das `*`-Segment des Globs bzw. der Dateiname), *Baseline* (alle Gates, nach den vorherigen Schritten, vor dem ersten Gate-Lauf), *Bericht* (`.sdd/adopt-report.md`).
+
+**Mit `--apply`** gelten die Grenzen aus [ADR 0001](../docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md): nur in einem Git-Repository mit sauberem Arbeitsbaum, nicht bei losgelöstem `HEAD`, nur auf einem **neuen** Branch (existiert er, bricht der Lauf ab). Kein Push, kein Merge; der Ausgangsbranch bleibt unverändert. Gelöscht oder ersetzt wird nichts: Frontmatter wird nur vorangestellt, und nur, wenn die Datei noch genau dem gelesenen Stand entspricht. Hat ein Feature-Artefakt Frontmatter ohne `feature:`, bleibt es unverändert und erscheint unter *Konflikte*.
+
+**Ausgewiesen, nicht ausgeführt:** Die Archivierung (`SDD-050`, nicht baselinefähig) listet der Bericht als Aufräumschritt vor dem ersten Release. Der vorangestellte Status `active` ist eine Annahme; längst umgesetzte Features sind auf `implemented` zu setzen.
 
 ### CI-Einbindung (GitHub Action) {#ci-einbindung}
 

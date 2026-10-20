@@ -6,7 +6,7 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 > Es gibt **einen Regelkatalog** ([`catalog/catalog.yaml`](catalog/catalog.yaml)). Das [Handbuch](handbuch/03-mechanismen.md) erklärt ihn, das Programm setzt ihn durch. Beide sind Ausgaben derselben Quelle — und diese Quelle wird über `SDD-070` bis `SDD-073` maschinell geprüft.
 
-## Aktueller Stand (Roadmap Schritt 1 und 2)
+## Aktueller Stand (Roadmap Schritt 1 bis 3)
 
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md) und [`docs/sdd_process_3.md`](docs/sdd_process_3.md)
 - **Dogfooding-Konfiguration & Verfassung:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md)
@@ -21,10 +21,12 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
   - `go run ./cmd/sdd gate <pre-implementation|pre-merge|pre-release> [--json] [--feature <slug>[,<slug>…]] [--paths <globs>]`
   - `go run ./cmd/sdd baseline [--gate <gate>] [--prune] [--accept <rule_id>]`
   - `go run ./cmd/sdd init [--profile minimal|standard|regulated] [--dry-run] [--no-ci]`
+  - `go run ./cmd/sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` — Bestandsprojekt übernehmen: Probelauf-Bericht, mit `--apply` auf neuem Branch, ein Commit je Schritt
   - `go run ./cmd/sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` bzw. `new --type adr|doc --title …`
 - **GitHub Action:** [`action.yml`](action.yml) baut `sdd` und führt `sdd gate <gate>` aus (siehe [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#ci-einbindung))
-- **Feature-Artefakte des Werkzeugs selbst:** `sdd-core-v1` und `sdd-init-new` unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design)
+- **Artefaktpfade als Ordner oder Glob:** z. B. Spec Kit `specs/features/*/spec.md` ohne Umzug
+- **Feature-Artefakte des Werkzeugs selbst:** `sdd-core-v1`, `sdd-init-new` und `sdd-adopt` unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design)
 
 ## Nächste Schritte (beim nächsten Mal)
 
-- **Schritt 3:** `sdd adopt` — Inventar, Reifegrad, Baseline und Probelauf für Bestandsprojekte (Pilot: `md-indexer`).
+- **Schritt 4:** `sdd report` (Schuldenstand und Trend), Regeln aus v1.1 (`SDD-002b`, `SDD-010`, `SDD-011`, …).

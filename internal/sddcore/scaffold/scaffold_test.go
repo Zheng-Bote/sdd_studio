@@ -365,3 +365,55 @@ func TestNewWithGlobSpec(t *testing.T) {
 		t.Errorf("non-derivable glob: expected ErrInvalidInput, got %v", err)
 	}
 }
+
+// sdd-adopt AC-5: a frontmatter block is prepended only to the unchanged file; nothing is removed.
+func TestApplyPrepend(t *testing.T) {
+	root := t.TempDir()
+	original := []byte("# Spec\n\nInhalt\n")
+	target := filepath.Join(root, "specs/a/spec.md")
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(target, original, 0o640); err != nil {
+		t.Fatal(err)
+	}
+	head := []byte("---\nfeature: a\nstatus: active\n---\n\n")
+	plan := scaffold.Plan{Ops: []scaffold.Op{{Path: "specs/a/spec.md", Content: head, Prepend: true, Expect: original}}}
+	results, err := plan.Apply(root)
+	if err != nil || len(results) != 1 || results[0].Status != scaffold.StatusPrepended {
+		t.Fatalf("got %+v, %v", results, err)
+	}
+	if got := readFile(t, root, "specs/a/spec.md"); got != string(head)+string(original) {
+		t.Fatalf("unexpected content %q", got)
+	}
+	if info, _ := os.Stat(target); info.Mode().Perm() != 0o640 {
+		t.Errorf("permissions changed to %v", info.Mode().Perm())
+	}
+	// The file now differs from Expect: a second apply must skip instead of prepending twice.
+	results, err = plan.Apply(root)
+	if err != nil || results[0].Status != scaffold.StatusSkipped {
+		t.Fatalf("second apply: got %+v, %v", results, err)
+	}
+}
+
+// sdd-adopt AC-1: generated configuration keeps globs intact (quoted YAML).
+func TestRenderConfigQuotesGlobs(t *testing.T) {
+	cfg := scaffold.DefaultConfig("standard")
+	cfg.Artifacts.PRD = "**/spec.md"
+	cfg.Artifacts.Design = "specs/features/*/plan.md"
+	content, err := scaffold.RenderConfig(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "sdd.config.yaml"), content, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := config.Load(root)
+	if err != nil {
+		t.Fatalf("rendered config invalid: %v\n%s", err, content)
+	}
+	if loaded.Artifacts.PRD != "**/spec.md" || loaded.Artifacts.Design != "specs/features/*/plan.md" {
+		t.Errorf("globs not preserved: %+v", loaded.Artifacts)
+	}
+}

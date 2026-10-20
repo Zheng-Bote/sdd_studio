@@ -7,16 +7,16 @@ language: de
 base_ref: ""
 
 artifacts:
-  constitution: {{.Artifacts.Constitution}}
-  adr: {{.Artifacts.ADR}}
-  prd: {{.Artifacts.PRD}}
-  design: {{.Artifacts.Design}}
-  plans: {{.Artifacts.Plans}}
-  archive: {{.Artifacts.Archive}}
+  constitution: {{printf "%q" .Artifacts.Constitution}}
+  adr: {{printf "%q" .Artifacts.ADR}}
+  prd: {{printf "%q" .Artifacts.PRD}}
+  design: {{printf "%q" .Artifacts.Design}}
+  plans: {{printf "%q" .Artifacts.Plans}}
+  archive: {{printf "%q" .Artifacts.Archive}}
   # Doku/Exploration: lösen keine Feature-Prüfung aus.
   docs:
 {{- range .Artifacts.Docs}}
-    - {{.}}
+    - {{printf "%q" .}}
 {{- end}}
 
 tests:

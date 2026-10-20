@@ -23,6 +23,10 @@ type Op struct {
 	KeepDir bool
 	// Skip, if set, records why the operation is planned but will not be executed (e.g. artifact exists).
 	Skip string
+	// Prepend inserts Content before the existing file content instead of creating a file. It only applies if the file
+	// still equals Expect byte for byte; otherwise the operation is skipped (the file changed since it was planned).
+	Prepend bool
+	Expect  []byte
 }
 
 // Plan is an ordered list of operations.
@@ -32,8 +36,9 @@ type Plan struct {
 
 // Status values reported by Apply.
 const (
-	StatusCreated = "created"
-	StatusSkipped = "skipped"
+	StatusCreated   = "created"
+	StatusPrepended = "prepended"
+	StatusSkipped   = "skipped"
 )
 
 // Result is the outcome of one operation.
@@ -78,6 +83,13 @@ func previewOp(root string, op Op) Result {
 		return Result{Path: op.Path, Status: StatusSkipped, Reason: op.Skip}
 	}
 	target := filepath.Join(root, filepath.FromSlash(op.Path))
+	if op.Prepend {
+		current, err := os.ReadFile(target)
+		if err != nil || !bytes.Equal(current, op.Expect) {
+			return Result{Path: op.Path, Status: StatusSkipped, Reason: "Datei seit der Planung verändert"}
+		}
+		return Result{Path: op.Path, Status: StatusPrepended}
+	}
 	if op.KeepDir {
 		if _, err := os.Stat(filepath.Dir(target)); err == nil {
 			return Result{Path: op.Path, Status: StatusSkipped, Reason: "Verzeichnis existiert"}
@@ -122,6 +134,13 @@ func (p Plan) Apply(root string) ([]Result, error) {
 		if realDir != realRoot && !strings.HasPrefix(realDir, realRoot+string(filepath.Separator)) {
 			return out, fmt.Errorf("%w: %s (über symbolischen Link)", ErrUnsafePath, rel)
 		}
+		if op.Prepend {
+			if err := prependFile(target, op.Content, op.Expect); err != nil {
+				return out, fmt.Errorf("%s nicht ergänzbar: %w", rel, err)
+			}
+			out = append(out, Result{Path: rel, Status: StatusPrepended})
+			continue
+		}
 		f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 		if errors.Is(err, fs.ErrExist) {
 			out = append(out, Result{Path: rel, Status: StatusSkipped, Reason: "Datei existiert"})
@@ -138,6 +157,29 @@ func (p Plan) Apply(root string) ([]Result, error) {
 		out = append(out, Result{Path: rel, Status: StatusCreated})
 	}
 	return out, nil
+}
+
+// prependFile writes head+expect to target via a temporary file in the same directory and an atomic rename,
+// keeping the original permissions. No existing content is removed.
+func prependFile(target string, head, expect []byte) error {
+	info, err := os.Lstat(target)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return errors.New("keine reguläre Datei")
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(target), ".sdd-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmp.Name())
+	_, werr := tmp.Write(append(append([]byte{}, head...), expect...))
+	cerr := tmp.Close()
+	if err := errors.Join(werr, cerr, os.Chmod(tmp.Name(), info.Mode().Perm())); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), target)
 }
 
 // render executes an embedded template from templates/<name>.

@@ -11,7 +11,6 @@ import (
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/baseline"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
-	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/rules"
 )
 
 func main() {
@@ -35,6 +34,8 @@ func run(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return runInit(args[1:], repoRoot, stdout, stderr)
 	case "new":
 		return runNew(args[1:], repoRoot, stdout, stderr)
+	case "adopt":
+		return runAdopt(args[1:], repoRoot, stdout, stderr)
 	case "-h", "--help", "help":
 		printUsage(stdout)
 		return 0
@@ -151,7 +152,7 @@ func runBaseline(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
 		return 2
 	}
-	cat, catPath, err := catalog.Load(repoRoot)
+	cat, _, err := catalog.Load(repoRoot)
 	if err != nil {
 		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
 		return 2
@@ -180,32 +181,19 @@ func runBaseline(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		gatesToRun = []string{*gate}
 	}
 
-	reg := rules.NewRegistry()
-	var currentEntries []baseline.Entry
-	for _, g := range gatesToRun {
-		ctx := &rules.Context{
-			RepoRoot:    repoRoot,
-			Config:      cfg,
-			Catalog:     cat,
-			CatalogPath: catPath,
-			Gate:        g,
-		}
-		findings, err := rules.Evaluate(ctx, reg)
-		if err != nil {
-			fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
-			return 2
-		}
-		entries := baseline.BuildEntriesFromFindings(cat, g, findings)
-		if *acceptRule != "" {
-			var filtered []baseline.Entry
-			for _, e := range entries {
-				if e.RuleID == *acceptRule {
-					filtered = append(filtered, e)
-				}
+	currentEntries, err := sddcore.BaselineEntries(repoRoot, cfg, gatesToRun)
+	if err != nil {
+		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
+		return 2
+	}
+	if *acceptRule != "" {
+		var filtered []baseline.Entry
+		for _, e := range currentEntries {
+			if e.RuleID == *acceptRule {
+				filtered = append(filtered, e)
 			}
-			entries = filtered
 		}
-		currentEntries = append(currentEntries, entries...)
+		currentEntries = filtered
 	}
 
 	existing, hasExisting, err := baseline.Load(repoRoot)
@@ -279,5 +267,6 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  gate       Führt ein Gate aus: pre-implementation | pre-merge | pre-release")
 	fmt.Fprintln(w, "  baseline   Verwaltet .sdd/baseline.json (--gate, --prune, --accept)")
 	fmt.Fprintln(w, "  init       Legt ein neues Projekt an (--profile, --dry-run, --no-ci)")
+	fmt.Fprintln(w, "  adopt      Übernimmt ein bestehendes Projekt: Bericht, mit --apply auf neuem Branch (--profile, --branch)")
 	fmt.Fprintln(w, "  new        Legt Artefakte aus Templates an (--feature, --type, --title, --touches, --archive-after, --dry-run)")
 }

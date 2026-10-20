@@ -52,23 +52,18 @@ func InitPlan(opts InitOptions) (Plan, error) {
 	if err := cfg.Validate(); err != nil {
 		return Plan{}, err
 	}
-	data := struct {
-		Profile   string
-		Project   string
-		Artifacts config.ArtifactsConfig
-	}{opts.Profile, opts.Project, cfg.Artifacts}
-
 	var plan Plan
-	for _, f := range []struct{ path, tmpl string }{
-		{config.DefaultConfigFileName, "config.yaml.tmpl"},
-		{cfg.Artifacts.Constitution, "constitution.md.tmpl"},
-	} {
-		content, err := render(f.tmpl, data)
-		if err != nil {
-			return Plan{}, err
-		}
-		plan.Ops = append(plan.Ops, Op{Path: f.path, Content: content})
+	cfgContent, err := RenderConfig(cfg)
+	if err != nil {
+		return Plan{}, err
 	}
+	constContent, err := RenderConstitution(cfg, opts.Project)
+	if err != nil {
+		return Plan{}, err
+	}
+	plan.Ops = append(plan.Ops,
+		Op{Path: config.DefaultConfigFileName, Content: cfgContent},
+		Op{Path: cfg.Artifacts.Constitution, Content: constContent})
 
 	dirs := []string{cfg.Artifacts.ADR, cfg.Artifacts.PRD, cfg.Artifacts.Design, cfg.Artifacts.Plans, cfg.Artifacts.Archive}
 	dirs = append(dirs, cfg.Artifacts.Docs...)
@@ -77,7 +72,7 @@ func InitPlan(opts InitOptions) (Plan, error) {
 	}
 
 	if opts.CI {
-		content, err := render("workflow.yml.tmpl", data)
+		content, err := render("workflow.yml.tmpl", nil)
 		if err != nil {
 			return Plan{}, err
 		}
@@ -90,4 +85,20 @@ func InitPlan(opts InitOptions) (Plan, error) {
 	}
 	plan.Ops = append(plan.Ops, Op{Path: baseline.DefaultBaselineRelPath, Content: append(bl, '\n')})
 	return plan, nil
+}
+
+type templateData struct {
+	Profile   string
+	Project   string
+	Artifacts config.ArtifactsConfig
+}
+
+// RenderConfig renders sdd.config.yaml for the profile and artifact paths of cfg (thresholds stay empty).
+func RenderConfig(cfg *config.Config) ([]byte, error) {
+	return render("config.yaml.tmpl", templateData{Profile: cfg.Profile, Artifacts: cfg.Artifacts})
+}
+
+// RenderConstitution renders the constitution template with the required SDD-002a sections.
+func RenderConstitution(cfg *config.Config, project string) ([]byte, error) {
+	return render("constitution.md.tmpl", templateData{Profile: cfg.Profile, Project: project, Artifacts: cfg.Artifacts})
 }

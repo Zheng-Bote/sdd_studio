@@ -9,8 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/adopt"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scaffold"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scan"
 )
 
 func runInit(args []string, repoRoot string, stdout, stderr io.Writer) int {
@@ -115,4 +117,47 @@ func splitList(raw string) []string {
 		}
 	}
 	return out
+}
+
+func runAdopt(args []string, repoRoot string, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("adopt", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	profile := fs.String("profile", "standard", "Profil für eine vorgeschlagene Konfiguration: minimal, standard oder regulated")
+	apply := fs.Bool("apply", false, "Übernahme auf einem neuen Branch anwenden (ein Commit je Schritt)")
+	branch := fs.String("branch", "sdd/adopt", "Name des neuen Branches für --apply")
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	project := "Projekt"
+	if abs, err := filepath.Abs(repoRoot); err == nil {
+		project = filepath.Base(abs)
+	}
+	opts := adopt.Options{Profile: *profile, Branch: *branch, Project: project, Today: time.Now()}
+	proposal, err := adopt.Propose(repoRoot, opts)
+	if err != nil {
+		fmt.Fprintf(stderr, "sdd adopt: %v\n", err)
+		return 2
+	}
+	if !*apply {
+		fmt.Fprint(stdout, adopt.RenderReport(proposal, nil))
+		return 0
+	}
+
+	res, err := adopt.Apply(repoRoot, proposal, scan.CLIGit{Root: repoRoot})
+	if res != nil {
+		for _, c := range res.Commits {
+			fmt.Fprintf(stdout, "Commit %s  %s (%d Dateien)\n", c.Hash, c.Step, len(c.Paths))
+		}
+	}
+	if err != nil {
+		fmt.Fprintf(stderr, "sdd adopt: %v\n", err)
+		if res != nil && len(res.Commits) > 0 {
+			fmt.Fprintf(stderr, "sdd adopt: Branch %s enthält die Schritte bis „%s“; der Ausgangsbranch %s ist unverändert\n", res.Branch, res.Commits[len(res.Commits)-1].Step, res.FromBranch)
+		}
+		return 2
+	}
+	fmt.Fprintf(stdout, "Übernahme auf Branch %s angewendet; Bericht: %s\n", res.Branch, adopt.ReportPath)
+	fmt.Fprintf(stdout, "Prüfen: git diff %s...%s — zurück: git switch %s\n", res.FromBranch, res.Branch, res.FromBranch)
+	return 0
 }

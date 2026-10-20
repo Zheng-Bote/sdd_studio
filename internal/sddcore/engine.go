@@ -24,8 +24,12 @@ func RunCheck(opts RunOptions) (*report.Report, error) {
 	if err != nil {
 		return nil, err
 	}
+	return RunCheckWithConfig(opts, cfg)
+}
 
-	cat, catPath, err := catalog.Load(opts.RepoRoot)
+// RunCheckWithConfig is RunCheck with an already loaded (or proposed) configuration.
+func RunCheckWithConfig(opts RunOptions, cfg *config.Config) (*report.Report, error) {
+	cat, findings, err := evaluate(opts, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +39,33 @@ func RunCheck(opts RunOptions) (*report.Report, error) {
 		return nil, err
 	}
 
-	reg := rules.NewRegistry()
+	suppressed := 0
+	if hasBaseline {
+		findings, suppressed = baseline.Apply(bf, cat, opts.Gate, findings)
+	}
+
+	rep := report.Build(cat.Version, cfg.Profile, opts.Gate, opts.Feature, hasBaseline, suppressed, findings)
+	return &rep, nil
+}
+
+// BaselineEntries evaluates the given gates without applying an existing baseline and returns the baselineable entries.
+func BaselineEntries(repoRoot string, cfg *config.Config, gates []string) ([]baseline.Entry, error) {
+	var entries []baseline.Entry
+	for _, g := range gates {
+		cat, findings, err := evaluate(RunOptions{RepoRoot: repoRoot, Gate: g}, cfg)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, baseline.BuildEntriesFromFindings(cat, g, findings)...)
+	}
+	return baseline.MergeEntries(nil, entries), nil
+}
+
+func evaluate(opts RunOptions, cfg *config.Config) (*catalog.Catalog, []report.Finding, error) {
+	cat, catPath, err := catalog.Load(opts.RepoRoot)
+	if err != nil {
+		return nil, nil, err
+	}
 	ctx := &rules.Context{
 		RepoRoot:    opts.RepoRoot,
 		Config:      cfg,
@@ -45,17 +75,9 @@ func RunCheck(opts RunOptions) (*report.Report, error) {
 		Feature:     opts.Feature,
 		Paths:       opts.Paths,
 	}
-
-	findings, err := rules.Evaluate(ctx, reg)
+	findings, err := rules.Evaluate(ctx, rules.NewRegistry())
 	if err != nil {
-		return nil, fmt.Errorf("Fehler bei der Regelprüfung: %w", err)
+		return nil, nil, fmt.Errorf("Fehler bei der Regelprüfung: %w", err)
 	}
-
-	suppressed := 0
-	if hasBaseline {
-		findings, suppressed = baseline.Apply(bf, cat, opts.Gate, findings)
-	}
-
-	rep := report.Build(cat.Version, cfg.Profile, opts.Gate, opts.Feature, hasBaseline, suppressed, findings)
-	return &rep, nil
+	return cat, findings, nil
 }
