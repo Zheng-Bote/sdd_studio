@@ -148,6 +148,34 @@ Fortsetzungszeilen und Fließtext sind keine Kriterien. Jede erkannte Zeile muss
 
 ---
 
+## Archivierung (`SDD-050`)
+
+PRD, Tech Spec und Plan gelten bis zum Release. Danach sind sie Historie: Sie werden nach `artifacts.archive` verschoben, nicht gelöscht, und tragen `status: archived`. Der Archivierungsschritt gehört in den Release-Vorbereitungs-Commit, zusammen mit dem Changelog, unmittelbar vor dem Git-Tag.
+
+---
+
+### SDD-050 — Abgeschlossene Features sind vor dem Release archiviert {#sdd-050}
+
+- **Schweregrad:** `warn` (`default`, `pre-merge`), `error` in `pre-release`
+- **Profil:** ab `standard`
+- **Baseline:** `forbidden` — Archivieren ist ein Verschieben, keine Autorschaft; der Zustand lässt sich jederzeit billig herstellen.
+- **Check:** `archive_state`
+
+**Begründung:** Ein Gate nach dem Release blockiert nichts. Deshalb wird vor dem Release-Tag geprüft, dass kein abgeschlossenes Feature mehr zwischen den aktiven Artefakten liegt. Sonst lesen Menschen und Agenten erledigte Anforderungen als gültig.
+
+#### SDD-050 Prüfvertrag {#sdd-050-vertrag}
+
+Ein **Feature-Artefakt** ist eine Markdown-Datei unter `artifacts.prd`, `artifacts.design` oder `artifacts.plans` (rekursiv, ohne `exclude`-Treffer) mit gültigem Frontmatter und nicht-leerem `feature:`-Feld. Die Prüfung ist repository-weit; es findet keine Feature-Auflösung statt.
+
+1. Liegt ein Feature-Artefakt nicht unter `artifacts.archive` und gilt mindestens eines der folgenden, entsteht genau ein Befund je Datei:
+   - `status: implemented`;
+   - `archive-after` ist gesetzt und kein Datum der Form `YYYY-MM-DD` (ein Git-Tag ist kein gültiger Wert);
+   - `archive-after` liegt vor dem heutigen lokalen Datum (am Stichtag selbst noch kein Befund).
+2. Trägt eine Markdown-Datei unter `artifacts.archive` ein nicht-leeres `feature:`-Feld und einen `status` außer `archived` oder `superseded`, entsteht ein Befund.
+3. Ist `artifacts.archive` nicht konfiguriert, entfällt Punkt 2; Befunde nach Punkt 1 verweisen dann auf die fehlende Konfiguration.
+
+---
+
 ## Selbstschutz- und Coverage-Regeln (`SDD-070` – `SDD-073`)
 
 Damit Regelkatalog, Handbuch und Prüfkern niemals auseinanderlaufen, prüft `sdd` bei jedem Lauf zuerst die Konsistenz des Katalogs selbst. Alle vier Regeln gelten ab Profil `minimal`, sind in allen Gates aktiv und tragen `baseline: forbidden`.

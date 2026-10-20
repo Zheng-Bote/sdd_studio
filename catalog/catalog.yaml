@@ -75,6 +75,22 @@ rules:
       braucht ein abgestimmtes technisches Design, bevor implementiert wird.
     handbook: handbuch/03-mechanismen.md#sdd-030
 
+  - id: SDD-050
+    title: Abgeschlossene Features sind vor dem Release archiviert
+    severity:
+      default: warn
+      by_gate:
+        pre-release: error
+    profile: standard
+    check: archive_state
+    gate_default: [pre-merge, pre-release]
+    baseline: forbidden
+    contract: handbuch/03-mechanismen.md#sdd-050-vertrag
+    rationale: >
+      Ein Gate nach dem Release blockiert nichts. Geprüft wird daher vor dem
+      Release-Tag, dass abgeschlossene Feature-Artefakte im Archiv liegen.
+    handbook: handbuch/03-mechanismen.md#sdd-050
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:

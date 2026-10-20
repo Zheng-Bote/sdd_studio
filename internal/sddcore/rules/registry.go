@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	sddstudio "github.com/Zheng-Bote/sdd_studio"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
@@ -25,7 +26,8 @@ type Context struct {
 	Gate        string // "" for default `sdd lint`, or "pre-implementation", "pre-merge", "pre-release"
 	Feature     string
 	Paths       []string
-	Git         scan.Git // nil means the git CLI in RepoRoot
+	Git         scan.Git         // nil means the git CLI in RepoRoot
+	Now         func() time.Time // nil means time.Now
 
 	// per-run caches, filled lazily by the feature checks
 	diffDone      bool
