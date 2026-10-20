@@ -180,6 +180,18 @@ func TestMaturity(t *testing.T) {
 	if p.Maturity.Level != 2 || p.Maturity.Next == nil || p.Maturity.Next.Name != "CI ruft sdd gate auf" {
 		t.Fatalf("initialized project: want L2 with next step CI, got L%d %+v", p.Maturity.Level, p.Maturity.Next)
 	}
+
+	// sdd-adopt AC-3: archiving after a release keeps L2 — archived PRDs and Tech Specs still show the separation.
+	for _, rel := range []string{"docs/prd/a.md", "docs/design/a.md"} {
+		data, _ := os.ReadFile(filepath.Join(root2, rel))
+		write(t, root2, strings.Replace(rel, "docs/", "docs/archive/", 1), strings.Replace(string(data), "status: active", "status: archived", 1))
+		if err := os.Remove(filepath.Join(root2, rel)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if p, err = adopt.Propose(root2, options()); err != nil || p.Maturity.Level != 2 {
+		t.Fatalf("after archiving: want L2, got %+v, %v", p.Maturity, err)
+	}
 }
 
 // sdd-adopt AC-4, AC-7: the dry run writes nothing and shows every planned change.
