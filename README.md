@@ -26,6 +26,7 @@ Siehe [CHANGELOG](CHANGELOG.md). In CI: `uses: Zheng-Bote/sdd_studio@v0.1.0` (Be
   - `go run ./cmd/sdd gate <pre-implementation|pre-merge|pre-release> [--json] [--feature <slug>[,<slug>…]] [--paths <globs>]`
   - `go run ./cmd/sdd baseline [--gate <gate>] [--prune] [--accept <rule_id>]`
   - `go run ./cmd/sdd init [--profile minimal|standard|regulated] [--dry-run] [--no-ci]`
+  - `go run ./cmd/sdd ui [--port N] [--open]` — lokale Oberfläche auf 127.0.0.1: Übersicht, Artefakte, Befunde (live), Neues Artefakt, Übernahme, Handbuch
   - `go run ./cmd/sdd report [--format markdown|json] [--since <ref>]` — Reifegrad, Befunde, Gates, Schuldenstand mit Trend; die Action schreibt ihn in die Job-Zusammenfassung
   - `go run ./cmd/sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` — Bestandsprojekt übernehmen: Probelauf-Bericht, mit `--apply` auf neuem Branch, ein Commit je Schritt
   - `go run ./cmd/sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` bzw. `new --type adr|doc --title …`
@@ -36,4 +37,4 @@ Siehe [CHANGELOG](CHANGELOG.md). In CI: `uses: Zheng-Bote/sdd_studio@v0.1.0` (Be
 ## Nächste Schritte (beim nächsten Mal)
 
 - **Entscheidung offen:** `SDD-060` (Widersprüche Verfassung ↔ Tech Spec) ist laut Konzept nur assistiert über ein lokales Sprachmodell möglich (§9.6).
-- **Roadmap Schritt 5/6:** `sdd ui`, Agenten-Schnittstelle (MCP).
+- **Roadmap Schritt 6:** Agenten-Schnittstelle (MCP).

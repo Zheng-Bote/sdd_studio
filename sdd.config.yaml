@@ -26,6 +26,11 @@ thresholds:
     - internal/sddcore/rules/**
     - internal/sddcore/baseline/**
     - internal/sddcore/report/**
+    - internal/sddcore/scaffold/**
+    - internal/sddcore/adopt/**
+    - internal/sddcore/overview/**
+    - internal/sddcore/adrlock/**
+    - internal/ui/**
   feature_artifacts_required_when:
     min_layers_touched: 2
     touched_paths:

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SDD Studio</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true">◆</span> SDD Studio <span id="project" class="muted"></span></div>
+    <button id="palette-open" class="ghost" title="Befehlspalette (Strg+K)">Befehle <kbd>Strg</kbd><kbd>K</kbd></button>
+  </header>
+  <div class="layout">
+    <nav class="sidebar" aria-label="Ansichten">
+      <a href="#overview" data-view="overview"><kbd>1</kbd> Übersicht</a>
+      <a href="#artifacts" data-view="artifacts"><kbd>2</kbd> Artefakte</a>
+      <a href="#findings" data-view="findings"><kbd>3</kbd> Befunde</a>
+      <a href="#new" data-view="new"><kbd>4</kbd> Neues Artefakt</a>
+      <a href="#adopt" data-view="adopt"><kbd>5</kbd> Übernahme</a>
+      <a href="/handbook" target="_blank" rel="noopener"><kbd>H</kbd> Handbuch ↗</a>
+    </nav>
+    <main id="view" tabindex="-1" aria-live="polite"></main>
+  </div>
+  <div id="palette" class="palette" hidden role="dialog" aria-modal="true" aria-label="Befehlspalette">
+    <div class="palette-box">
+      <input id="palette-input" type="text" placeholder="Ansicht oder Befehl …" autocomplete="off" aria-label="Befehl suchen">
+      <ul id="palette-list" role="listbox"></ul>
+    </div>
+  </div>
+</body>
+</html>

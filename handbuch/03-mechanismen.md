@@ -4,7 +4,7 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
-## Projektanlage, Templates, Übernahme und Bericht (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`)
+## Projektanlage, Templates, Übernahme, Bericht und Oberfläche (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`, `sdd ui`)
 
 `init`, `new` und `adopt` schreiben ausschließlich **additiv**; `report` schreibt nichts: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
 
@@ -68,6 +68,32 @@ Zeigt den Stand des Projekts: Reifegrad L0–L4 mit nächstem Schritt (dieselben
 - **Vergleichsstand:** `--since <ref>`, sonst die Merge-Basis nach `base_ref` (wie `pre-merge`). Die frühere Baseline wird per `git show <ref>:.sdd/baseline.json` gelesen — Git bleibt lesend. Fehlt sie dort, gilt sie als leer.
 - **Ratchet:** Die Baseline darf nur schrumpfen. Enthält sie einen Eintrag (Identität `gate + rule_id + path + content_hash + ordinal`), den der Vergleichsstand nicht enthielt, hebt der Bericht das als Verstoß hervor und listet die neuen Einträge. Es ist ein Hinweis für das Review, kein Regelbefund.
 - **Robust:** Ist ein Gate nicht ausführbar (etwa ohne Git) oder der Vergleichsstand nicht lesbar, steht der Grund im Bericht. Exit-Code `2` gibt es nur bei fehlender oder ungültiger Konfiguration, ungültigem Format oder nicht lesbarer aktueller Baseline.
+
+### `sdd ui` {#sdd-ui}
+
+```text
+sdd ui [--port N] [--open]
+```
+
+Startet eine lokale Oberfläche auf `127.0.0.1` (Standard: freier Port) und gibt die URL mit einem Sitzungstoken aus; `--open` öffnet sie im Standardbrowser, `Strg+C` beendet sie. Die Oberfläche ist eine Ansicht auf dieselbe Bibliothek — jede Funktion gibt es auch in der CLI:
+
+| Ansicht | entspricht |
+|---|---|
+| Übersicht | `sdd report` |
+| Artefakte (Typ, Status, Alter, Archivfrist) | Inventar von `sdd adopt` |
+| Befunde (Gate, „neu“/„Altbestand“, Export JSON/CSV, Handbuch-Link, Fundstelle in VS Code oder `$EDITOR`) | `sdd lint --json`, `sdd gate <gate> --json` |
+| Neues Artefakt (Vorschau, dann Anlegen) | `sdd new` |
+| Übernahme (Probelauf, dann Anwenden auf neuem Branch) | `sdd adopt`, `sdd adopt --apply` |
+
+Die Befundliste aktualisiert sich alle drei Sekunden, solange der Tab sichtbar ist. `Strg+K` öffnet die Befehlspalette, `1`–`5` und `H` springen direkt.
+
+**Sicherheit** (Verfassung, Security 2):
+
+- Bindung ausschließlich an `127.0.0.1`. Jede Anfrage mit einem anderen `Host` — auch `localhost` — wird mit `403` abgewiesen (Schutz vor DNS-Rebinding).
+- Kein CORS; `Content-Security-Policy: default-src 'self'`; keine externen Schriften, Skripte oder Telemetrie.
+- Schreibende Anfragen (`POST`) brauchen das Sitzungstoken (`X-SDD-Token`), `Origin: http://127.0.0.1:<port>` und `Content-Type: application/json`. Lesen geht ohne Token.
+- Geschrieben wird nur über den Plan/Apply-Pfad von `sdd new` und `sdd adopt --apply`, jeweils erst nach Vorschau und Bestätigung. Baseline und ADR-Lockfile lassen sich in der Oberfläche nicht verändern.
+- `$EDITOR` wird ohne Shell gestartet und nur für Dateien innerhalb des Repositorys.
 
 ### CI-Einbindung (GitHub Action) {#ci-einbindung}
 
