@@ -4,6 +4,33 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
+## Verfassungsregeln (`SDD-001` – `SDD-002`)
+
+Die Verfassung ist das ranghöchste Artefakt eines Projekts. Diese Regeln stellen sicher, dass sie existiert und ihr Strukturschema erfüllt.
+
+---
+
+### SDD-001 — Verfassung vorhanden {#sdd-001}
+
+- **Schweregrad:** `error` (`default`, `pre-implementation`, `pre-merge`)
+- **Profil:** ab `minimal`
+- **Baseline:** `allowed`
+- **Check:** `constitution_present`
+
+**Begründung:** Ohne Verfassung fehlt die oberste Quelle der Präzedenzordnung. Architektur-, Sicherheits- und Prozessregeln wären nur implizit vorhanden und damit weder prüfbar noch für Agenten auffindbar.
+
+#### SDD-001 Prüfvertrag {#sdd-001-vertrag}
+
+Für den in `sdd.config.yaml` unter `artifacts.constitution` konfigurierten Pfad muss gelten:
+1. Der Pfad ist gesetzt (nicht leer).
+2. Der Pfad ist relativ und verweist nach Normalisierung nicht außerhalb des Repository-Wurzelverzeichnisses (kein absoluter Pfad, kein `..`-Ausbruch).
+3. Unter dem Pfad existiert eine reguläre Datei (kein Verzeichnis).
+4. Die Datei enthält mindestens ein Zeichen, das kein Leerraum ist.
+
+Der Inhalt wird nicht geprüft — das ist Aufgabe von `SDD-002`.
+
+---
+
 ## Selbstschutz- und Coverage-Regeln (`SDD-070` – `SDD-073`)
 
 Damit Regelkatalog, Handbuch und Prüfkern niemals auseinanderlaufen, prüft `sdd` bei jedem Lauf zuerst die Konsistenz des Katalogs selbst. Alle vier Regeln gelten ab Profil `minimal`, sind in allen Gates aktiv und tragen `baseline: forbidden`.

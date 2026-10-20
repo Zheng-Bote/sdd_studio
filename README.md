@@ -11,6 +11,7 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md) und [`docs/sdd_process_3.md`](docs/sdd_process_3.md)
 - **Dogfooding-Konfiguration & Verfassung:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md)
 - **Selbstschutz-Regeln (`SDD-070` – `SDD-073`):** Katalog, Handbuchabschnitte, Prüfverträge und Laufzeit-Checks aktiv
+- **Verfassungsregel `SDD-001`:** Verfassung vorhanden (Phase 1C)
 - **Baseline & Ratchet:** Gate-gebundene Baseline (`.sdd/baseline.json`) mit `content_hash`, deterministischem `ordinal` und Schutz für `baseline: forbidden`
 - **CLI-Kommandos:**
   - `go run ./cmd/sdd lint [--json] [--gate <gate>]`
@@ -19,5 +20,5 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 ## Nächste Schritte (beim nächsten Mal)
 
-- **Phase 1C:** Verbleibende 7 Regeln des v1-Schnitts ergänzen (`SDD-001`, `SDD-002a`, `SDD-020`, `SDD-030`, `SDD-021`, `SDD-022`, `SDD-050`) — jeweils inklusive Handbuchabschnitt, Prüfvertrag und Tests im selben Commit.
+- **Phase 1C:** Verbleibende 6 Regeln des v1-Schnitts ergänzen (`SDD-002a`, `SDD-020`, `SDD-030`, `SDD-021`, `SDD-022`, `SDD-050`) — jeweils inklusive Handbuchabschnitt, Prüfvertrag und Tests im selben Commit.
 - **Schritt 2:** `sdd init`, `sdd new` (Templates) und GitHub-Action-Wrapper.

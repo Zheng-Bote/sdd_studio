@@ -1,5 +1,19 @@
 version: "1.0.0"
 rules:
+  - id: SDD-001
+    title: Verfassung vorhanden
+    severity:
+      default: error
+    profile: minimal
+    check: constitution_present
+    gate_default: [pre-implementation, pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-001-vertrag
+    rationale: >
+      Ohne Verfassung fehlt die oberste Quelle der Präzedenzordnung; jede
+      Architektur- oder Sicherheitsregel wäre nur implizit.
+    handbook: handbuch/03-mechanismen.md#sdd-001
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:
