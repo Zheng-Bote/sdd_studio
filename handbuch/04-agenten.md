@@ -58,3 +58,27 @@ Ressourcen: `sdd://constitution`, `sdd://catalog`, `sdd://handbook` und `sdd://a
 - **Kein Agent verändert die Baseline**, quittiert Befunde (`sdd baseline --accept`), schreibt das ADR-Lockfile, führt `sdd adopt --apply` aus oder setzt ein ADR auf `accepted`. Dafür gibt es kein Werkzeug; der Mensch entscheidet (Konzept §9.6).
 - **Ein Agent formuliert, der Mensch nimmt ab.** Akzeptanzkriterien, Nicht-Ziele und Entscheidungen entstehen im Gespräch, nicht aus Platzhaltertext.
 - **Testverweise nennen den Feature-Slug:** `// <slug> AC-<n>: …` direkt über dem Test (`SDD-022`, `SDD-025`).
+
+---
+
+## KI-Desktop `sdd-desk` {#sdd-desk}
+
+`sdd-desk` ist ein **getrenntes, optionales Programm** ([ADR 0002](../docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)): Es führt im Gespräch mit einem frei wählbaren Sprachmodell durch den Prozess und nutzt dafür `sdd mcp`. `sdd` selbst bleibt KI-frei und offline.
+
+**Bauen und starten** (bis zur Tauri-Hülle als lokale Web-Oberfläche):
+
+```text
+cd apps/desk && npm ci && npm run build:desk     # Oberfläche bauen und einbetten
+go build -o bin/sdd ./cmd/sdd
+go build -o bin/sdd-desk ./cmd/sdd-desk
+bin/sdd-desk --project <repository> --open        # gibt URL mit Sitzungstoken aus
+```
+
+**Modelle:** `config/llm.env` neben der ausführbaren Datei (Vorlage: `config/llm.env.example`), Rechte `0600`. Lokales Ollama, Ollama Cloud, OpenRouter, NVIDIA NIM, Claude und Gemini; Prozessvariablen haben Vorrang. Ohne Datei steht nur lokales Ollama zur Verfügung.
+
+**Was der Desktop darf:**
+
+- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen zehn Werkzeuge, keine eigenen.
+- Jeder Aufruf braucht eine Freigabe: **einmal**, **für die Sitzung** (nur lesende Werkzeuge) oder **Ablehnen**. Ein schreibender Aufruf (`sdd_new` mit `apply`) zeigt vorher die Vorschau mit Dateien und Inhalt und lässt sich nur einzeln freigeben.
+- Vor dem ersten Aufruf eines Cloud-Anbieters muss der Hinweis „Inhalte verlassen dieses Gerät“ bestätigt sein; ohne Bestätigung lehnt das Backend ab. Inhalte werden nicht geschwärzt.
+- Lokaler Server nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken für jeden API-Aufruf, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.

@@ -8,6 +8,7 @@ touches:
   - apps/desk/**
   - .gitignore
   - handbuch/**
+  - sdd.config.yaml
 ---
 
 # Tech Spec — KI-Desktop (`sdd-desk`)

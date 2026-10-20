@@ -17,6 +17,7 @@ artifacts:
 tests:
   include:
     - "**/*_test.go"
+    - "apps/desk/src/**/*.spec.ts"
 
 thresholds:
   layers:
@@ -40,6 +41,10 @@ thresholds:
       - "go.mod"
 
 exclude:
+  - "**/node_modules/**"
+  - apps/desk/dist/**
+  - apps/desk/.angular/**
+  - internal/desk/webdist/**
   - vendor/**
   - node_modules/**
   - .git/**

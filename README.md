@@ -34,10 +34,11 @@ Siehe [CHANGELOG](CHANGELOG.md). In CI: `uses: Zheng-Bote/sdd_studio@v0.1.0` (Be
   - `go run ./cmd/sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` — Bestandsprojekt übernehmen: Probelauf-Bericht, mit `--apply` auf neuem Branch, ein Commit je Schritt
   - `go run ./cmd/sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` bzw. `new --type adr|doc --title …`
 - **GitHub Action:** [`action.yml`](action.yml) baut `sdd` und führt `sdd gate <gate>` aus (siehe [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#ci-einbindung))
+- **KI-Desktop `sdd-desk`** (optional, getrennt, [ADR 0002](docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)): Angular 22 + Spartan-NG unter [`apps/desk`](apps/desk), Go-Backend [`cmd/sdd-desk`](cmd/sdd-desk); führt mit wählbarem Modell durch den Prozess, `sdd`-Werkzeuge nur mit Erlaubnis ([Handbuch](handbuch/04-agenten.md#sdd-desk))
 - **Artefaktpfade als Ordner oder Glob:** z. B. Spec Kit `specs/features/*/spec.md` ohne Umzug
 - **Feature-Artefakte des Werkzeugs selbst:** `sdd-core-v1`, `sdd-init-new`, `sdd-adopt`, `sdd-report` und `sdd-rules-v1-1`, mit Version 0.1.0 archiviert unter [`docs/archive`](docs/archive)
 
 ## Nächste Schritte (beim nächsten Mal)
 
 - **Entscheidung offen:** `SDD-060` (Widersprüche Verfassung ↔ Tech Spec) ist laut Konzept nur assistiert über ein lokales Sprachmodell möglich (§9.6).
-- **KI-Desktop `sdd-desk`** (ADR 0002): getrenntes, optionales Programm mit Modellwahl, das durch den Prozess führt und `sdd`-Werkzeuge mit Erlaubnis ausführt.
+- **Tauri-v2-Hülle für `sdd-desk`:** `apps/desk/src-tauri`, Go-Backend als Sidecar; Streaming der Modellantworten.

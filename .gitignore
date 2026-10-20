@@ -4,3 +4,10 @@ config/llm.env
 
 # Build-Ausgaben
 /bin/
+
+# Oberfläche von sdd-desk (Build-Ausgabe von apps/desk)
+/internal/desk/webdist/*
+!/internal/desk/webdist/README.md
+/apps/desk/node_modules/
+/apps/desk/dist/
+/apps/desk/.angular/
