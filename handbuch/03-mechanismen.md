@@ -297,6 +297,24 @@ Wie der [Prüfvertrag von SDD-020](#sdd-020-vertrag), mit `artifacts.design` an 
 
 ---
 
+### SDD-024 — Der Diff weicht nicht von der erklärten Änderungsabsicht ab {#sdd-024}
+
+- **Schweregrad:** `warn`, nur in `pre-merge` (die Regel braucht den Diff)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `diff_within_intent`
+
+**Begründung:** `pre-implementation` prüft die erklärte Absicht, `pre-merge` die Wirklichkeit. Wächst der Umfang während der Umsetzung über `touches` hinaus, beschreibt die Spezifikation nicht mehr, was gemergt wird — meist ein Zeichen, dass sie nachzuführen ist.
+
+#### SDD-024 Prüfvertrag {#sdd-024-vertrag}
+
+1. Die Features werden wie bei `SDD-020` [aufgelöst](#feature-aufloesung). Ist keines auflösbar, prüft die Regel nichts (das meldet `SDD-020`/`SDD-030`).
+2. **Erklärte Absicht** ist die Vereinigung von `touches` aller Feature-Artefakte der aufgelösten Features und `--paths`. Ist sie leer, prüft die Regel nichts.
+3. **Geprüft** werden die Dateien aus `git diff --no-renames <base>...HEAD` ohne `exclude`-Treffer, außer Verfassung, Feature-Artefakten (`artifacts.prd`, `design`, `plans`, `archive`), Dateien unter `artifacts.adr`, `artifacts.docs` und `.sdd/`.
+4. Eine geprüfte Datei liegt in der Absicht, wenn sie sich mit mindestens einem Glob der Absicht [überschneidet](#glob-syntax). Für jede andere entsteht ein `warn` an der Datei.
+
+---
+
 ## Akzeptanzkriterien (`SDD-021`, `SDD-022`)
 
 Akzeptanzkriterien sind das Bindeglied zwischen PRD, Tests und Tasks. Sie tragen deshalb eine stabile Kennung `AC-<n>`, die nie umnummeriert wird.

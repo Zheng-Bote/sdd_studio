@@ -191,6 +191,21 @@ rules:
       Abweichungen werden über das Lockfile quittiert, nicht über die Baseline.
     handbook: handbuch/03-mechanismen.md#sdd-011
 
+  - id: SDD-024
+    title: Der Diff weicht nicht von der erklärten Änderungsabsicht ab
+    severity:
+      by_gate:
+        pre-merge: warn
+    profile: standard
+    check: diff_within_intent
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-024-vertrag
+    rationale: >
+      Wächst der Umfang während der Umsetzung über touches hinaus, beschreibt
+      die Spezifikation nicht mehr, was gemergt wird.
+    handbook: handbuch/03-mechanismen.md#sdd-024
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:
