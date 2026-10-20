@@ -264,6 +264,13 @@ func TestApplyCommitsEachStep(t *testing.T) {
 			t.Errorf("forbidden rule in baseline: %+v", e)
 		}
 	}
+	// sdd-rules-v1-1 AC-6: the baseline step also locks the decided ADRs, in the same commit.
+	if got := git(t, root, "show", "--name-only", "--format=", "HEAD~1"); got != ".sdd/adr-lock.json\n.sdd/baseline.json" {
+		t.Errorf("baseline commit touches %q", got)
+	}
+	if lock, err := os.ReadFile(filepath.Join(root, ".sdd/adr-lock.json")); err != nil || !strings.Contains(string(lock), "docs/architecture/adr/0001-storage.md") {
+		t.Errorf("ADR lockfile: %v %s", err, lock)
+	}
 	// The baseline makes the adopted repository pass; only the non-baselineable archive warning remains.
 	rep, err := sddcore.RunCheck(sddcore.RunOptions{RepoRoot: root})
 	if err != nil {
