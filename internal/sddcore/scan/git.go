@@ -103,3 +103,19 @@ func (g CLIGit) CurrentBranch() (string, error) {
 	}
 	return "", nil
 }
+
+// ShowFile reads path at ref (`git show <ref>:<path>`), read-only. ok is false if the file does not exist at ref;
+// an unknown ref is an error.
+func (g CLIGit) ShowFile(ref, path string) ([]byte, bool, error) {
+	if !g.refExists(ref) {
+		return nil, false, fmt.Errorf("%w: Ref %q existiert nicht", ErrGit, ref)
+	}
+	if _, err := g.run("cat-file", "-e", ref+":"+path); err != nil {
+		return nil, false, nil
+	}
+	out, err := g.run("show", ref+":"+path)
+	if err != nil {
+		return nil, false, err
+	}
+	return []byte(out), true, nil
+}

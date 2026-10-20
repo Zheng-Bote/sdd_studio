@@ -45,3 +45,12 @@ runs:
         if [ -n "$SDD_FEATURE" ]; then args+=(--feature "$SDD_FEATURE"); fi
         if [ -n "$SDD_PATHS" ]; then args+=(--paths "$SDD_PATHS"); fi
         "$RUNNER_TEMP/sdd" "${args[@]}"
+
+    # Bericht in die Job-Zusammenfassung, auch wenn das Gate fehlschlägt; ändert dessen Exit-Code nicht.
+    - name: sdd report
+      if: always()
+      continue-on-error: true
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        "$RUNNER_TEMP/sdd" report >> "$GITHUB_STEP_SUMMARY"

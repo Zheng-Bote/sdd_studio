@@ -9,6 +9,9 @@ import (
 )
 
 type actionStep struct {
+	Name             string            `yaml:"name"`
+	If               string            `yaml:"if"`
+	ContinueOnError  bool              `yaml:"continue-on-error"`
 	Uses             string            `yaml:"uses"`
 	Run              string            `yaml:"run"`
 	WorkingDirectory string            `yaml:"working-directory"`
@@ -16,6 +19,7 @@ type actionStep struct {
 }
 
 // sdd-init-new AC-7: the action builds sdd from its own source, runs the gate, and passes inputs only via env.
+// sdd-report AC-5: see the report step check below.
 func TestActionPassesInputsViaEnv(t *testing.T) {
 	data, err := os.ReadFile("action.yml")
 	if err != nil {
@@ -37,8 +41,12 @@ func TestActionPassesInputsViaEnv(t *testing.T) {
 		t.Fatalf("expected a composite action with required input gate, got %+v", action)
 	}
 
-	var built, gated bool
-	for _, s := range action.Runs.Steps {
+	var built, gated, reported bool
+	for i, s := range action.Runs.Steps {
+		// sdd-report AC-5: the report step runs even after a failed gate and never fails the job itself.
+		if strings.Contains(s.Run, `"$RUNNER_TEMP/sdd" report`) && strings.Contains(s.Run, "$GITHUB_STEP_SUMMARY") {
+			reported = s.If == "always()" && s.ContinueOnError && i > 0 && strings.Contains(action.Runs.Steps[i-1].Run, `gate "$SDD_GATE"`)
+		}
 		if strings.Contains(s.Run, "${{") {
 			t.Errorf("run script interpolates an expression; pass it via env instead:\n%s", s.Run)
 		}
@@ -52,12 +60,15 @@ func TestActionPassesInputsViaEnv(t *testing.T) {
 					t.Errorf("gate step must propagate the exit code, found %q", forbidden)
 				}
 			}
+			if s.ContinueOnError || s.If != "" {
+				t.Errorf("gate step must neither be conditional nor continue on error")
+			}
 			if lines := strings.Split(strings.TrimSpace(s.Run), "\n"); !strings.Contains(lines[len(lines)-1], `"$RUNNER_TEMP/sdd"`) {
 				t.Errorf("sdd must be the last command so its exit code is the step's exit code")
 			}
 		}
 	}
-	if !built || !gated {
-		t.Fatalf("expected a build step in the action path and a gate step reading inputs from env (built=%v gated=%v)", built, gated)
+	if !built || !gated || !reported {
+		t.Fatalf("expected build, gate and report steps (built=%v gated=%v reported=%v)", built, gated, reported)
 	}
 }

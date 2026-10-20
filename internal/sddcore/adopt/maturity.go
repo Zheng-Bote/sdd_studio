@@ -11,19 +11,19 @@ import (
 
 // Criterion is one maturity criterion with its result and justification.
 type Criterion struct {
-	Level  int
-	Name   string
-	Met    bool
-	Detail string
+	Level  int    `json:"level"`
+	Name   string `json:"name"`
+	Met    bool   `json:"met"`
+	Detail string `json:"detail"`
 	// Advice is the concrete next step if the criterion is not met.
-	Advice string
+	Advice string `json:"advice"`
 }
 
 // Maturity is the assessed level L0-L4 and exactly one proposed next step.
 type Maturity struct {
-	Level    int
-	Criteria []Criterion
-	Next     *Criterion // nil at L4
+	Level    int         `json:"level"`
+	Criteria []Criterion `json:"criteria"`
+	Next     *Criterion  `json:"next,omitempty"` // nil at L4
 }
 
 var acIDRegex = regexp.MustCompile(`\bAC-[1-9][0-9]*\b`)

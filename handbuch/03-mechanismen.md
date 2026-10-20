@@ -4,9 +4,9 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
-## Projektanlage, Templates und Übernahme (`sdd init`, `sdd new`, `sdd adopt`)
+## Projektanlage, Templates, Übernahme und Bericht (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`)
 
-Alle drei Befehle schreiben ausschließlich **additiv**: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
+`init`, `new` und `adopt` schreiben ausschließlich **additiv**; `report` schreibt nichts: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
 
 ### `sdd init` {#sdd-init}
 
@@ -57,6 +57,18 @@ sdd adopt [--profile minimal|standard|regulated] [--apply] [--branch sdd/adopt]
 
 **Ausgewiesen, nicht ausgeführt:** Die Archivierung (`SDD-050`, nicht baselinefähig) listet der Bericht als Aufräumschritt vor dem ersten Release. Der vorangestellte Status `active` ist eine Annahme; längst umgesetzte Features sind auf `implemented` zu setzen.
 
+### `sdd report` {#sdd-report}
+
+```text
+sdd report [--format markdown|json] [--since <ref>]
+```
+
+Zeigt den Stand des Projekts: Reifegrad L0–L4 mit nächstem Schritt (dieselben Kriterien wie [`sdd adopt`](#sdd-adopt)), die offenen Befunde von `sdd lint`, für jedes Gate die Anzahl der `error`-, `warn`- und baselineten Befunde sowie den **Schuldenstand**: die Einträge in `.sdd/baseline.json` je Regel und Gate, verglichen mit der Baseline am Vergleichsstand.
+
+- **Vergleichsstand:** `--since <ref>`, sonst die Merge-Basis nach `base_ref` (wie `pre-merge`). Die frühere Baseline wird per `git show <ref>:.sdd/baseline.json` gelesen — Git bleibt lesend. Fehlt sie dort, gilt sie als leer.
+- **Ratchet:** Die Baseline darf nur schrumpfen. Enthält sie einen Eintrag (Identität `gate + rule_id + path + content_hash + ordinal`), den der Vergleichsstand nicht enthielt, hebt der Bericht das als Verstoß hervor und listet die neuen Einträge. Es ist ein Hinweis für das Review, kein Regelbefund.
+- **Robust:** Ist ein Gate nicht ausführbar (etwa ohne Git) oder der Vergleichsstand nicht lesbar, steht der Grund im Bericht. Exit-Code `2` gibt es nur bei fehlender oder ungültiger Konfiguration, ungültigem Format oder nicht lesbarer aktueller Baseline.
+
 ### CI-Einbindung (GitHub Action) {#ci-einbindung}
 
 Die Action im Wurzelverzeichnis von `sdd_studio` baut `sdd` aus ihrem eigenen Quellstand und führt `sdd gate <gate>` im Arbeitsverzeichnis aus; der Exit-Code des Gates ist der Exit-Code des Schritts.
@@ -72,7 +84,7 @@ Die Action im Wurzelverzeichnis von `sdd_studio` baut `sdd` aus ihrem eigenen Qu
     paths: ""               # optional, erklärte Absicht für pre-implementation
 ```
 
-Ohne `fetch-depth: 0` fehlt die Merge-Basis, und das Gate endet mit Exit-Code `2`. Der von `sdd init` erzeugte Workflow führt `pre-merge` für Pull Requests aus und `pre-release` für Pushes auf `release/**` sowie manuell — also vor dem Tag, nicht danach.
+Ohne `fetch-depth: 0` fehlt die Merge-Basis, und das Gate endet mit Exit-Code `2`. Nach dem Gate hängt die Action den [Bericht](#sdd-report) an die Job-Zusammenfassung an — auch wenn das Gate fehlschlägt, und ohne dessen Exit-Code zu verändern. Der von `sdd init` erzeugte Workflow führt `pre-merge` für Pull Requests aus und `pre-release` für Pushes auf `release/**` sowie manuell — also vor dem Tag, nicht danach.
 
 ---
 
