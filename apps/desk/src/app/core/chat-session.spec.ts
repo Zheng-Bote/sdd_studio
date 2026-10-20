@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { ApiError, DeskApi } from './desk-api';
-import { ChatSession } from './chat-session';
-import { Meta, TurnRequest, TurnResponse } from './types';
+import { ApiError, DeskApi, NdjsonLines } from './desk-api';
+import { ChatSession, trimOpenCalls } from './chat-session';
+import { Message, Meta, StreamEvent, TurnRequest, TurnResponse } from './types';
 
 const meta: Meta = {
   project: 'demo',
@@ -13,15 +13,19 @@ const meta: Meta = {
   ],
 };
 
-function setup(responses: TurnResponse[]) {
+/** A turn's events; a plain response becomes a single done event. */
+type Script = TurnResponse | StreamEvent[];
+
+function setup(responses: Script[]) {
   const requests: TurnRequest[] = [];
   const api = {
     meta: async () => meta,
-    turn: async (req: TurnRequest) => {
+    turnStream: async (req: TurnRequest, onEvent: (e: StreamEvent) => void) => {
       requests.push(structuredClone(req));
       const res = responses.shift();
       if (!res) throw new ApiError('no more responses', 500);
-      return res;
+      const events: StreamEvent[] = Array.isArray(res) ? res : [{ type: 'done', ...res }];
+      events.forEach(onEvent);
     },
   };
   TestBed.configureTestingModule({ providers: [{ provide: DeskApi, useValue: api }] });
@@ -87,8 +91,8 @@ describe('ChatSession', () => {
 
   it('withdraws the acknowledgement when the backend demands the disclosure again', async () => {
     const { session } = setup([]);
-    const api = TestBed.inject(DeskApi) as unknown as { turn: () => Promise<never> };
-    api.turn = async () => {
+    const api = TestBed.inject(DeskApi) as unknown as { turnStream: () => Promise<never> };
+    api.turnStream = async () => {
       throw new ApiError('Hinweis nicht bestätigt', 428);
     };
     await session.load();
@@ -97,5 +101,101 @@ describe('ChatSession', () => {
     await session.send('x');
     expect(session.needsDisclosure()).toBe(true);
     expect(session.error()).toContain('Hinweis');
+  });
+
+  // sdd-desk-streaming AC-6: the reasoning is shown while the model works and is dropped afterwards.
+  // sdd-desk-streaming AC-5: reasoning and answer grow while the model works; reasoning never enters the conversation.
+  it('shows the streamed text and then the finished messages', async () => {
+    const seen: string[] = [];
+    const answer: Message = { role: 'assistant', content: 'Hallo Welt' };
+    const { session } = setup([]);
+    const api = TestBed.inject(DeskApi) as unknown as { turnStream: DeskApi['turnStream'] };
+    api.turnStream = async (_req, onEvent) => {
+      onEvent({ type: 'thinking', text: 'Erst überlegen.' });
+      seen.push(session.thinking());
+      onEvent({ type: 'delta', text: 'Hallo' });
+      seen.push(session.streamingMessage()?.content ?? '');
+      onEvent({ type: 'delta', text: ' Welt' });
+      seen.push(session.streamingMessage()?.content ?? '');
+      onEvent({ type: 'message', message: answer });
+      seen.push(session.streaming());
+      onEvent({ type: 'done', messages: [{ role: 'user', content: 'x' }, answer] });
+    };
+    await session.load();
+    expect(session.canSend()).toBe(true);
+    const turn = session.send('x');
+    expect(session.busy()).toBe(true);
+    expect(session.canSend()).toBe(false);
+    await turn;
+    expect(seen).toEqual(['Erst überlegen.', 'Hallo', 'Hallo Welt', '']);
+    expect(session.thinking()).toBe('');
+    expect(session.messages().some((m) => m.content.includes('überlegen'))).toBe(false);
+    expect(session.messages().at(-1)).toEqual(answer);
+    expect(session.pending()).toEqual([]);
+    expect(session.busy()).toBe(false);
+  });
+
+  // sdd-desk-streaming AC-4: after cancel the finished messages stay, the partial text is kept and an open call is dropped.
+  it('keeps finished messages and drops an unanswered call when the turn is cancelled', async () => {
+    const { session } = setup([]);
+    const api = TestBed.inject(DeskApi) as unknown as { turnStream: DeskApi['turnStream'] };
+    api.turnStream = (_req, onEvent, signal) =>
+      new Promise((_resolve, reject) => {
+        onEvent({ type: 'message', message: { role: 'assistant', content: '', tool_calls: [{ id: 'c1', name: 'sdd_next', arguments: {} }] } });
+        onEvent({ type: 'message', message: { role: 'tool', content: 'ok', tool_call_id: 'c1', tool_name: 'sdd_next' } });
+        onEvent({ type: 'delta', text: 'Der nächste Schritt' });
+        signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+      });
+    await session.load();
+    const turn = session.send('Was nun?');
+    session.cancel();
+    await turn;
+    expect(session.messages().map((m) => m.role)).toEqual(['user', 'assistant', 'tool', 'assistant']);
+    expect(session.messages().at(-1)?.content).toBe('Der nächste Schritt');
+    expect(session.error()).toBe('Abgebrochen.');
+    expect(session.busy()).toBe(false);
+    expect(session.canSend()).toBe(true);
+  });
+
+  // sdd-desk-streaming AC-4: an error event mid-turn ends it like an abort, with the error shown.
+  it('ends the turn on an error event', async () => {
+    const { session } = setup([
+      [
+        { type: 'message', message: { role: 'assistant', content: '', tool_calls: [{ id: 'c9', name: 'sdd_lint', arguments: {} }] } },
+        { type: 'error', error: 'Claude: HTTP 529: overloaded' },
+      ],
+    ]);
+    await session.load();
+    await session.send('prüfen');
+    expect(session.messages().map((m) => m.role)).toEqual(['user']);
+    expect(session.error()).toContain('overloaded');
+  });
+});
+
+describe('trimOpenCalls', () => {
+  // sdd-desk-streaming AC-4: only an assistant message whose calls lack results is removed, with everything after it.
+  it('removes an assistant message with unanswered calls', () => {
+    const call = (id: string): Message => ({ role: 'assistant', content: '', tool_calls: [{ id, name: 'sdd_next', arguments: {} }] });
+    const result = (id: string): Message => ({ role: 'tool', content: 'ok', tool_call_id: id });
+    const user: Message = { role: 'user', content: 'x' };
+    expect(trimOpenCalls([user, call('a'), result('a')])).toEqual([user, call('a'), result('a')]);
+    expect(trimOpenCalls([user, call('a')])).toEqual([user]);
+    expect(trimOpenCalls([user, call('a'), result('a'), call('b')])).toEqual([user, call('a'), result('a')]);
+    expect(trimOpenCalls([user])).toEqual([user]);
+  });
+});
+
+describe('NdjsonLines', () => {
+  // sdd-desk-streaming AC-2: events split across chunks are put back together line by line.
+  it('reassembles events from arbitrary chunks', () => {
+    const lines = new NdjsonLines();
+    expect(lines.push('{"type":"delta","te')).toEqual([]);
+    expect(lines.push('xt":"Hal"}\n{"type":"delta","text":"lo"}\n\n{"type":')).toEqual([
+      { type: 'delta', text: 'Hal' },
+      { type: 'delta', text: 'lo' },
+    ]);
+    expect(lines.push('"x"}')).toEqual([]);
+    expect(lines.end()).toEqual([{ type: 'x' }]);
+    expect(lines.end()).toEqual([]);
   });
 });

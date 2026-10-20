@@ -1,4 +1,4 @@
-import { Component, ElementRef, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
@@ -13,7 +13,15 @@ import { MessageView } from './message-view';
   imports: [MessageView, ApprovalCard, HlmButtonImports, HlmTextareaImports, HlmAlertImports, HlmSpinnerImports],
   host: { class: 'flex min-h-0 flex-1 flex-col' },
   template: `
-    <div #log class="flex-1 space-y-3 overflow-y-auto p-4" role="log" aria-live="polite" aria-label="Gespräch">
+    <div
+      #log
+      class="flex-1 space-y-3 overflow-y-auto p-4"
+      role="log"
+      aria-live="polite"
+      aria-label="Gespräch"
+      [attr.aria-busy]="session.busy()"
+      (scroll)="onScroll()"
+    >
       @if (session.messages().length === 0) {
         <div class="mx-auto mt-16 max-w-md text-center text-muted-foreground">
           <p class="text-lg font-medium text-foreground">Wobei soll ich helfen?</p>
@@ -26,7 +34,15 @@ import { MessageView } from './message-view';
       @for (p of session.pending(); track p.call_id) {
         <desk-approval-card [pending]="p" (decided)="session.decide(p.call_id, $event)" />
       }
-      @if (session.busy()) {
+      @if (session.busy() && session.thinking()) {
+        <details class="max-w-[85%] text-xs text-muted-foreground">
+          <summary class="cursor-pointer">Gedankengang des Modells</summary>
+          <pre class="mt-1 max-h-48 overflow-auto whitespace-pre-wrap">{{ thinkingTail() }}</pre>
+        </details>
+      }
+      @if (session.streamingMessage(); as partial) {
+        <desk-message [message]="partial" />
+      } @else if (session.busy()) {
         <div class="flex items-center gap-2 text-sm text-muted-foreground"><hlm-spinner /> denkt nach …</div>
       }
     </div>
@@ -62,22 +78,43 @@ import { MessageView } from './message-view';
         (keydown.control.enter)="submit($event)"
         (keydown.meta.enter)="submit($event)"
       ></textarea>
-      <button hlmBtn type="submit" [disabled]="!session.canSend() || !draft().trim()">Senden</button>
+      @if (session.busy()) {
+        <button hlmBtn variant="outline" type="button" (click)="session.cancel()">Abbrechen</button>
+      } @else {
+        <button hlmBtn type="submit" [disabled]="!session.canSend() || !draft().trim()">Senden</button>
+      }
     </form>
   `,
 })
 export class ChatPanel {
   protected readonly session = inject(ChatSession);
   protected readonly draft = signal('');
+  /** The end of the reasoning is what matters while the model works; long reasoning is cut at the front. */
+  protected readonly thinkingTail = computed(() => {
+    const text = this.session.thinking();
+    return text.length > 4000 ? '…' + text.slice(-4000) : text;
+  });
   private readonly log = viewChild<ElementRef<HTMLElement>>('log');
+  /** Follow new text only while the user is at the bottom, so reading earlier messages is not interrupted. */
+  private follow = true;
 
   constructor() {
     effect(() => {
       this.session.messages();
       this.session.pending();
+      this.session.streaming();
       const el = this.log()?.nativeElement;
-      queueMicrotask(() => el?.scrollTo({ top: el.scrollHeight }));
+      if (this.follow) {
+        queueMicrotask(() => el?.scrollTo({ top: el.scrollHeight }));
+      }
     });
+  }
+
+  protected onScroll(): void {
+    const el = this.log()?.nativeElement;
+    if (el) {
+      this.follow = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    }
   }
 
   protected async submit(event: Event): Promise<void> {

@@ -51,6 +51,17 @@ type TurnResponse struct {
 	Pending  []Pending `json:"pending"`
 }
 
+// Event is one step of a streamed turn: a text piece (delta), a piece of the model's reasoning (thinking), a finished
+// message, the final state (done) or an error.
+type Event struct {
+	Type     string    `json:"type"`
+	Text     string    `json:"text,omitempty"`
+	Message  *Message  `json:"message,omitempty"`
+	Messages []Message `json:"messages,omitempty"`
+	Pending  []Pending `json:"pending,omitempty"`
+	Error    string    `json:"error,omitempty"`
+}
+
 // Errors of a turn that the UI must handle.
 var (
 	ErrDisclosure      = errors.New("Cloud-Anbieter: Hinweis „Inhalte verlassen das Gerät“ nicht bestätigt")
@@ -101,8 +112,8 @@ func openCalls(msgs []Message) []ToolCall {
 	return nil
 }
 
-// Turn runs open tool calls the user decided on and asks the model until it answers or a call needs a decision.
-func (a *Agent) Turn(ctx context.Context, req TurnRequest) (*TurnResponse, error) {
+// Check validates provider, disclosure and model before anything is sent or streamed.
+func (a *Agent) Check(req TurnRequest) (*Provider, error) {
 	var provider *Provider
 	for i := range a.Providers {
 		if a.Providers[i].ID == req.Provider {
@@ -118,8 +129,33 @@ func (a *Agent) Turn(ctx context.Context, req TurnRequest) (*TurnResponse, error
 	if req.Model == "" {
 		return nil, errors.New("kein Modell gewählt")
 	}
+	return provider, nil
+}
+
+// Turn runs open tool calls the user decided on and asks the model until it answers or a call needs a decision.
+func (a *Agent) Turn(ctx context.Context, req TurnRequest) (*TurnResponse, error) {
+	return a.run(ctx, req, nil)
+}
+
+// TurnStream works like Turn and reports text pieces and every finished message to emit as they happen.
+// The model streams if its chat implements Streamer. Permissions are decided exactly as in Turn.
+func (a *Agent) TurnStream(ctx context.Context, req TurnRequest, emit func(Event)) (*TurnResponse, error) {
+	return a.run(ctx, req, emit)
+}
+
+func (a *Agent) run(ctx context.Context, req TurnRequest, emit func(Event)) (*TurnResponse, error) {
+	provider, err := a.Check(req)
+	if err != nil {
+		return nil, err
+	}
 	chat := a.NewChat(*provider)
 	msgs := append([]Message{}, req.Messages...)
+	add := func(m Message) {
+		msgs = append(msgs, m)
+		if emit != nil {
+			emit(Event{Type: "message", Message: &m})
+		}
+	}
 
 	for step := 0; ; step++ {
 		var pending []Pending
@@ -132,16 +168,24 @@ func (a *Agent) Turn(ctx context.Context, req TurnRequest) (*TurnResponse, error
 				pending = append(pending, *wait)
 				continue
 			}
-			msgs = append(msgs, Message{Role: "tool", ToolCallID: tc.ID, ToolName: tc.Name, Content: result})
+			add(Message{Role: "tool", ToolCallID: tc.ID, ToolName: tc.Name, Content: result})
 		}
 		if len(pending) > 0 {
 			return &TurnResponse{Messages: msgs, Pending: pending}, nil
 		}
 		if step >= maxModelSteps {
-			msgs = append(msgs, Message{Role: "assistant", Content: fmt.Sprintf("(Abgebrochen nach %d Modellaufrufen in einem Zug.)", maxModelSteps)})
+			add(Message{Role: "assistant", Content: fmt.Sprintf("(Abgebrochen nach %d Modellaufrufen in einem Zug.)", maxModelSteps)})
 			return &TurnResponse{Messages: msgs, Pending: []Pending{}}, nil
 		}
-		reply, err := chat.Complete(ctx, req.Model, a.System, msgs, a.Tools)
+		var reply Message
+		if s, ok := chat.(Streamer); ok && emit != nil {
+			reply, err = s.Stream(ctx, req.Model, a.System, msgs, a.Tools, Deltas{
+				Text:     func(text string) { emit(Event{Type: "delta", Text: text}) },
+				Thinking: func(text string) { emit(Event{Type: "thinking", Text: text}) },
+			})
+		} else {
+			reply, err = chat.Complete(ctx, req.Model, a.System, msgs, a.Tools)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +194,7 @@ func (a *Agent) Turn(ctx context.Context, req TurnRequest) (*TurnResponse, error
 				reply.ToolCalls[i].ID = fmt.Sprintf("call-%d-%d", len(msgs), i)
 			}
 		}
-		msgs = append(msgs, reply)
+		add(reply)
 		if len(reply.ToolCalls) == 0 {
 			return &TurnResponse{Messages: msgs, Pending: []Pending{}}, nil
 		}

@@ -62,6 +62,14 @@ export interface TurnResponse {
   pending: Pending[];
 }
 
+/** One line of POST /api/turn/stream. */
+export type StreamEvent =
+  | { type: 'delta'; text: string }
+  | { type: 'thinking'; text: string }
+  | { type: 'message'; message: Message }
+  | { type: 'done'; messages: Message[]; pending?: Pending[] }
+  | { type: 'error'; error: string };
+
 export interface Step {
   id: string;
   title: string;

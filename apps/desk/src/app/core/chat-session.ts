@@ -20,6 +20,13 @@ export class ChatSession {
   readonly acknowledged = signal<string[]>([]);
   readonly busy = signal(false);
   readonly error = signal('');
+  /** Text of the answer the model is writing right now. */
+  readonly streaming = signal('');
+  /** The model's reasoning for the current step; shown while it works, never part of the conversation. */
+  readonly thinking = signal('');
+  readonly streamingMessage = computed<Message | null>(() =>
+    this.streaming() ? { role: 'assistant', content: this.streaming() } : null,
+  );
 
   readonly provider = computed<Provider | undefined>(() =>
     this.meta()?.providers.find((p) => p.id === this.providerId()),
@@ -35,6 +42,7 @@ export class ChatSession {
 
   private approvedCalls: string[] = [];
   private deniedCalls: string[] = [];
+  private abort: AbortController | null = null;
 
   async load(): Promise<void> {
     try {
@@ -94,29 +102,84 @@ export class ChatSession {
     }
   }
 
+  /** Aborts the running turn; finished messages stay, see runTurn. */
+  cancel(): void {
+    this.abort?.abort();
+  }
+
   private async runTurn(): Promise<void> {
+    const abort = new AbortController();
+    this.abort = abort;
     this.busy.set(true);
     this.error.set('');
+    this.streaming.set('');
+    this.thinking.set('');
+    let finished = false;
     try {
-      const res = await this.api.turn({
-        provider: this.providerId(),
-        model: this.model(),
-        messages: this.messages(),
-        allowed_tools: this.allowedTools(),
-        approved_calls: this.approvedCalls,
-        denied_calls: this.deniedCalls,
-        disclosure_ack: this.acknowledged().includes(this.providerId()),
-      });
-      this.messages.set(res.messages);
-      this.pending.set(res.pending);
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 428) {
-        this.acknowledged.update((ids) => ids.filter((id) => id !== this.providerId()));
+      await this.api.turnStream(
+        {
+          provider: this.providerId(),
+          model: this.model(),
+          messages: this.messages(),
+          allowed_tools: this.allowedTools(),
+          approved_calls: this.approvedCalls,
+          denied_calls: this.deniedCalls,
+          disclosure_ack: this.acknowledged().includes(this.providerId()),
+        },
+        (event) => {
+          switch (event.type) {
+            case 'delta':
+              this.streaming.update((t) => t + event.text);
+              break;
+            case 'thinking':
+              this.thinking.update((t) => t + event.text);
+              break;
+            case 'message':
+              this.messages.update((m) => [...m, event.message]);
+              this.streaming.set('');
+              this.thinking.set('');
+              break;
+            case 'done':
+              this.messages.set(event.messages);
+              this.pending.set(event.pending ?? []);
+              finished = true;
+              break;
+            case 'error':
+              throw new Error(event.error);
+          }
+        },
+        abort.signal,
+      );
+      if (!finished) {
+        throw new Error('Die Verbindung endete, bevor der Zug abgeschlossen war.');
       }
-      this.error.set(errorText(e));
+    } catch (e) {
+      this.keepFinished();
+      if (abort.signal.aborted) {
+        this.error.set('Abgebrochen.');
+      } else {
+        if (e instanceof ApiError && e.status === 428) {
+          this.acknowledged.update((ids) => ids.filter((id) => id !== this.providerId()));
+        }
+        this.error.set(errorText(e));
+      }
     } finally {
+      this.streaming.set('');
+      this.thinking.set('');
       this.busy.set(false);
+      if (this.abort === abort) {
+        this.abort = null;
+      }
     }
+  }
+
+  /** After an abort or error: drop a tool call without result, keep text the model had written so far. */
+  private keepFinished(): void {
+    const partial = this.streaming().trim();
+    this.messages.update((m) => {
+      const kept = trimOpenCalls(m);
+      return partial ? [...kept, { role: 'assistant', content: this.streaming() }] : kept;
+    });
   }
 
   reset(): void {
@@ -127,6 +190,22 @@ export class ChatSession {
     this.deniedCalls = [];
     this.error.set('');
   }
+}
+
+/**
+ * Removes the last assistant message with tool calls that have no result, and everything after it, so no provider
+ * sees an incomplete conversation.
+ */
+export function trimOpenCalls(messages: Message[]): Message[] {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const calls = messages[i].tool_calls ?? [];
+    if (messages[i].role !== 'assistant' || calls.length === 0) {
+      continue;
+    }
+    const answered = new Set(messages.slice(i + 1).filter((m) => m.role === 'tool').map((m) => m.tool_call_id));
+    return calls.every((c) => answered.has(c.id)) ? messages : messages.slice(0, i);
+  }
+  return messages;
 }
 
 function errorText(e: unknown): string {

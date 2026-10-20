@@ -1,5 +1,5 @@
 import { Service } from '@angular/core';
-import { Guide, Meta, PromptInfo, TurnRequest, TurnResponse } from './types';
+import { Guide, Meta, PromptInfo, StreamEvent, TurnRequest } from './types';
 
 const TOKEN_KEY = 'sdd-desk-token';
 
@@ -57,21 +57,65 @@ export class DeskApi {
     return this.request('POST', '/api/prompts/get', { name, arguments: args });
   }
 
-  turn(req: TurnRequest): Promise<TurnResponse> {
-    return this.request<TurnResponse>('POST', '/api/turn', req);
+  /**
+   * Runs a conversation turn and calls onEvent for every event as it arrives. Rejects with ApiError if the backend
+   * refuses the turn before streaming (e.g. 428), and with an AbortError when signal aborts.
+   */
+  async turnStream(req: TurnRequest, onEvent: (event: StreamEvent) => void, signal?: AbortSignal): Promise<void> {
+    const res = await this.send('POST', '/api/turn/stream', req, signal);
+    if (!res.ok || !res.body) {
+      throw await apiError(res);
+    }
+    const lines = new NdjsonLines();
+    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) {
+        break;
+      }
+      lines.push(value).forEach(onEvent);
+    }
+    lines.end().forEach(onEvent);
   }
 
   private async request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
-    const res = await fetch(path, {
+    const res = await this.send(method, path, body);
+    if (!res.ok) {
+      throw await apiError(res);
+    }
+    return (await res.json().catch(() => ({}))) as T;
+  }
+
+  private send(method: 'GET' | 'POST', path: string, body?: unknown, signal?: AbortSignal): Promise<Response> {
+    return fetch(path, {
       method,
       cache: 'no-store',
       headers: { 'X-SDD-Token': this.token, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
     });
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) {
-      throw new ApiError(data.error ?? res.statusText, res.status);
-    }
-    return data as T;
+  }
+}
+
+async function apiError(res: Response): Promise<ApiError> {
+  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  return new ApiError(data.error ?? res.statusText, res.status);
+}
+
+/** Splits streamed text into NDJSON events; a line may arrive in several chunks. */
+export class NdjsonLines {
+  private buffer = '';
+
+  push(chunk: string): StreamEvent[] {
+    this.buffer += chunk;
+    const parts = this.buffer.split('\n');
+    this.buffer = parts.pop() ?? '';
+    return parts.filter((l) => l.trim()).map((l) => JSON.parse(l) as StreamEvent);
+  }
+
+  end(): StreamEvent[] {
+    const rest = this.buffer;
+    this.buffer = '';
+    return rest.trim() ? [JSON.parse(rest) as StreamEvent] : [];
   }
 }

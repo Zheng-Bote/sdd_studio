@@ -10,11 +10,11 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 ## Stand
 
-Letzte Version: **0.1.0** ([CHANGELOG](CHANGELOG.md)). Seitdem auf `main`: `SDD-003`, `SDD-040`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und `sdd-desk`, auch als Tauri-v2-Anwendung.
+Letzte Version: **0.1.0** ([CHANGELOG](CHANGELOG.md)). Seitdem auf `main`: `SDD-003`, `SDD-040`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und `sdd-desk`, auch als Tauri-v2-Anwendung und mit gestreamten Antworten.
 
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** aktiv unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design) (`sdd-rules-003-040`, `sdd-ui`, `sdd-guidance`, `sdd-desk`, `sdd-desk-tauri`), mit 0.1.0 archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** aktiv unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design) (`sdd-rules-003-040`, `sdd-ui`, `sdd-guidance`, `sdd-desk`, `sdd-desk-tauri`, `sdd-desk-streaming`), mit 0.1.0 archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -135,7 +135,7 @@ bin/sdd-desk --project . --open
 
 `sdd-desk` gibt Adresse und URL mit Sitzungstoken aus; ohne `--open` diese URL im Browser öffnen. Beenden mit Strg+C.
 
-In der Oberfläche Anbieter und Modell wählen, links einen geführten Ablauf starten (z. B. **Idee → PRD**) oder frei fragen. Die Seitenleiste zeigt den Prozessstand aus `sdd next`.
+In der Oberfläche Anbieter und Modell wählen, links einen geführten Ablauf starten (z. B. **Idee → PRD**) oder frei fragen. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
 
 ### Was der Desktop darf
 
@@ -158,5 +158,4 @@ go run ./cmd/sdd lint
 
 ## Nächste Schritte
 
-- **Streaming der Modellantworten** in `sdd-desk`.
 - **Entscheidung offen:** `SDD-060` (Widersprüche Verfassung ↔ Tech Spec) ist laut Konzept nur assistiert über ein lokales Sprachmodell möglich (§9.6) — Kandidat für `sdd-desk`, nicht für `sdd`.

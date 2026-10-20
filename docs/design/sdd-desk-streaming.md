@@ -30,9 +30,13 @@ Ein Anbieter kann zusätzlich zu `Chat` die Schnittstelle `Streamer` erfüllen:
 
 ```go
 type Streamer interface {
-    Stream(ctx, model, system string, msgs []Message, tools []ToolDef, onText func(string)) (Message, error)
+    Stream(ctx, model, system string, msgs []Message, tools []ToolDef, out Deltas) (Message, error)
 }
+
+type Deltas struct{ Text, Thinking func(string) }
 ```
+
+`Thinking` erhält den Gedankengang des Modells. Er wird nur angezeigt: nicht in `Message`, nicht im Verlauf, nicht zurück an den Anbieter.
 
 `TurnStream` nutzt `Stream`, wenn der Anbieter ihn bietet, sonst `Complete`. `Turn` (und damit `POST /api/turn`) bleibt unverändert nicht gestreamt.
 
@@ -40,11 +44,11 @@ type Streamer interface {
 
 **Protokolle** (jeweils `stream: true`):
 
-| Protokoll | Format | Text | Werkzeugaufrufe |
-|---|---|---|---|
-| Ollama | NDJSON, `done: true` am Ende | `message.content` | `message.tool_calls`, vollständig in einem Stück |
-| OpenAI-kompatibel | SSE `data: {…}`, Ende `data: [DONE]` | `choices[0].delta.content` | `delta.tool_calls[]` nach `index` zusammengesetzt, `arguments` als Textstücke |
-| Claude | SSE mit `event:`/`data:` | `content_block_delta` / `text_delta` | `content_block_start` (`tool_use`) und `input_json_delta` je Block-`index` |
+| Protokoll | Format | Text | Gedankengang | Werkzeugaufrufe |
+|---|---|---|---|---|
+| Ollama | NDJSON, `done: true` am Ende | `message.content` | `message.thinking` | `message.tool_calls`, vollständig in einem Stück |
+| OpenAI-kompatibel | SSE `data: {…}`, Ende `data: [DONE]` | `choices[0].delta.content` | `delta.reasoning`, `delta.reasoning_content` | `delta.tool_calls[]` nach `index` zusammengesetzt, `arguments` als Textstücke |
+| Claude | SSE mit `event:`/`data:` | `content_block_delta` / `text_delta` | `thinking_delta` | `content_block_start` (`tool_use`) und `input_json_delta` je Block-`index` |
 
 Ein `error`-Objekt im Stream wird zum Fehler des Schritts. Zeilen bis 1 MiB.
 
@@ -53,6 +57,7 @@ Ein `error`-Objekt im Stream wird zum Fehler des Schritts. Zeilen bis 1 MiB.
 | `type` | Felder | Bedeutung |
 |---|---|---|
 | `delta` | `text` | Textstück der entstehenden Antwort |
+| `thinking` | `text` | Stück des Gedankengangs (nur Anzeige) |
 | `message` | `message` | fertige Nachricht (Antwort mit Werkzeugaufrufen oder Werkzeugergebnis) |
 | `done` | `messages`, `pending` | wie die Antwort von `/api/turn` |
 | `error` | `error` | Fehler mitten im Zug; danach endet der Stream |
@@ -61,7 +66,7 @@ Der Zug läuft im Kontext der Anfrage: bricht die Oberfläche `fetch` ab, wird d
 
 ## Oberfläche
 
-`DeskApi.turnStream(req, onEvent, signal)` liest den Body zeilenweise. `ChatSession` hält den entstehenden Text in `streaming`, hängt jede `message` an und übernimmt bei `done` Verlauf und offene Freigaben. `cancel()` bricht ab; danach bleiben die fertigen Nachrichten, ein angefangener Text wird als Antwort behalten, und eine Antwort mit Werkzeugaufrufen ohne Ergebnis wird samt allem danach verworfen (`trimOpenCalls`), damit kein Anbieter einen unvollständigen Verlauf sieht.
+`DeskApi.turnStream(req, onEvent, signal)` liest den Body zeilenweise. `ChatSession` hält den entstehenden Text in `streaming` und den Gedankengang in `thinking` (aufklappbar, nur während des Zuges), hängt jede `message` an und übernimmt bei `done` Verlauf und offene Freigaben. `cancel()` bricht ab; danach bleiben die fertigen Nachrichten, ein angefangener Text wird als Antwort behalten, und eine Antwort mit Werkzeugaufrufen ohne Ergebnis wird samt allem danach verworfen (`trimOpenCalls`), damit kein Anbieter einen unvollständigen Verlauf sieht.
 
 ## Umsetzung der Akzeptanzkriterien
 
@@ -72,6 +77,7 @@ Der Zug läuft im Kontext der Anfrage: bricht die Oberfläche `fetch` ab, wird d
 | AC-3 | `agent.go` (`Check`, `decide`) | `TestTurnStreamKeepsApprovals` |
 | AC-4 | Anfragekontext, `chat-session.ts` (`cancel`, `trimOpenCalls`) | `TestTurnStreamCancel`, `chat-session.spec.ts` |
 | AC-5 | `chat-panel.ts`, `chat-session.ts` | `chat-session.spec.ts` |
+| AC-6 | `stream.go` (`Deltas.Thinking`), `chat-session.ts` (`thinking`), `chat-panel.ts` | `TestStreamProviders`, `chat-session.spec.ts` |
 
 ## Sicherheit
 

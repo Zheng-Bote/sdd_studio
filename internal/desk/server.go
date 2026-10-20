@@ -53,6 +53,7 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("POST /api/prompts/get", s.handlePromptGet)
 	m.HandleFunc("GET /api/next", s.handleNext)
 	m.HandleFunc("POST /api/turn", s.handleTurn)
+	m.HandleFunc("POST /api/turn/stream", s.handleTurnStream)
 	s.mux = m
 	return s
 }
@@ -185,17 +186,61 @@ func (s *Server) handleTurn(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Errorf("ungültige Anfrage: %w", err))
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(r.Context(), turnTimeout)
 	defer cancel()
 	res, err := s.Agent.Turn(ctx, req)
+	if err != nil {
+		writeError(w, turnErrorStatus(err), err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+// turnTimeout bounds one conversation turn.
+const turnTimeout = 10 * time.Minute
+
+func turnErrorStatus(err error) int {
 	switch {
 	case errors.Is(err, ErrDisclosure):
-		writeError(w, http.StatusPreconditionRequired, err)
+		return http.StatusPreconditionRequired
 	case errors.Is(err, ErrUnknownProvider):
-		writeError(w, http.StatusBadRequest, err)
-	case err != nil:
-		writeError(w, http.StatusBadGateway, err)
+		return http.StatusBadRequest
 	default:
-		writeJSON(w, http.StatusOK, res)
+		return http.StatusBadGateway
 	}
+}
+
+// handleTurnStream runs a turn and sends its events as NDJSON. Request errors (provider, disclosure, model) are
+// answered with a status before the stream starts; later errors arrive as an error event. The turn runs in the
+// request's context, so a client that aborts also aborts the model request.
+func (s *Server) handleTurnStream(w http.ResponseWriter, r *http.Request) {
+	var req TurnRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("ungültige Anfrage: %w", err))
+		return
+	}
+	if _, err := s.Agent.Check(req); err != nil {
+		status := turnErrorStatus(err)
+		if status == http.StatusBadGateway {
+			status = http.StatusBadRequest
+		}
+		writeError(w, status, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/x-ndjson; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	rc := http.NewResponseController(w)
+	enc := json.NewEncoder(w)
+	emit := func(e Event) {
+		_ = enc.Encode(e)
+		_ = rc.Flush()
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), turnTimeout)
+	defer cancel()
+	res, err := s.Agent.TurnStream(ctx, req, emit)
+	if err != nil {
+		emit(Event{Type: "error", Error: err.Error()})
+		return
+	}
+	emit(Event{Type: "done", Messages: res.Messages, Pending: res.Pending})
 }

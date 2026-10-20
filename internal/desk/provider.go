@@ -50,14 +50,15 @@ func NewChat(p Provider, client *http.Client) Chat {
 	}
 }
 
-func postJSON(ctx context.Context, c *http.Client, url string, headers map[string]string, body, out any) error {
+// post sends a JSON body and returns the response if its status is 2xx; otherwise the error carries the body's start.
+func post(ctx context.Context, c *http.Client, url string, headers map[string]string, body any) (*http.Response, error) {
 	data, err := json.Marshal(body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(data))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	for k, v := range headers {
@@ -65,19 +66,29 @@ func postJSON(ctx context.Context, c *http.Client, url string, headers map[strin
 	}
 	resp, err := c.Do(req)
 	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode/100 != 2 {
+		defer resp.Body.Close()
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+		msg := strings.TrimSpace(string(raw))
+		if len(msg) > 500 {
+			msg = msg[:500] + "…"
+		}
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
+	}
+	return resp, nil
+}
+
+func postJSON(ctx context.Context, c *http.Client, url string, headers map[string]string, body, out any) error {
+	resp, err := post(ctx, c, url, headers, body)
+	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
 	if err != nil {
 		return err
-	}
-	if resp.StatusCode/100 != 2 {
-		msg := strings.TrimSpace(string(raw))
-		if len(msg) > 500 {
-			msg = msg[:500] + "…"
-		}
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, msg)
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
 		return fmt.Errorf("unerwartete Antwort: %w", err)
@@ -106,25 +117,30 @@ type ollamaChat struct {
 	c *http.Client
 }
 
-func (o *ollamaChat) Complete(ctx context.Context, model, system string, msgs []Message, tools []ToolDef) (Message, error) {
-	type fn struct {
-		Name      string          `json:"name"`
-		Arguments json.RawMessage `json:"arguments"`
-	}
-	type call struct {
-		Function fn `json:"function"`
-	}
-	type msg struct {
-		Role      string `json:"role"`
-		Content   string `json:"content"`
-		ToolCalls []call `json:"tool_calls,omitempty"`
-		ToolName  string `json:"tool_name,omitempty"`
-	}
-	out := []msg{{Role: "system", Content: system}}
+type ollamaFn struct {
+	Name      string          `json:"name"`
+	Arguments json.RawMessage `json:"arguments"`
+}
+
+type ollamaCall struct {
+	Function ollamaFn `json:"function"`
+}
+
+type ollamaMsg struct {
+	Role      string       `json:"role"`
+	Content   string       `json:"content"`
+	ToolCalls []ollamaCall `json:"tool_calls,omitempty"`
+	ToolName  string       `json:"tool_name,omitempty"`
+	Thinking  string       `json:"thinking,omitempty"` // only in answers; never sent back
+}
+
+// request returns headers and body of a /api/chat call.
+func (o *ollamaChat) request(model, system string, msgs []Message, tools []ToolDef, stream bool) (map[string]string, map[string]any) {
+	out := []ollamaMsg{{Role: "system", Content: system}}
 	for _, m := range msgs {
-		om := msg{Role: m.Role, Content: m.Content, ToolName: m.ToolName}
+		om := ollamaMsg{Role: m.Role, Content: m.Content, ToolName: m.ToolName}
 		for _, tc := range m.ToolCalls {
-			om.ToolCalls = append(om.ToolCalls, call{fn{tc.Name, argsObject(tc.Arguments)}})
+			om.ToolCalls = append(om.ToolCalls, ollamaCall{ollamaFn{tc.Name, argsObject(tc.Arguments)}})
 		}
 		out = append(out, om)
 	}
@@ -136,10 +152,15 @@ func (o *ollamaChat) Complete(ctx context.Context, model, system string, msgs []
 	if o.p.APIKey != "" {
 		headers["Authorization"] = "Bearer " + o.p.APIKey
 	}
+	return headers, map[string]any{"model": model, "messages": out, "tools": defs, "stream": stream}
+}
+
+func (o *ollamaChat) Complete(ctx context.Context, model, system string, msgs []Message, tools []ToolDef) (Message, error) {
+	headers, body := o.request(model, system, msgs, tools, false)
 	var resp struct {
-		Message msg `json:"message"`
+		Message ollamaMsg `json:"message"`
 	}
-	if err := postJSON(ctx, o.c, o.p.Endpoint+"/api/chat", headers, map[string]any{"model": model, "messages": out, "tools": defs, "stream": false}, &resp); err != nil {
+	if err := postJSON(ctx, o.c, o.p.Endpoint+"/api/chat", headers, body, &resp); err != nil {
 		return Message{}, fmt.Errorf("%s: %w", o.p.Name, err)
 	}
 	res := Message{Role: "assistant", Content: resp.Message.Content}
@@ -185,28 +206,32 @@ type openAIChat struct {
 	c *http.Client
 }
 
-func (o *openAIChat) Complete(ctx context.Context, model, system string, msgs []Message, tools []ToolDef) (Message, error) {
-	type fn struct {
-		Name      string `json:"name"`
-		Arguments string `json:"arguments"`
-	}
-	type call struct {
-		ID       string `json:"id"`
-		Type     string `json:"type"`
-		Function fn     `json:"function"`
-	}
-	type msg struct {
-		Role       string  `json:"role"`
-		Content    *string `json:"content"`
-		ToolCalls  []call  `json:"tool_calls,omitempty"`
-		ToolCallID string  `json:"tool_call_id,omitempty"`
-	}
+type openAIFn struct {
+	Name      string `json:"name"`
+	Arguments string `json:"arguments"`
+}
+
+type openAICall struct {
+	ID       string   `json:"id"`
+	Type     string   `json:"type"`
+	Function openAIFn `json:"function"`
+}
+
+type openAIMsg struct {
+	Role       string       `json:"role"`
+	Content    *string      `json:"content"`
+	ToolCalls  []openAICall `json:"tool_calls,omitempty"`
+	ToolCallID string       `json:"tool_call_id,omitempty"`
+}
+
+// request returns headers and body of a /chat/completions call.
+func (o *openAIChat) request(model, system string, msgs []Message, tools []ToolDef, stream bool) (map[string]string, map[string]any) {
 	text := func(s string) *string { return &s }
-	out := []msg{{Role: "system", Content: text(system)}}
+	out := []openAIMsg{{Role: "system", Content: text(system)}}
 	for _, m := range msgs {
-		om := msg{Role: m.Role, Content: text(m.Content), ToolCallID: m.ToolCallID}
+		om := openAIMsg{Role: m.Role, Content: text(m.Content), ToolCallID: m.ToolCallID}
 		for _, tc := range m.ToolCalls {
-			om.ToolCalls = append(om.ToolCalls, call{ID: tc.ID, Type: "function", Function: fn{tc.Name, string(argsObject(tc.Arguments))}})
+			om.ToolCalls = append(om.ToolCalls, openAICall{ID: tc.ID, Type: "function", Function: openAIFn{tc.Name, string(argsObject(tc.Arguments))}})
 		}
 		out = append(out, om)
 	}
@@ -214,13 +239,21 @@ func (o *openAIChat) Complete(ctx context.Context, model, system string, msgs []
 	for _, t := range tools {
 		defs = append(defs, map[string]any{"type": "function", "function": map[string]any{"name": t.Name, "description": t.Description, "parameters": schemaOf(t)}})
 	}
+	body := map[string]any{"model": model, "messages": out, "tools": defs}
+	if stream {
+		body["stream"] = true
+	}
+	return map[string]string{"Authorization": "Bearer " + o.p.APIKey}, body
+}
+
+func (o *openAIChat) Complete(ctx context.Context, model, system string, msgs []Message, tools []ToolDef) (Message, error) {
+	headers, body := o.request(model, system, msgs, tools, false)
 	var resp struct {
 		Choices []struct {
-			Message msg `json:"message"`
+			Message openAIMsg `json:"message"`
 		} `json:"choices"`
 	}
-	headers := map[string]string{"Authorization": "Bearer " + o.p.APIKey}
-	if err := postJSON(ctx, o.c, o.p.Endpoint+"/chat/completions", headers, map[string]any{"model": model, "messages": out, "tools": defs}, &resp); err != nil {
+	if err := postJSON(ctx, o.c, o.p.Endpoint+"/chat/completions", headers, body, &resp); err != nil {
 		return Message{}, fmt.Errorf("%s: %w", o.p.Name, err)
 	}
 	if len(resp.Choices) == 0 {
@@ -244,7 +277,8 @@ type claudeChat struct {
 	c *http.Client
 }
 
-func (o *claudeChat) Complete(ctx context.Context, model, system string, msgs []Message, tools []ToolDef) (Message, error) {
+// request returns headers and body of a /v1/messages call.
+func (o *claudeChat) request(model, system string, msgs []Message, tools []ToolDef, stream bool) (map[string]string, map[string]any) {
 	type block map[string]any
 	type msg struct {
 		Role    string  `json:"role"`
@@ -279,6 +313,16 @@ func (o *claudeChat) Complete(ctx context.Context, model, system string, msgs []
 	for _, t := range tools {
 		defs = append(defs, map[string]any{"name": t.Name, "description": t.Description, "input_schema": schemaOf(t)})
 	}
+	headers := map[string]string{"x-api-key": o.p.APIKey, "anthropic-version": "2023-06-01"}
+	body := map[string]any{"model": model, "max_tokens": 8192, "system": system, "messages": out, "tools": defs}
+	if stream {
+		body["stream"] = true
+	}
+	return headers, body
+}
+
+func (o *claudeChat) Complete(ctx context.Context, model, system string, msgs []Message, tools []ToolDef) (Message, error) {
+	headers, body := o.request(model, system, msgs, tools, false)
 	var resp struct {
 		Content []struct {
 			Type  string          `json:"type"`
@@ -288,8 +332,6 @@ func (o *claudeChat) Complete(ctx context.Context, model, system string, msgs []
 			Input json.RawMessage `json:"input"`
 		} `json:"content"`
 	}
-	headers := map[string]string{"x-api-key": o.p.APIKey, "anthropic-version": "2023-06-01"}
-	body := map[string]any{"model": model, "max_tokens": 8192, "system": system, "messages": out, "tools": defs}
 	if err := postJSON(ctx, o.c, o.p.Endpoint+"/v1/messages", headers, body, &resp); err != nil {
 		return Message{}, fmt.Errorf("%s: %w", o.p.Name, err)
 	}

@@ -17,7 +17,7 @@ touches:
 
 ## Ziel
 
-Der Text einer Antwort erscheint, während das Modell schreibt; Werkzeugergebnisse erscheinen, sobald sie vorliegen; ein laufender Zug lässt sich abbrechen. Freigaben, Hinweis für Cloud-Anbieter und alle Sicherheitsgrenzen von `sdd-desk` bleiben unverändert.
+Der Text einer Antwort und, falls das Modell ihn liefert, sein Gedankengang erscheinen, während das Modell arbeitet; Werkzeugergebnisse erscheinen, sobald sie vorliegen; ein laufender Zug lässt sich abbrechen. Freigaben, Hinweis für Cloud-Anbieter und alle Sicherheitsgrenzen von `sdd-desk` bleiben unverändert.
 
 ## Nutzer
 
@@ -41,3 +41,4 @@ Gestreamte Antworten für alle Anbieter von `sdd-desk` (Ollama lokal und Cloud, 
 - **AC-3** Freigaben gelten im gestreamten Zug genau wie im nicht gestreamten: kein Werkzeug ohne Erlaubnis, schreibende Aufrufe mit Vorschau; ohne bestätigten Hinweis lehnt der Endpunkt einen Cloud-Anbieter ab, bevor etwas gestreamt wird.
 - **AC-4** Bricht der Nutzer ab, beendet das Backend die Anfrage an den Anbieter; die Oberfläche behält die fertigen Nachrichten und verwirft einen Werkzeugaufruf ohne Ergebnis, damit das Gespräch fortgesetzt werden kann.
 - **AC-5** Die Oberfläche zeigt den entstehenden Text fortlaufend als Text an und bietet während eines Zuges „Abbrechen“ an.
+- **AC-6** Liefert ein Modell seinen Gedankengang gesondert (Ollama `thinking`, OpenAI-kompatibel `reasoning`/`reasoning_content`, Claude `thinking_delta`), zeigt die Oberfläche ihn während des Zuges aufklappbar an; er wird nicht Teil des Verlaufs und geht nicht zurück an das Modell.
