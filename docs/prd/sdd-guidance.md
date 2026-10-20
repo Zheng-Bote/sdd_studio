@@ -8,6 +8,7 @@ touches:
   - internal/mcp/**
   - handbuch/**
   - constitution.md
+  - .gitignore
 ---
 
 # PRD — Prozessführung: sdd next und sdd mcp (`sdd-guidance`)

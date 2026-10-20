@@ -42,6 +42,8 @@ func run(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return runReport(args[1:], repoRoot, stdout, stderr)
 	case "ui":
 		return runUI(args[1:], repoRoot, stdout, stderr)
+	case "next":
+		return runNext(args[1:], repoRoot, stdout, stderr)
 	case "-h", "--help", "help":
 		printUsage(stdout)
 		return 0
@@ -300,6 +302,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  gate       Führt ein Gate aus: pre-implementation | pre-merge | pre-release")
 	fmt.Fprintln(w, "  baseline   Verwaltet .sdd/baseline.json und .sdd/adr-lock.json (--gate, --prune, --accept)")
 	fmt.Fprintln(w, "  init       Legt ein neues Projekt an (--profile, --dry-run, --no-ci)")
+	fmt.Fprintln(w, "  next       Nächster Prozessschritt je Feature (--feature, --json)")
 	fmt.Fprintln(w, "  ui         Lokale Oberfläche auf 127.0.0.1 (--port, --open)")
 	fmt.Fprintln(w, "  report     Reifegrad, Befunde, Gates und Schuldenstand mit Trend (--format markdown|json, --since <ref>)")
 	fmt.Fprintln(w, "  adopt      Übernimmt ein bestehendes Projekt: Bericht, mit --apply auf neuem Branch (--profile, --branch)")

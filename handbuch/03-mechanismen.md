@@ -4,7 +4,7 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
-## Projektanlage, Templates, Übernahme, Bericht und Oberfläche (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`, `sdd ui`)
+## Projektanlage, Templates, Übernahme, Bericht, Prozessführung und Oberfläche (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`, `sdd next`, `sdd ui`)
 
 `init`, `new` und `adopt` schreiben ausschließlich **additiv**; `report` schreibt nichts: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
 
@@ -68,6 +68,29 @@ Zeigt den Stand des Projekts: Reifegrad L0–L4 mit nächstem Schritt (dieselben
 - **Vergleichsstand:** `--since <ref>`, sonst die Merge-Basis nach `base_ref` (wie `pre-merge`). Die frühere Baseline wird per `git show <ref>:.sdd/baseline.json` gelesen — Git bleibt lesend. Fehlt sie dort, gilt sie als leer.
 - **Ratchet:** Die Baseline darf nur schrumpfen. Enthält sie einen Eintrag (Identität `gate + rule_id + path + content_hash + ordinal`), den der Vergleichsstand nicht enthielt, hebt der Bericht das als Verstoß hervor und listet die neuen Einträge. Es ist ein Hinweis für das Review, kein Regelbefund.
 - **Robust:** Ist ein Gate nicht ausführbar (etwa ohne Git) oder der Vergleichsstand nicht lesbar, steht der Grund im Bericht. Exit-Code `2` gibt es nur bei fehlender oder ungültiger Konfiguration, ungültigem Format oder nicht lesbarer aktueller Baseline.
+
+### `sdd next` {#sdd-next}
+
+```text
+sdd next [--feature <slug>] [--json]
+```
+
+Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abgeleitet wie `sdd lint`, ohne etwas zu schreiben. Mit `--feature` alle Schritte des Features, ohne nur den nächsten Schritt je aktivem Feature; gibt es noch keines, den Einstieg (`sdd new --feature <slug> --type prd`).
+
+| Schritt | erledigt, wenn |
+|---|---|
+| PRD | aktives PRD mit `feature: <slug>` |
+| Nicht-Ziele | kein `SDD-023` am PRD |
+| Akzeptanzkriterien | mindestens eine Kennung, kein `SDD-021` am PRD |
+| Änderungsabsicht | `touches` in einem Artefakt des Features |
+| Tech Spec | vorhanden — oder *nicht nötig*, weil die [Größenschwelle](#groessenschwelle) nicht überschritten ist |
+| Tech Spec nennt alle Kriterien | kein `SDD-031` |
+| ADR | *nicht nötig*, wenn `touches` die Verfassung nicht berührt; sonst *manuell* (`SDD-010` prüft im Gate) |
+| Plan | *nicht nötig* ohne Plan; sonst kein `SDD-040`/`SDD-041` |
+| Tests | kein `SDD-022` für die Kennungen des PRDs |
+| Abschluss | nach dem Merge `status: implemented`; dann vor dem Release archivieren (`SDD-050`) |
+
+Der nächste Schritt ist der erste *offene*, sonst der erste *manuelle*, sonst der Abschluss. Zustände in der Textausgabe: `✓` erledigt, `✗` offen, `?` manuell, `–` nicht nötig, `·` später.
 
 ### `sdd ui` {#sdd-ui}
 
