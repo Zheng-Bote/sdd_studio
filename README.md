@@ -13,7 +13,7 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 - **Selbstschutz-Regeln (`SDD-070` – `SDD-073`):** Katalog, Handbuchabschnitte, Prüfverträge und Laufzeit-Checks aktiv
 - **Verfassungsregeln `SDD-001`, `SDD-002a`:** Verfassung vorhanden und mit Pflichtabschnitten (Phase 1C)
 - **Feature-Regeln `SDD-020`, `SDD-030`:** PRD und Tech Spec bei Schwellenüberschreitung, mit Feature-Auflösung (`--feature`, Frontmatter im Diff, Branch-Name) und fail-closed-Verhalten (Phase 1C)
-- **AC-Regel `SDD-021`:** Akzeptanzkriterien in PRDs tragen eine stabile Kennung `AC-<n>` (Phase 1C)
+- **AC-Regeln `SDD-021`, `SDD-022`:** Akzeptanzkriterien in PRDs tragen eine stabile Kennung `AC-<n>` und sind in Testdateien referenziert (Phase 1C)
 - **Archivregel `SDD-050`:** abgeschlossene Features liegen vor dem Release im Archiv (Phase 1C)
 - **Baseline & Ratchet:** Gate-gebundene Baseline (`.sdd/baseline.json`) mit `content_hash`, deterministischem `ordinal` und Schutz für `baseline: forbidden`
 - **CLI-Kommandos:**
@@ -23,5 +23,4 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 ## Nächste Schritte (beim nächsten Mal)
 
-- **Phase 1C:** Letzte Regel des v1-Schnitts ergänzen (`SDD-022`) — jeweils inklusive Handbuchabschnitt, Prüfvertrag und Tests im selben Commit.
 - **Schritt 2:** `sdd init`, `sdd new` (Templates) und GitHub-Action-Wrapper.

@@ -183,3 +183,17 @@ func mustWrite(t *testing.T, path, content string) {
 		t.Fatal(err)
 	}
 }
+
+func TestWalkFiles(t *testing.T) {
+	root := t.TempDir()
+	for _, p := range []string{"a_test.go", "pkg/b_test.go", "pkg/b.go", "vendor/x/c_test.go", ".git/d_test.go", "web/e.spec.ts"} {
+		mustWrite(t, filepath.Join(root, p), "x")
+	}
+	got, err := WalkFiles(root, []string{"**/*_test.go", "**/*.{test,spec}.{ts,tsx,js,jsx}"}, []string{"vendor/**"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"a_test.go", "pkg/b_test.go", "web/e.spec.ts"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("WalkFiles = %v, want %v", got, want)
+	}
+}

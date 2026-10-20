@@ -51,6 +51,44 @@ Für die unter `artifacts.constitution` konfigurierte Datei gilt:
 
 ---
 
+### SDD-022 — Jedes Akzeptanzkriterium ist in mindestens einer Testdatei referenziert {#sdd-022}
+
+- **Schweregrad:** `error` (`default`, `pre-merge`); `warn`, wenn keine Testdatei gefunden wird
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `acceptance_criteria_tested`
+
+**Begründung:** Ein Akzeptanzkriterium, auf das kein Test verweist, ist eine Behauptung. Die Regel misst **Präsenz, nicht Coverage**: Ein `// TODO: AC-3 testen` erfüllt sie. Das ist der bewusste Preis für Sprachneutralität ohne Parser; die schärfere Aussage „steht in einer Testdeklaration" trifft später `SDD-025` als `warn`.
+
+#### SDD-022 Prüfvertrag {#sdd-022-vertrag}
+
+1. **Definierte Kennungen:** alle Vorkommen von `\bAC-[1-9][0-9]*\b` in den aktiven PRDs (Auswahl, Frontmatter und Codeblöcke wie bei [`SDD-021`](#sdd-021-vertrag)). Durchgestrichene Kennungen (`~~… AC-<n> …~~`) zählen nicht. Maßgeblich ist das erste Vorkommen je Datei und Kennung.
+2. **Testdateien:** alle regulären Dateien des Repositorys, die einen Glob aus `tests.include` treffen und keinen aus `exclude`; das Verzeichnis `.git` wird nie gelesen. Ist `tests.include` leer, gilt die Fallback-Liste:
+
+   ```text
+   **/*_test.go
+   **/test_*.py
+   **/*_test.py
+   **/*.{test,spec}.{ts,tsx,js,jsx}
+   **/*Test.java
+   **/*_test.rs
+   **/tests/**
+   **/__tests__/**
+   ```
+
+3. **Referenz:** Eine Kennung `AC-<n>` gilt als referenziert, wenn in mindestens einer Testdatei eines dieser Muster mit genau der Nummer `<n>` vorkommt (die Ziffernfolge wird vollständig gelesen, `AC-12` referenziert also nicht `AC-1`), gleich ob im Testnamen, in einem String oder in einem Kommentar:
+   - `\bAC-<n>` — z. B. `// AC-3`, `it("AC-3 …")`;
+   - `AC` in Großbuchstaben, optional `_`, dann `<n>`, wobei davor der Dateianfang oder ein Zeichen außer Großbuchstabe und Ziffer steht — z. B. `TestAC3_Login`, `TestAC_3`;
+   - `ac` in beliebiger Schreibweise, optional `_`, dann `<n>`, wobei davor der Dateianfang oder ein Zeichen außer Buchstabe und Ziffer steht — z. B. `test_ac_3`, `ac3`.
+
+   *Präzisierung gegenüber dem Konzept (§9.5):* Dort steht `(?i)\bAC_?<n>\b`. Weil `\b` weder CamelCase- noch snake_case-Teile trennt, träfe dieses Muster `TestAC3_Login` nicht; die obigen Muster ersetzen es.
+4. Für jede definierte, nicht referenzierte Kennung entsteht ein `error` an ihrem ersten Vorkommen im PRD.
+5. Trifft die Glob-Liste keine einzige Datei, entsteht statt Einzelbefunden genau ein `warn`: Ein fehlender Testpfad ist ein Konfigurationsproblem, kein Projektverstoß.
+
+**Bekannte Grenze:** Kennungen sind je PRD vergeben, Referenzen aber nicht nach Feature getrennt. Ein Test mit `AC-1` erfüllt `AC-1` in jedem PRD.
+
+---
+
 ## Feature-Artefakte bei Schwellenüberschreitung (`SDD-020`, `SDD-030`)
 
 Ab einer projektspezifischen Größenschwelle verlangt `sdd` für ein Feature ein PRD (`SDD-020`) und eine Tech Spec (`SDD-030`). Beide Regeln teilen die Feature-Auflösung, die Glob-Syntax und die Schwellenlogik; sie unterscheiden sich nur im geprüften Verzeichnis (`artifacts.prd` bzw. `artifacts.design`).
@@ -119,7 +157,7 @@ Wie der [Prüfvertrag von SDD-020](#sdd-020-vertrag), mit `artifacts.design` an 
 
 ---
 
-## Akzeptanzkriterien (`SDD-021`)
+## Akzeptanzkriterien (`SDD-021`, `SDD-022`)
 
 Akzeptanzkriterien sind das Bindeglied zwischen PRD, Tests und Tasks. Sie tragen deshalb eine stabile Kennung `AC-<n>`, die nie umnummeriert wird.
 

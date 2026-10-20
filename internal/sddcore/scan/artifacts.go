@@ -66,3 +66,37 @@ func UnderDir(path, dir string) bool {
 	dir = strings.TrimSuffix(normalizePath(dir), "/")
 	return dir != "" && strings.HasPrefix(normalizePath(path), dir+"/")
 }
+
+// WalkFiles returns all regular files below repoRoot (slash-separated, sorted) that match include and not exclude.
+// The .git directory is always skipped.
+func WalkFiles(repoRoot string, include, exclude []string) ([]string, error) {
+	var out []string
+	err := filepath.WalkDir(repoRoot, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, relErr := filepath.Rel(repoRoot, p)
+		if relErr != nil {
+			return relErr
+		}
+		if rel == "." {
+			return nil
+		}
+		rel = filepath.ToSlash(rel)
+		if d.IsDir() {
+			if d.Name() == ".git" || MatchAny(exclude, rel) {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if d.Type().IsRegular() && MatchAny(include, rel) && !MatchAny(exclude, rel) {
+			out = append(out, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(out)
+	return out, nil
+}

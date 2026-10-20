@@ -58,3 +58,46 @@ Fließtext mit AC-ähnlichem Wort ist kein Kriterium.
 		}
 	}
 }
+
+// AC-9: every AC ID of an active PRD is referenced in at least one test file.
+func TestSDD022(t *testing.T) {
+	prd := "---\nfeature: f\n---\n## Akzeptanzkriterien\n- AC-1 a\n- AC-2 b\n- ~~AC-3~~ entfallen\n- AC-4 d, siehe auch AC-1\n- AC-12 e\n"
+
+	t.Run("references via hyphen, identifier and comment", func(t *testing.T) {
+		root := t.TempDir()
+		writeFile(t, root, "docs/prd/f.md", prd)
+		writeFile(t, root, "pkg/a_test.go", "// covers AC-1\nfunc TestAC2_Login(t *testing.T) {}\nfunc TestTRAC4(t *testing.T) {}\nvar x = \"trac4 AC-40\"\n")
+		writeFile(t, root, "web/b.spec.ts", "it('ac_12 works', () => {})\n")
+		writeFile(t, root, "pkg/helper.go", "// AC-4\n")
+		writeFile(t, root, "vendor/x/c_test.go", "// AC-4\n")
+		cfg := featureConfig()
+		cfg.Tests.Include = []string{"**/*_test.go", "**/*.spec.ts"}
+
+		findings, err := checkSDD022(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-022"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(findings) != 1 || findings[0].Path != "docs/prd/f.md" || findings[0].Line != 8 || findings[0].Severity != "" {
+			t.Fatalf("expected one finding for AC-4 at docs/prd/f.md:8, got %+v", findings)
+		}
+	})
+
+	t.Run("fallback list is used when tests.include is empty", func(t *testing.T) {
+		root := t.TempDir()
+		writeFile(t, root, "docs/prd/f.md", prd)
+		writeFile(t, root, "tests/all.txt", "AC-1 AC-2 AC-4 AC-12")
+		findings, err := checkSDD022(&Context{RepoRoot: root, Config: featureConfig()}, catalog.Rule{ID: "SDD-022"})
+		if err != nil || len(findings) != 0 {
+			t.Fatalf("expected no findings, got %+v, %v", findings, err)
+		}
+	})
+
+	t.Run("no test files yields a single warn", func(t *testing.T) {
+		root := t.TempDir()
+		writeFile(t, root, "docs/prd/f.md", prd)
+		findings, err := checkSDD022(&Context{RepoRoot: root, Config: featureConfig()}, catalog.Rule{ID: "SDD-022"})
+		if err != nil || len(findings) != 1 || findings[0].Severity != "warn" {
+			t.Fatalf("expected one warn finding, got %+v, %v", findings, err)
+		}
+	})
+}

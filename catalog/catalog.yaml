@@ -59,6 +59,20 @@ rules:
       noch in Tasks referenzieren; die Rückverfolgbarkeit wäre behauptet.
     handbook: handbuch/03-mechanismen.md#sdd-021
 
+  - id: SDD-022
+    title: Jedes Akzeptanzkriterium ist in mindestens einer Testdatei referenziert
+    severity:
+      default: error
+    profile: standard
+    check: acceptance_criteria_tested
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-022-vertrag
+    rationale: >
+      Ein Akzeptanzkriterium, auf das kein Test verweist, ist eine Behauptung.
+      Die Regel misst Präsenz, nicht Coverage.
+    handbook: handbuch/03-mechanismen.md#sdd-022
+
   - id: SDD-030
     title: Tech Spec vorhanden, wenn die Größenschwelle greift
     severity:

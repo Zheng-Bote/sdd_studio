@@ -57,7 +57,7 @@ Abhängigkeiten zeigen nur nach unten: `cmd/sdd` → `sddcore` → `rules` → `
 | AC-6 | `rules/constitution.go`: `checkSDD002a` | `TestSDD002a` |
 | AC-7 | `rules/feature.go`: Feature-Auflösung, Schwelle, `checkFeatureArtifact` | `TestSDD020`, `TestSDD030UsesDesignDirectory` |
 | AC-8 | `rules/acceptance.go`: `checkSDD021` | `TestSDD021` |
-| AC-9 | `SDD-022` (ausstehend) | — |
+| AC-9 | `rules/acceptance.go`: `checkSDD022`, `scan.WalkFiles` | `TestSDD022` |
 | AC-10 | `rules/archive.go`: `checkSDD050` | `TestSDD050` |
 
 ## Sicherheit

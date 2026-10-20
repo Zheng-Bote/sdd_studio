@@ -138,3 +138,116 @@ func isAcceptanceCriterionLine(line string, inACSection bool) bool {
 	}
 	return inACSection || strings.Contains(line, "AC-")
 }
+
+// FallbackTestGlobs is the test file list used when tests.include is empty (concept section 9.5, handbook SDD-022).
+var FallbackTestGlobs = []string{
+	"**/*_test.go",
+	"**/test_*.py",
+	"**/*_test.py",
+	"**/*.{test,spec}.{ts,tsx,js,jsx}",
+	"**/*Test.java",
+	"**/*_test.rs",
+	"**/tests/**",
+	"**/__tests__/**",
+}
+
+var (
+	acDefRegex = regexp.MustCompile(`\bAC-([1-9][0-9]*)\b`)
+	// acRefRegexes recognize AC references in test files. Greedy digits make a trailing boundary unnecessary;
+	// the leading context is matched explicitly because \b does not separate camelCase or snake_case parts.
+	acRefRegexes = []*regexp.Regexp{
+		regexp.MustCompile(`\bAC-([1-9][0-9]*)`),                   // AC-3 in comments, strings, names
+		regexp.MustCompile(`(?:^|[^A-Z0-9])AC_?([1-9][0-9]*)`),     // TestAC3_Login, TestAC_3
+		regexp.MustCompile(`(?i)(?:^|[^a-z0-9])ac_?([1-9][0-9]*)`), // test_ac_3, ac3, Ac3
+	}
+)
+
+// acDefinition is the first occurrence of an AC ID in an active PRD.
+type acDefinition struct {
+	ID         string
+	Number     string
+	Path       string
+	Line       int
+	ByteOffset int
+}
+
+// definedACs collects the AC IDs of all active PRDs, ignoring tombstoned (struck-through) IDs.
+func definedACs(ctx *Context) ([]acDefinition, error) {
+	prds, err := activePRDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var defs []acDefinition
+	for _, prd := range prds {
+		data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(prd.Path)))
+		if err != nil {
+			return nil, fmt.Errorf("PRD %s nicht lesbar: %w", prd.Path, err)
+		}
+		seen := map[string]bool{}
+		for _, l := range markdownLines(data) {
+			text := acTombstoneRegex.ReplaceAllString(l.Text, "")
+			for _, m := range acDefRegex.FindAllStringSubmatch(text, -1) {
+				if seen[m[0]] {
+					continue
+				}
+				seen[m[0]] = true
+				defs = append(defs, acDefinition{ID: m[0], Number: m[1], Path: prd.Path, Line: l.Number, ByteOffset: l.ByteOffset})
+			}
+		}
+	}
+	return defs, nil
+}
+
+// checkSDD022 (SDD-022): Every AC ID of an active PRD occurs in at least one test file (presence, not coverage).
+func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
+	defs, err := definedACs(ctx)
+	if err != nil || len(defs) == 0 {
+		return nil, err
+	}
+
+	include, source := ctx.Config.Tests.Include, "tests.include"
+	if len(include) == 0 {
+		include, source = FallbackTestGlobs, "Fallback-Liste"
+	}
+	testFiles, err := scan.WalkFiles(ctx.RepoRoot, include, ctx.Config.Exclude)
+	if err != nil {
+		return nil, fmt.Errorf("Testdateien nicht lesbar: %w", err)
+	}
+	if len(testFiles) == 0 {
+		return []report.Finding{{
+			Severity:    "warn",
+			Path:        "sdd.config.yaml",
+			Line:        1,
+			Message:     fmt.Sprintf("Keine Testdatei gefunden (%s); AC-Referenzen nicht prüfbar — tests.include konfigurieren", source),
+			ContentHash: HashContent(rule.ID + ":notests:" + source),
+		}}, nil
+	}
+
+	referenced := map[string]bool{}
+	for _, f := range testFiles {
+		data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(f)))
+		if err != nil {
+			return nil, fmt.Errorf("Testdatei %s nicht lesbar: %w", f, err)
+		}
+		for _, re := range acRefRegexes {
+			for _, m := range re.FindAllStringSubmatch(string(data), -1) {
+				referenced[m[1]] = true
+			}
+		}
+	}
+
+	var findings []report.Finding
+	for _, d := range defs {
+		if referenced[d.Number] {
+			continue
+		}
+		findings = append(findings, report.Finding{
+			Path:        d.Path,
+			Line:        d.Line,
+			ByteOffset:  d.ByteOffset,
+			Message:     fmt.Sprintf("%s ist in keiner Testdatei (%s) referenziert", d.ID, source),
+			ContentHash: HashContent(rule.ID + ":" + d.Path + ":" + d.ID),
+		})
+	}
+	return findings, nil
+}
