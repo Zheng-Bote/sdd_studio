@@ -204,22 +204,77 @@ func definedACs(ctx *Context) ([]acDefinition, error) {
 	return defs, nil
 }
 
+// testFile is one file from tests.include (or the fallback list) split into lines.
+type testFile struct {
+	Path  string
+	Lines []string
+}
+
+// loadTestFiles reads all test files and reports which glob list selected them.
+func loadTestFiles(ctx *Context) ([]testFile, string, error) {
+	include, source := ctx.Config.Tests.Include, "tests.include"
+	if len(include) == 0 {
+		include, source = FallbackTestGlobs, "Fallback-Liste"
+	}
+	paths, err := scan.WalkFiles(ctx.RepoRoot, include, ctx.Config.Exclude)
+	if err != nil {
+		return nil, source, fmt.Errorf("Testdateien nicht lesbar: %w", err)
+	}
+	var files []testFile
+	for _, p := range paths {
+		data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(p)))
+		if err != nil {
+			return nil, source, fmt.Errorf("Testdatei %s nicht lesbar: %w", p, err)
+		}
+		files = append(files, testFile{Path: p, Lines: strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")})
+	}
+	return files, source, nil
+}
+
+// acMatcher decides whether a test file line references an AC definition (SDD-022 contract, items 3 and 4).
+type acMatcher struct {
+	definedBy map[string]map[string]bool // AC number -> PRD paths defining it
+}
+
+func newACMatcher(defs []acDefinition) acMatcher {
+	m := acMatcher{definedBy: map[string]map[string]bool{}}
+	for _, d := range defs {
+		if m.definedBy[d.Number] == nil {
+			m.definedBy[d.Number] = map[string]bool{}
+		}
+		m.definedBy[d.Number][d.Path] = true
+	}
+	return m
+}
+
+func (m acMatcher) ambiguous(d acDefinition) bool {
+	return len(m.definedBy[d.Number]) > 1
+}
+
+// refers reports whether line references d; for an ambiguous number the same line must name the feature slug.
+func (m acMatcher) refers(line string, d acDefinition) bool {
+	found := false
+	for _, re := range acRefRegexes {
+		for _, match := range re.FindAllStringSubmatch(line, -1) {
+			if match[1] == d.Number {
+				found = true
+			}
+		}
+	}
+	return found && (!m.ambiguous(d) || anyMentionsSlug([]string{line}, d.Feature))
+}
+
 // checkSDD022 (SDD-022): Every AC ID of an active PRD occurs in at least one test file (presence, not coverage).
 func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 	defs, err := definedACs(ctx)
 	if err != nil || len(defs) == 0 {
 		return nil, err
 	}
-
-	include, source := ctx.Config.Tests.Include, "tests.include"
-	if len(include) == 0 {
-		include, source = FallbackTestGlobs, "Fallback-Liste"
-	}
-	testFiles, err := scan.WalkFiles(ctx.RepoRoot, include, ctx.Config.Exclude)
+	files, source, err := loadTestFiles(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Testdateien nicht lesbar: %w", err)
+		return nil, err
 	}
-	if len(testFiles) == 0 {
+	if len(files) == 0 {
 		return []report.Finding{{
 			Severity:    "warn",
 			Path:        "sdd.config.yaml",
@@ -229,48 +284,15 @@ func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 		}}, nil
 	}
 
-	// referencedIn maps an AC number to all test file lines referencing it.
-	referencedIn := map[string][]string{}
-	for _, f := range testFiles {
-		data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(f)))
-		if err != nil {
-			return nil, fmt.Errorf("Testdatei %s nicht lesbar: %w", f, err)
-		}
-		for _, line := range strings.Split(string(data), "\n") {
-			numbers := map[string]bool{}
-			for _, re := range acRefRegexes {
-				for _, m := range re.FindAllStringSubmatch(line, -1) {
-					numbers[m[1]] = true
-				}
-			}
-			for n := range numbers {
-				referencedIn[n] = append(referencedIn[n], line)
-			}
-		}
-	}
-
-	// An AC number defined by several active PRDs is ambiguous: the referencing line must also name the feature slug.
-	definedBy := map[string]map[string]bool{}
-	for _, d := range defs {
-		if definedBy[d.Number] == nil {
-			definedBy[d.Number] = map[string]bool{}
-		}
-		definedBy[d.Number][d.Path] = true
-	}
-
+	m := newACMatcher(defs)
 	var findings []report.Finding
 	for _, d := range defs {
-		lines := referencedIn[d.Number]
-		ambiguous := len(definedBy[d.Number]) > 1
-		if !ambiguous && len(lines) > 0 {
-			continue
-		}
-		if ambiguous && anyMentionsSlug(lines, d.Feature) {
+		if referencedAnywhere(files, m, d) {
 			continue
 		}
 		msg := fmt.Sprintf("%s ist in keiner Testdatei (%s) referenziert", d.ID, source)
-		if ambiguous {
-			msg = fmt.Sprintf("%s ist in %d PRDs vergeben; keine Zeile einer Testdatei (%s) referenziert %s und nennt zugleich den Feature-Slug %s", d.ID, len(definedBy[d.Number]), source, d.ID, d.Feature)
+		if m.ambiguous(d) {
+			msg = fmt.Sprintf("%s ist in %d PRDs vergeben; keine Zeile einer Testdatei (%s) referenziert %s und nennt zugleich den Feature-Slug %s", d.ID, len(m.definedBy[d.Number]), source, d.ID, d.Feature)
 		}
 		findings = append(findings, report.Finding{
 			Path:        d.Path,
@@ -281,6 +303,17 @@ func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 		})
 	}
 	return findings, nil
+}
+
+func referencedAnywhere(files []testFile, m acMatcher, d acDefinition) bool {
+	for _, f := range files {
+		for _, line := range f.Lines {
+			if m.refers(line, d) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // anyMentionsSlug reports whether one of the lines contains slug as a whole token (not as part of a longer slug).

@@ -215,6 +215,26 @@ Die Verfassung hält den *aktuell gültigen Zustand*, das ADR die *unveränderli
 
 ---
 
+### SDD-025 — Jede AC-Kennung steht in einer Testdeklaration oder ihrem Rumpf {#sdd-025}
+
+- **Schweregrad:** `warn` (`default`, `pre-merge`) — die Deklarationsmuster sind sprachadaptiv, also kein `error`
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `acceptance_criteria_in_test_declarations`
+
+**Begründung:** [`SDD-022`](#sdd-022) misst Präsenz irgendwo in einer Testdatei; auch ein `// TODO: AC-3` im Dateikopf genügt dort. `SDD-025` nähert sich der Aussage „ein Test verweist auf das Kriterium“.
+
+#### SDD-025 Prüfvertrag {#sdd-025-vertrag}
+
+1. Geprüft werden die Kennungen, die `SDD-022` als referenziert anerkennt — mit denselben Mustern und derselben Slug-Regel für mehrdeutige Nummern. Nicht referenzierte Kennungen meldet nur `SDD-022`.
+2. **Testdeklaration** ist eine Zeile, die einem dieser Muster entspricht: `func Test…(`/`Benchmark…`/`Fuzz…`/`Example…` (Go), `def test…(` (Python), `it(`, `test(`, `describe(` auch mit `.only`/`.skip` (JavaScript/TypeScript), `TEST(`, `TEST_F(`, `TEST_P(` (C++), `#[test]` (Rust), `@Test` (Java/Kotlin).
+3. **Bereich** einer Deklaration: vom ersten Zeile des Kommentar- oder Attributblocks unmittelbar darüber (Zeilen, die mit `//`, `#`, `/*`, `*`, `--`, `@`, `"""` oder `'''` beginnen, ohne Leerzeile dazwischen) bis vor die nächste Deklaration gleicher oder geringerer Einrückung — samt deren Block — oder bis zum Dateiende. Ein freistehender Kommentar, von der Deklaration durch eine Leerzeile getrennt, gehört nicht dazu.
+4. Kommt eine anerkannte Referenz einer Kennung in keinem Bereich vor, entsteht ein `warn` an ihrem ersten Vorkommen im PRD.
+
+*Präzisierung gegenüber dem Konzept:* Dort zählen Kommentare vor der Deklaration nicht. Der direkt anschließende Kommentarblock gehört hier zur Deklaration, wie ein Go-Doc-Kommentar oder ein Python-Decorator; das ist die Stelle der Konvention `// <slug> AC-<n>: …`.
+
+---
+
 ## Feature-Artefakte bei Schwellenüberschreitung (`SDD-020`, `SDD-030`)
 
 Ab einer projektspezifischen Größenschwelle verlangt `sdd` für ein Feature ein PRD (`SDD-020`) und eine Tech Spec (`SDD-030`). Beide Regeln teilen die Feature-Auflösung, die Glob-Syntax und die Schwellenlogik; sie unterscheiden sich nur im geprüften Verzeichnis (`artifacts.prd` bzw. `artifacts.design`).

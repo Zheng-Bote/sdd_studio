@@ -206,6 +206,20 @@ rules:
       die Spezifikation nicht mehr, was gemergt wird.
     handbook: handbuch/03-mechanismen.md#sdd-024
 
+  - id: SDD-025
+    title: Jede AC-Kennung steht in einer Testdeklaration oder ihrem Rumpf
+    severity:
+      default: warn
+    profile: standard
+    check: acceptance_criteria_in_test_declarations
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-025-vertrag
+    rationale: >
+      SDD-022 misst Präsenz irgendwo in einer Testdatei. Ein Verweis in einem
+      Test ist die schärfere, sprachadaptive Aussage — daher nur warn.
+    handbook: handbuch/03-mechanismen.md#sdd-025
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:
