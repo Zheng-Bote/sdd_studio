@@ -176,3 +176,43 @@ func TestRunnerKeepsCheckSeverity(t *testing.T) {
 		t.Fatalf("expected one warn finding for SDD-020, got %+v", findings)
 	}
 }
+
+// sdd-adopt AC-1: SDD-020/030/050 evaluate Spec Kit globs; spec.md and plan.md in one folder are told apart.
+func TestRulesWithGlobSpecs(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "specs/features/billing/spec.md", "---\nfeature: billing\nstatus: active\ntouches: [cmd/**]\n---\n")
+	writeFile(t, root, "specs/features/search/plan.md", "---\nfeature: search\nstatus: implemented\ntouches: [go.mod]\n---\n")
+	writeFile(t, root, "specs/archive/old/spec.md", "---\nfeature: old\nstatus: active\n---\n")
+	cfg := featureConfig()
+	cfg.Artifacts.PRD = "specs/features/*/spec.md"
+	cfg.Artifacts.Design = "specs/features/*/plan.md"
+	cfg.Artifacts.Plans = "specs/features/*/tasks.md"
+	cfg.Artifacts.Archive = "specs/archive"
+
+	for slug, want := range map[string][2]bool{"billing": {false, true}, "search": {true, false}} {
+		ctx := &Context{RepoRoot: root, Config: cfg, Gate: "pre-implementation", Feature: slug, Git: fakeGit{}}
+		prd, err := checkSDD020(ctx, catalog.Rule{ID: "SDD-020"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		design, err := checkSDD030(ctx, catalog.Rule{ID: "SDD-030"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if (len(prd) == 1) != want[0] || (len(design) == 1) != want[1] {
+			t.Errorf("%s: PRD finding=%v (want %v), Tech Spec finding=%v (want %v)", slug, len(prd) == 1, want[0], len(design) == 1, want[1])
+		}
+	}
+
+	findings, err := checkSDD050(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-050"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]bool{}
+	for _, f := range findings {
+		got[f.Path] = true
+	}
+	if len(findings) != 2 || !got["specs/features/search/plan.md"] || !got["specs/archive/old/spec.md"] {
+		t.Fatalf("SDD-050 with globs: got %+v", findings)
+	}
+}

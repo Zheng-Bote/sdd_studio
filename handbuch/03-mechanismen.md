@@ -152,10 +152,24 @@ Ab einer projektspezifischen Größenschwelle verlangt `sdd` für ein Feature ei
 Welche Features ein Gate-Lauf prüft, wird in dieser Reihenfolge bestimmt; die erste Stufe mit Ergebnis gewinnt:
 
 1. **`--feature <slug>`** — kommagetrennt mehrere Slugs möglich. Ein Slug besteht ausschließlich aus `[a-z0-9-]`; ein ungültiger Slug bricht mit Exit-Code `2` ab.
-2. **Frontmatter im Diff** — alle Markdown-Dateien unter `artifacts.prd`, `artifacts.design` und `artifacts.plans`, die in `git diff <base>...HEAD` vorkommen und ein gültiges `feature:`-Feld tragen.
+2. **Frontmatter im Diff** — alle Markdown-Dateien, die `artifacts.prd`, `artifacts.design` oder `artifacts.plans` auswählen ([Ordner oder Glob](#artefaktpfade)), die in `git diff <base>...HEAD` vorkommen und ein gültiges `feature:`-Feld tragen.
 3. **Branch-Name** — `feature/<slug>` oder `feat/<slug>` bzw. `feat/<nummer>-<slug>`. In CI mit losgelöstem `HEAD` gelten `$GITHUB_HEAD_REF`, `$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` und `$CI_COMMIT_BRANCH`.
 
 Liefert keine Stufe ein Feature, gilt der Lauf als **nicht aufgelöst** (siehe Prüfverträge). Die Merge-Basis ist `base_ref` aus `sdd.config.yaml`; leer bedeutet: `$GITHUB_BASE_REF` bzw. `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME` (bevorzugt als `origin/<name>`), sonst `@{upstream}`, sonst `main`, sonst `master`. Ist Git nicht verfügbar oder keine Basis ermittelbar, endet der Lauf mit Exit-Code `2`.
+
+### Artefaktpfade: Ordner oder Datei-Glob {#artefaktpfade}
+
+`artifacts.prd`, `artifacts.design`, `artifacts.plans` und `artifacts.archive` sind entweder ein **Ordner** (alle `*.md` darunter, rekursiv) oder ein **Datei-Glob** (sobald der Wert einen Platzhalter enthält). Damit lassen sich bestehende Strukturen ohne Umzug einbinden, etwa GitHub Spec Kit:
+
+```yaml
+artifacts:
+  prd: specs/features/*/spec.md
+  design: specs/features/*/plan.md
+  plans: specs/features/*/tasks.md
+  archive: specs/archive
+```
+
+Liegen PRD und Tech Spec im selben Ordner, unterscheidet sie allein der Glob. `sdd new` leitet den Zielpfad aus einem Glob ab, wenn er genau ein `*` als ganzes Pfadsegment enthält (`specs/features/*/spec.md` → `specs/features/<slug>/spec.md`); bei anderen Globs bricht es mit Exit-Code `2` ab.
 
 ### Glob-Syntax {#glob-syntax}
 

@@ -123,7 +123,7 @@ func featurePlan(root string, cfg *config.Config, types []string, opts NewOption
 
 	prdPath := existing[TypePRD]
 	if prdPath == "" && strings.TrimSpace(cfg.Artifacts.PRD) != "" {
-		prdPath = path.Join(cfg.Artifacts.PRD, opts.Feature+".md")
+		prdPath, _ = scan.TargetPath(cfg.Artifacts.PRD, opts.Feature)
 	}
 	data := featureTemplateData{Slug: opts.Feature, Title: title, ArchiveAfter: opts.ArchiveAfter, PRDPath: prdPath, Touches: touches}
 
@@ -133,10 +133,13 @@ func featurePlan(root string, cfg *config.Config, types []string, opts NewOption
 		if dir == "" {
 			return Plan{}, fmt.Errorf("%w: %s ist nicht konfiguriert", ErrInvalidInput, keys[t])
 		}
-		target := path.Join(dir, opts.Feature+".md")
 		if p, ok := existing[t]; ok {
 			plan.Ops = append(plan.Ops, Op{Path: p, Skip: fmt.Sprintf("trägt bereits feature: %s", opts.Feature)})
 			continue
+		}
+		target, err := scan.TargetPath(dir, opts.Feature)
+		if err != nil {
+			return Plan{}, fmt.Errorf("%w: %s: %v", ErrInvalidInput, keys[t], err)
 		}
 		content, err := render(tmpls[t], data)
 		if err != nil {

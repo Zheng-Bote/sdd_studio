@@ -31,7 +31,7 @@ func checkSDD050(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 
 	var findings []report.Finding
 	for _, a := range artifacts {
-		if a.Frontmatter.Feature == "" || (archiveDir != "" && scan.UnderDir(a.Path, archiveDir)) {
+		if a.Frontmatter.Feature == "" || (archiveDir != "" && scan.InSpec(a.Path, archiveDir)) {
 			continue
 		}
 		var reasons []string

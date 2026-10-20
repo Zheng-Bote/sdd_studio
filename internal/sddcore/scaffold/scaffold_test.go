@@ -329,3 +329,39 @@ func TestNewRejectsInvalidInput(t *testing.T) {
 		t.Errorf("artifact dir outside the repository: expected ErrUnsafePath, got %v", err)
 	}
 }
+
+// sdd-adopt AC-1: sdd new derives targets from Spec Kit globs and recognizes existing artifacts there.
+func TestNewWithGlobSpec(t *testing.T) {
+	root := t.TempDir()
+	cfg := scaffold.DefaultConfig("standard")
+	cfg.Artifacts.PRD = "specs/features/*/spec.md"
+	cfg.Artifacts.Design = "specs/features/*/plan.md"
+	cfg.Artifacts.Plans = "specs/features/*/tasks.md"
+	if err := os.MkdirAll(filepath.Join(root, "specs/features/legacy"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "specs/features/legacy/spec.md"), []byte("---\nfeature: billing\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := scaffold.NewPlan(root, cfg, scaffold.NewOptions{Feature: "billing", Types: []string{"prd", "design", "plan"}, Today: today})
+	if err != nil {
+		t.Fatal(err)
+	}
+	results, err := plan.Apply(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{
+		"specs/features/legacy/spec.md":   scaffold.StatusSkipped,
+		"specs/features/billing/plan.md":  scaffold.StatusCreated,
+		"specs/features/billing/tasks.md": scaffold.StatusCreated,
+	}
+	if got := statuses(results); !reflect.DeepEqual(got, want) {
+		t.Fatalf("statuses = %v, want %v", got, want)
+	}
+
+	cfg.Artifacts.PRD = "specs/**/spec.md"
+	if _, err := scaffold.NewPlan(root, cfg, scaffold.NewOptions{Feature: "other", Types: []string{"prd"}, Today: today}); !errors.Is(err, scaffold.ErrInvalidInput) {
+		t.Errorf("non-derivable glob: expected ErrInvalidInput, got %v", err)
+	}
+}

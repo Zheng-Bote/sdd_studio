@@ -34,7 +34,7 @@ Glob-fähige Artefaktpfade in der Konfiguration, `sdd adopt` mit Inventar, Klass
 - KI-gestützte Klassifikation — die Zuordnung folgt festen Pfad- und Namensmustern.
 - Ausführen des Archivierungsschritts; er wird nur ausgewiesen.
 - `sdd report` mit Schuldenstand-Trend und PR-Kommentar.
-- Inhaltliches Ergänzen von Artefakten (AC-Kennungen nachtragen, Abschnitte schreiben).
+- Inhaltliches Ergänzen von Artefakten (Kennungen für Akzeptanzkriterien nachtragen, Abschnitte schreiben).
 - Push, Pull Request oder Merge des Adopt-Branches.
 
 ## Akzeptanzkriterien

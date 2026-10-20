@@ -210,3 +210,51 @@ func TestListArtifactsRejectsPathsOutsideRoot(t *testing.T) {
 		}
 	}
 }
+
+// sdd-adopt AC-1: artifact specs may be directories or file globs.
+func TestArtifactSpecGlob(t *testing.T) {
+	root := t.TempDir()
+	mustWrite(t, filepath.Join(root, "specs/features/001-billing/spec.md"), "---\nfeature: billing\n---\n")
+	mustWrite(t, filepath.Join(root, "specs/features/001-billing/plan.md"), "")
+	mustWrite(t, filepath.Join(root, "specs/features/002-search/spec.md"), "")
+	mustWrite(t, filepath.Join(root, "specs/features/002-search/notes/spec.md"), "") // deeper: not matched by the glob
+
+	got, err := ListArtifacts(root, "specs/features/*/spec.md", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var paths []string
+	for _, a := range got {
+		paths = append(paths, a.Path)
+	}
+	if want := []string{"specs/features/001-billing/spec.md", "specs/features/002-search/spec.md"}; !reflect.DeepEqual(paths, want) {
+		t.Fatalf("ListArtifacts(glob) = %v, want %v", paths, want)
+	}
+	if _, err := ListArtifacts(root, "../*/spec.md", nil); !errors.Is(err, ErrUnsafePath) {
+		t.Errorf("glob outside root: expected ErrUnsafePath, got %v", err)
+	}
+
+	if !InSpec("specs/features/x/spec.md", "specs/features/*/spec.md") || InSpec("specs/features/x/plan.md", "specs/features/*/spec.md") || !InSpec("docs/prd/a/b.md", "docs/prd") {
+		t.Errorf("InSpec mismatch")
+	}
+	for spec, want := range map[string]string{
+		"specs/features/*/spec.md": "specs/features/billing/spec.md",
+		"docs/prd":                 "docs/prd/billing.md",
+		"docs/prd/":                "docs/prd/billing.md",
+	} {
+		if got, err := TargetPath(spec, "billing"); err != nil || got != want {
+			t.Errorf("TargetPath(%q) = %q, %v; want %q", spec, got, err, want)
+		}
+	}
+	for _, spec := range []string{"specs/**/spec.md", "specs/*/*/spec.md", "specs/f*/spec.md", "../x"} {
+		if _, err := TargetPath(spec, "billing"); err == nil {
+			t.Errorf("TargetPath(%q): expected error", spec)
+		}
+	}
+	if got := SlugInSpec("specs/features/001-billing/spec.md", "specs/features/*/spec.md"); got != "001-billing" {
+		t.Errorf("SlugInSpec(glob) = %q", got)
+	}
+	if got := SlugInSpec("docs/prd/billing.md", "docs/prd"); got != "billing" {
+		t.Errorf("SlugInSpec(dir) = %q", got)
+	}
+}

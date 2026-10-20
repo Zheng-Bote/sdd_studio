@@ -59,17 +59,21 @@ func (c *Context) featureArtifacts() ([]scan.Artifact, error) {
 	}
 	c.artifactsDone = true
 	seen := map[string]bool{}
-	for _, dir := range []string{c.Config.Artifacts.PRD, c.Config.Artifacts.Design, c.Config.Artifacts.Plans} {
-		if strings.TrimSpace(dir) == "" || seen[dir] {
+	for _, spec := range []string{c.Config.Artifacts.PRD, c.Config.Artifacts.Design, c.Config.Artifacts.Plans} {
+		if strings.TrimSpace(spec) == "" {
 			continue
 		}
-		seen[dir] = true
-		list, err := scan.ListArtifacts(c.RepoRoot, dir, c.Config.Exclude)
+		list, err := scan.ListArtifacts(c.RepoRoot, spec, c.Config.Exclude)
 		if err != nil {
-			c.artifactsErr = fmt.Errorf("Artefakte unter %s nicht lesbar: %w", dir, err)
+			c.artifactsErr = fmt.Errorf("Artefakte unter %s nicht lesbar: %w", spec, err)
 			return nil, c.artifactsErr
 		}
-		c.artifacts = append(c.artifacts, list...)
+		for _, a := range list {
+			if !seen[a.Path] {
+				seen[a.Path] = true
+				c.artifacts = append(c.artifacts, a)
+			}
+		}
 	}
 	return c.artifacts, nil
 }
@@ -264,7 +268,7 @@ func undeclaredIntent(rule catalog.Rule, kind featureArtifactKind, path, slug st
 
 func hasArtifactFor(artifacts []scan.Artifact, dir, slug string) bool {
 	for _, a := range artifacts {
-		if scan.UnderDir(a.Path, dir) && a.Frontmatter.Feature == slug {
+		if scan.InSpec(a.Path, dir) && a.Frontmatter.Feature == slug {
 			return true
 		}
 	}
