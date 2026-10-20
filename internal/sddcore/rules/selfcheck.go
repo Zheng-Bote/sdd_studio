@@ -23,6 +23,7 @@ func registerBuiltins(r *Registry) {
 	r.Register("acceptance_criteria_ids", checkSDD021)
 	r.Register("acceptance_criteria_tested", checkSDD022)
 	r.Register("archive_state", checkSDD050)
+	r.Register("no_links_to_archive", checkSDD051)
 	r.Register("tasks_reference_acs", checkSDD041)
 	r.Register("design_references_acs", checkSDD031)
 	r.Register("prd_non_goals", checkSDD023)

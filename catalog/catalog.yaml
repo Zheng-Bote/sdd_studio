@@ -147,6 +147,20 @@ rules:
       wächst den Umfang, ohne dass das PRD es zeigt.
     handbook: handbuch/03-mechanismen.md#sdd-041
 
+  - id: SDD-051
+    title: Aktive Feature-Artefakte verweisen nicht auf archivierte Feature-Artefakte
+    severity:
+      default: warn
+    profile: standard
+    check: no_links_to_archive
+    gate_default: [pre-merge, pre-release]
+    baseline: forbidden
+    contract: handbuch/03-mechanismen.md#sdd-051-vertrag
+    rationale: >
+      Wer einem Verweis aus einer gültigen Spezifikation folgt, darf nicht in
+      einer erledigten landen und sie für gültig halten.
+    handbook: handbuch/03-mechanismen.md#sdd-051
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:

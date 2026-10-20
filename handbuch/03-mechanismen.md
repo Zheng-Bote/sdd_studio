@@ -346,6 +346,25 @@ Geprüft werden die aktiven Feature-Artefakte unter `artifacts.plans` (bei Spec 
 
 ---
 
+### SDD-051 — Aktive Feature-Artefakte verweisen nicht auf archivierte Feature-Artefakte {#sdd-051}
+
+- **Schweregrad:** `warn` (`default`, `pre-merge`, `pre-release`)
+- **Profil:** ab `standard`
+- **Baseline:** `forbidden` — ein Verweis lässt sich jederzeit billig entfernen oder ersetzen.
+- **Check:** `no_links_to_archive`
+
+**Begründung:** Wer einem Verweis aus einer gültigen Spezifikation folgt, darf nicht in einer erledigten landen und sie für gültig halten. ADRs, Verfassung, Doku und Runbooks sind ausgenommen: Historisches zu zitieren ist dort ihr Zweck.
+
+#### SDD-051 Prüfvertrag {#sdd-051-vertrag}
+
+1. **Quellen** sind die aktiven Feature-Artefakte (PRD, Tech Spec, Plan).
+2. **Verweise** sind Inline-Links und -Bilder `[text](ziel "titel")` sowie Referenzdefinitionen `[name]: ziel` außerhalb von Codeblöcken. Ziele mit Schema (`https:`, `mailto:` …), reine Anker (`#…`) und protokollrelative Ziele (`//…`) werden ignoriert; `#…` und `?…` am Ende werden abgeschnitten, Prozentkodierung wird aufgelöst.
+3. Ein Ziel mit führendem `/` gilt relativ zum Repository, sonst relativ zum Ordner der Quelle. Ziele außerhalb des Repositorys werden ignoriert, nie gelesen.
+4. **Archiviert** ist ein Ziel, das `artifacts.archive` auswählt, oder eine Datei mit Frontmatter, nicht-leerem `feature:` und `status: archived`.
+5. Für jeden Verweis auf ein archiviertes Ziel entsteht ein `warn` an der Zeile des Verweises.
+
+---
+
 ## Archivierung (`SDD-050`)
 
 PRD, Tech Spec und Plan gelten bis zum Release. Danach sind sie Historie: Sie werden nach `artifacts.archive` verschoben, nicht gelöscht, und tragen `status: archived`. Der Archivierungsschritt gehört in den Release-Vorbereitungs-Commit, zusammen mit dem Changelog, unmittelbar vor dem Git-Tag.

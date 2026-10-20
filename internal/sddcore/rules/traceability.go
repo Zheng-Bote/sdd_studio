@@ -2,7 +2,9 @@ package rules
 
 import (
 	"fmt"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -197,6 +199,103 @@ func checkSDD041(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 				Message:     fmt.Sprintf("Task ohne AC-Kennung: %q", strings.TrimSpace(l.Text)),
 				ContentHash: HashContent(rule.ID + ":" + plan.Path + ":" + l.Text),
 			})
+		}
+	}
+	return findings, nil
+}
+
+var (
+	inlineLinkRegex = regexp.MustCompile(`!?\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)`)
+	refLinkRegex    = regexp.MustCompile(`^\s{0,3}\[[^\]]+\]:\s*<?([^\s>]+)>?`)
+	schemeRegex     = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
+)
+
+// linkTargets extracts the targets of inline links and reference definitions in one line.
+func linkTargets(line string) []string {
+	var out []string
+	for _, m := range inlineLinkRegex.FindAllStringSubmatch(line, -1) {
+		out = append(out, m[1])
+	}
+	if m := refLinkRegex.FindStringSubmatch(line); m != nil {
+		out = append(out, m[1])
+	}
+	return out
+}
+
+// resolveLink turns a link target in file from into a repository-relative path; ok is false for external links,
+// pure anchors and targets outside the repository.
+func resolveLink(from, target string) (string, bool) {
+	if schemeRegex.MatchString(target) || strings.HasPrefix(target, "#") || strings.HasPrefix(target, "//") {
+		return "", false
+	}
+	if i := strings.IndexAny(target, "#?"); i >= 0 {
+		target = target[:i]
+	}
+	if unescaped, err := url.PathUnescape(target); err == nil {
+		target = unescaped
+	}
+	if target == "" {
+		return "", false
+	}
+	if strings.HasPrefix(target, "/") {
+		target = strings.TrimLeft(target, "/")
+	} else {
+		target = path.Join(path.Dir(from), target)
+	}
+	clean, err := scan.CleanRel(target)
+	return clean, err == nil
+}
+
+// checkSDD051 (SDD-051): Active feature artifacts do not link to archived feature artifacts.
+func checkSDD051(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
+	a := ctx.Config.Artifacts
+	archive := strings.TrimSpace(a.Archive)
+	var sources []scan.Artifact
+	for _, spec := range []string{a.PRD, a.Design, a.Plans} {
+		list, err := activeArtifacts(ctx, spec)
+		if err != nil {
+			return nil, err
+		}
+		sources = append(sources, list...)
+	}
+
+	archivedTarget := func(p string) bool {
+		if archive != "" && scan.InSpec(p, archive) {
+			return true
+		}
+		data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(p)))
+		if err != nil {
+			return false
+		}
+		fm, ok := scan.ParseFrontmatter(data)
+		return ok && fm.Feature != "" && fm.Status == "archived"
+	}
+
+	var findings []report.Finding
+	seen := map[string]bool{}
+	for _, src := range sources {
+		if seen[src.Path] {
+			continue
+		}
+		seen[src.Path] = true
+		lines, err := readLines(ctx, src.Path)
+		if err != nil {
+			return nil, err
+		}
+		for _, l := range lines {
+			for _, target := range linkTargets(l.Text) {
+				resolved, ok := resolveLink(src.Path, target)
+				if !ok || !archivedTarget(resolved) {
+					continue
+				}
+				findings = append(findings, report.Finding{
+					Path:        src.Path,
+					Line:        l.Number,
+					ByteOffset:  l.ByteOffset,
+					Message:     fmt.Sprintf("Aktives Feature-Artefakt verweist auf archiviertes Artefakt %s", resolved),
+					ContentHash: HashContent(rule.ID + ":" + src.Path + ":" + resolved),
+				})
+			}
 		}
 	}
 	return findings, nil

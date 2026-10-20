@@ -102,3 +102,33 @@ func TestSDD041(t *testing.T) {
 		t.Fatalf("finding lines %v, want %v (%+v)", lines, want, findings)
 	}
 }
+
+// sdd-rules-v1-1 AC-4: active feature artifacts must not link to archived feature artifacts.
+func TestSDD051(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "docs/archive/old.md", "---\nfeature: old\nstatus: archived\n---\n")
+	writeFile(t, root, "docs/prd/retired.md", "---\nfeature: retired\nstatus: archived\n---\n")
+	writeFile(t, root, "docs/prd/live.md", "---\nfeature: live\nstatus: active\n---\n")
+	writeFile(t, root, "docs/prd/new.md", "---\nfeature: new\n---\n"+
+		"Siehe [alt](../archive/old.md#ziel) und [live](live.md).\n"+ // 4: finding (archive dir)
+		"Ref auf ![Bild](/docs/archive/old.md \"Titel\")\n"+ // 5: finding (root-relative)
+		"[r]: retired.md\n"+ // 6: finding (status archived)
+		"[extern](https://example.com/docs/archive/old.md) [anker](#x) [raus](../../../etc/passwd)\n"+
+		"```\n[im Code](../archive/old.md)\n```\n")
+	writeFile(t, root, "docs/design/new.md", "---\nfeature: new\nstatus: superseded\n---\n[alt](../archive/old.md)\n") // inactive source
+	writeFile(t, root, "docs/adr/0001-x.md", "[alt](../archive/old.md)\n")                                             // ADRs may cite history
+	cfg := featureConfig()
+	cfg.Artifacts.Archive = "docs/archive"
+
+	findings, err := checkSDD051(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-051"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, f := range findings {
+		got = append(got, fmt.Sprintf("%s:%d", f.Path, f.Line))
+	}
+	if want := []string{"docs/prd/new.md:4", "docs/prd/new.md:5", "docs/prd/new.md:6"}; fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}
