@@ -172,6 +172,30 @@ Für die unter `artifacts.constitution` konfigurierte Datei gilt:
 
 ---
 
+## ADR-Regeln (`SDD-010`, `SDD-011`)
+
+Die Verfassung hält den *aktuell gültigen Zustand*, das ADR die *unveränderliche Begründung*. Als **ADR** gilt jede Datei `NNNN-*.md` (vier Ziffern) unter `artifacts.adr`.
+
+---
+
+### SDD-010 — Änderung einer Verfassungsregel verweist auf ein ADR {#sdd-010}
+
+- **Schweregrad:** `error` in `pre-implementation` und `pre-merge`; kein `default`, weil die Regel einen Diff braucht
+- **Profil:** ab `minimal`
+- **Baseline:** `allowed`
+- **Check:** `constitution_change_has_adr`
+
+**Begründung:** Eine Regeländerung ohne ADR verliert ihr Warum. Wer den Zustand ändert, ändert die Verfassung und verweist im selben Change auf das ADR, das ihn begründet.
+
+#### SDD-010 Prüfvertrag {#sdd-010-vertrag}
+
+1. Die Regel greift nur, wenn die unter `artifacts.constitution` konfigurierte Datei in `git diff --no-renames <base>...HEAD` vorkommt ([Merge-Basis](#feature-aufloesung)).
+2. **Keine Änderung im Sinne der Regel:** Die Datei fehlt am Vergleichsstand (erstmaliges Anlegen) oder ist im Arbeitsbaum gelöscht (dann gilt `SDD-001`), oder beide Fassungen sind nach Normalisierung gleich — Zeilenenden vereinheitlicht, Zeilen nur aus Leerraum entfernt, Leerraumfolgen zu einem Leerzeichen.
+3. Sonst muss mindestens ein ADR, das ebenfalls im Diff vorkommt, die Verfassung in seinem Frontmatter nennen: in der Liste `references` oder im Feld `adr` (Text oder Liste), als repository-relativer Pfad oder relativ zum ADR.
+4. Fehlt ein solches ADR, entsteht ein `error` an der Verfassung.
+
+---
+
 ## Feature-Artefakte bei Schwellenüberschreitung (`SDD-020`, `SDD-030`)
 
 Ab einer projektspezifischen Größenschwelle verlangt `sdd` für ein Feature ein PRD (`SDD-020`) und eine Tech Spec (`SDD-030`). Beide Regeln teilen die Feature-Auflösung, die Glob-Syntax und die Schwellenlogik; sie unterscheiden sich nur im geprüften Verzeichnis (`artifacts.prd` bzw. `artifacts.design`).

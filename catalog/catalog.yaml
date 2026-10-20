@@ -161,6 +161,22 @@ rules:
       einer erledigten landen und sie für gültig halten.
     handbook: handbuch/03-mechanismen.md#sdd-051
 
+  - id: SDD-010
+    title: Änderung einer Verfassungsregel verweist auf ein ADR
+    severity:
+      by_gate:
+        pre-implementation: error
+        pre-merge: error
+    profile: minimal
+    check: constitution_change_has_adr
+    gate_default: [pre-implementation, pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-010-vertrag
+    rationale: >
+      Die Verfassung hält den gültigen Zustand, das ADR die unveränderliche
+      Begründung. Eine Regeländerung ohne ADR verliert ihr Warum.
+    handbook: handbuch/03-mechanismen.md#sdd-010
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:

@@ -15,6 +15,15 @@ type fakeGit struct {
 	changed []string
 	branch  string
 	err     error
+	files   map[string]string // "<ref>:<path>" -> content at the base
+}
+
+func (f fakeGit) ShowFile(ref, path string) ([]byte, bool, error) {
+	if f.err != nil {
+		return nil, false, f.err
+	}
+	c, ok := f.files[ref+":"+path]
+	return []byte(c), ok, nil
 }
 
 func (f fakeGit) ChangedFiles(string) ([]string, error) { return f.changed, f.err }

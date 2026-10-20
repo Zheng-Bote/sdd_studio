@@ -39,6 +39,7 @@ func (c *Context) changedFiles() ([]string, error) {
 		c.diffErr = err
 		return nil, err
 	}
+	c.baseRef = base
 	files, err := g.ChangedFiles(base)
 	if err != nil {
 		c.diffErr = err

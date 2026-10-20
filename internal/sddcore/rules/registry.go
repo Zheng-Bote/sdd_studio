@@ -31,6 +31,7 @@ type Context struct {
 
 	// per-run caches, filled lazily by the feature checks
 	diffDone      bool
+	baseRef       string
 	diff          []string
 	diffErr       error
 	artifactsDone bool

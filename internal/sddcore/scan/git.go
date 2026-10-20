@@ -17,6 +17,8 @@ type Git interface {
 	CurrentBranch() (string, error)
 	// ResolveBaseRef determines the merge base reference (concept section 8.3).
 	ResolveBaseRef(configured string) (string, error)
+	// ShowFile reads path at ref; ok is false if the file does not exist there.
+	ShowFile(ref, path string) ([]byte, bool, error)
 }
 
 // ErrGit wraps all failures of the Git CLI; the CLI maps it to exit code 2.
