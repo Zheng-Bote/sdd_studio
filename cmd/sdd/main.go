@@ -44,6 +44,10 @@ func run(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return runUI(args[1:], repoRoot, stdout, stderr)
 	case "next":
 		return runNext(args[1:], repoRoot, stdout, stderr)
+	case "explain":
+		return runExplain(args[1:], repoRoot, stdout, stderr)
+	case "mcp":
+		return runMCP(args[1:], repoRoot, stdout, stderr)
 	case "-h", "--help", "help":
 		printUsage(stdout)
 		return 0
@@ -303,6 +307,8 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  baseline   Verwaltet .sdd/baseline.json und .sdd/adr-lock.json (--gate, --prune, --accept)")
 	fmt.Fprintln(w, "  init       Legt ein neues Projekt an (--profile, --dry-run, --no-ci)")
 	fmt.Fprintln(w, "  next       Nächster Prozessschritt je Feature (--feature, --json)")
+	fmt.Fprintln(w, "  explain    Regel mit Handbuchabschnitt und Prüfvertrag (z. B. sdd explain SDD-022)")
+	fmt.Fprintln(w, "  mcp        MCP-Server über stdio für Agenten (--allow-write)")
 	fmt.Fprintln(w, "  ui         Lokale Oberfläche auf 127.0.0.1 (--port, --open)")
 	fmt.Fprintln(w, "  report     Reifegrad, Befunde, Gates und Schuldenstand mit Trend (--format markdown|json, --since <ref>)")
 	fmt.Fprintln(w, "  adopt      Übernimmt ein bestehendes Projekt: Bericht, mit --apply auf neuem Branch (--profile, --branch)")

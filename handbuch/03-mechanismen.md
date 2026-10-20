@@ -4,7 +4,7 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
-## Projektanlage, Templates, Übernahme, Bericht, Prozessführung und Oberfläche (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`, `sdd next`, `sdd ui`)
+## Projektanlage, Templates, Übernahme, Bericht, Prozessführung, Agenten und Oberfläche (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`, `sdd next`, `sdd explain`, `sdd mcp`, `sdd ui`)
 
 `init`, `new` und `adopt` schreiben ausschließlich **additiv**; `report` schreibt nichts: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
 
@@ -91,6 +91,15 @@ Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abge
 | Abschluss | nach dem Merge `status: implemented`; dann vor dem Release archivieren (`SDD-050`) |
 
 Der nächste Schritt ist der erste *offene*, sonst der erste *manuelle*, sonst der Abschluss. Zustände in der Textausgabe: `✓` erledigt, `✗` offen, `?` manuell, `–` nicht nötig, `·` später.
+
+### `sdd explain` und `sdd mcp` {#sdd-mcp}
+
+```text
+sdd explain <regel-id> [--json]
+sdd mcp [--allow-write]
+```
+
+`sdd explain` zeigt den Handbuchabschnitt und den Prüfvertrag einer Regel. `sdd mcp` stellt die Bibliothek Agenten als MCP-Server über stdio bereit — Werkzeuge, Ressourcen und geführte Prompts, KI-frei und ohne Netzwerk ([ADR 0002](../docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)). Einrichtung, Werkzeuge und Grenzen beschreibt [Teil 4 — Für Agenten](04-agenten.md).
 
 ### `sdd ui` {#sdd-ui}
 

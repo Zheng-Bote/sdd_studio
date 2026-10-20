@@ -375,3 +375,92 @@ func anyMentionsSlug(contents []string, slug string) bool {
 	}
 	return false
 }
+
+// ACTrace is the traceability of one acceptance criterion (used by `sdd mcp` / sdd_trace).
+type ACTrace struct {
+	ID        string   `json:"id"`
+	PRD       string   `json:"prd"`
+	Line      int      `json:"line"`
+	TechSpecs []string `json:"tech_specs"`
+	Tests     []string `json:"tests"` // "path:line", matched exactly like SDD-022
+	Tasks     []string `json:"tasks"` // "path:line" of task lines naming the ID
+}
+
+// Trace follows each AC of a feature's active PRDs to Tech Specs, tests and tasks.
+func Trace(ctx *Context, feature string) ([]ACTrace, error) {
+	defs, err := definedACs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	files, _, err := loadTestFiles(ctx)
+	if err != nil {
+		return nil, err
+	}
+	m, err := newMatcherFor(ctx, defs)
+	if err != nil {
+		return nil, err
+	}
+	designs, err := activeArtifacts(ctx, ctx.Config.Artifacts.Design)
+	if err != nil {
+		return nil, err
+	}
+	plans, err := activeArtifacts(ctx, ctx.Config.Artifacts.Plans)
+	if err != nil {
+		return nil, err
+	}
+
+	out := []ACTrace{}
+	for _, d := range defs {
+		if d.Feature != feature {
+			continue
+		}
+		tr := ACTrace{ID: d.ID, PRD: d.Path, Line: d.Line, TechSpecs: []string{}, Tests: []string{}, Tasks: []string{}}
+		for _, ds := range designs {
+			if featureOf(ds, ctx.Config.Artifacts.Design) != feature {
+				continue
+			}
+			lines, err := readLines(ctx, ds.Path)
+			if err != nil {
+				return nil, err
+			}
+			for _, l := range lines {
+				if containsID(l.Text, d.ID) {
+					tr.TechSpecs = append(tr.TechSpecs, ds.Path)
+					break
+				}
+			}
+		}
+		for _, f := range files {
+			for i, line := range f.Lines {
+				if m.refers(line, d) {
+					tr.Tests = append(tr.Tests, fmt.Sprintf("%s:%d", f.Path, i+1))
+				}
+			}
+		}
+		for _, p := range plans {
+			if featureOf(p, ctx.Config.Artifacts.Plans) != feature {
+				continue
+			}
+			lines, err := readLines(ctx, p.Path)
+			if err != nil {
+				return nil, err
+			}
+			for _, l := range lines {
+				if checkboxRegex.MatchString(l.Text) && containsID(l.Text, d.ID) {
+					tr.Tasks = append(tr.Tasks, fmt.Sprintf("%s:%d", p.Path, l.Number))
+				}
+			}
+		}
+		out = append(out, tr)
+	}
+	return out, nil
+}
+
+func containsID(text, id string) bool {
+	for _, found := range acIDRegex.FindAllString(acTombstoneRegex.ReplaceAllString(text, ""), -1) {
+		if found == id {
+			return true
+		}
+	}
+	return false
+}
