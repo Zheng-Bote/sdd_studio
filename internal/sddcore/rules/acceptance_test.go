@@ -104,7 +104,7 @@ func TestSDD022(t *testing.T) {
 	})
 }
 
-// sdd-core-v1 AC-9: an AC number defined by several PRDs needs the feature slug in the referencing test file.
+// sdd-core-v1 AC-9: an AC number defined by several PRDs needs the feature slug on the referencing test line.
 func TestSDD022AmbiguousNumbersNeedSlug(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "docs/prd/billing.md", "---\nfeature: billing\n---\n## Akzeptanzkriterien\n- AC-1 a\n- AC-2 b\n")
@@ -128,6 +128,12 @@ func TestSDD022AmbiguousNumbersNeedSlug(t *testing.T) {
 	want := map[string]bool{"docs/prd/billing.md AC-1": true, "docs/prd/billing.md AC-2": true}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("want %v, got %+v", want, findings)
+	}
+
+	// Slug and reference on different lines do not count, even in the same file.
+	writeFile(t, root, "pkg/split_test.go", "// billing\n// AC-1 AC-2\n")
+	if findings, err = checkSDD022(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-022"}); err != nil || len(findings) != 2 {
+		t.Fatalf("slug on another line must not count, got %+v, %v", findings, err)
 	}
 
 	// A unique number needs no slug.

@@ -229,25 +229,27 @@ func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 		}}, nil
 	}
 
-	// referencedIn maps an AC number to the contents of all test files referencing it.
+	// referencedIn maps an AC number to all test file lines referencing it.
 	referencedIn := map[string][]string{}
 	for _, f := range testFiles {
 		data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(f)))
 		if err != nil {
 			return nil, fmt.Errorf("Testdatei %s nicht lesbar: %w", f, err)
 		}
-		numbers := map[string]bool{}
-		for _, re := range acRefRegexes {
-			for _, m := range re.FindAllStringSubmatch(string(data), -1) {
-				numbers[m[1]] = true
+		for _, line := range strings.Split(string(data), "\n") {
+			numbers := map[string]bool{}
+			for _, re := range acRefRegexes {
+				for _, m := range re.FindAllStringSubmatch(line, -1) {
+					numbers[m[1]] = true
+				}
 			}
-		}
-		for n := range numbers {
-			referencedIn[n] = append(referencedIn[n], string(data))
+			for n := range numbers {
+				referencedIn[n] = append(referencedIn[n], line)
+			}
 		}
 	}
 
-	// An AC number defined by several active PRDs is ambiguous: the test file must also name the feature slug.
+	// An AC number defined by several active PRDs is ambiguous: the referencing line must also name the feature slug.
 	definedBy := map[string]map[string]bool{}
 	for _, d := range defs {
 		if definedBy[d.Number] == nil {
@@ -258,17 +260,17 @@ func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 
 	var findings []report.Finding
 	for _, d := range defs {
-		files := referencedIn[d.Number]
+		lines := referencedIn[d.Number]
 		ambiguous := len(definedBy[d.Number]) > 1
-		if !ambiguous && len(files) > 0 {
+		if !ambiguous && len(lines) > 0 {
 			continue
 		}
-		if ambiguous && anyMentionsSlug(files, d.Feature) {
+		if ambiguous && anyMentionsSlug(lines, d.Feature) {
 			continue
 		}
 		msg := fmt.Sprintf("%s ist in keiner Testdatei (%s) referenziert", d.ID, source)
 		if ambiguous {
-			msg = fmt.Sprintf("%s ist in %d PRDs vergeben; keine Testdatei (%s) referenziert %s und nennt zugleich den Feature-Slug %s", d.ID, len(definedBy[d.Number]), source, d.ID, d.Feature)
+			msg = fmt.Sprintf("%s ist in %d PRDs vergeben; keine Zeile einer Testdatei (%s) referenziert %s und nennt zugleich den Feature-Slug %s", d.ID, len(definedBy[d.Number]), source, d.ID, d.Feature)
 		}
 		findings = append(findings, report.Finding{
 			Path:        d.Path,
@@ -281,7 +283,7 @@ func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 	return findings, nil
 }
 
-// anyMentionsSlug reports whether one of the contents contains slug as a whole token (not as part of a longer slug).
+// anyMentionsSlug reports whether one of the lines contains slug as a whole token (not as part of a longer slug).
 func anyMentionsSlug(contents []string, slug string) bool {
 	re := regexp.MustCompile(`(?:^|[^a-z0-9-])` + regexp.QuoteMeta(slug) + `(?:[^a-z0-9-]|$)`)
 	for _, c := range contents {
