@@ -1,6 +1,9 @@
 package rules
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -136,11 +139,53 @@ func TestSDD022AmbiguousNumbersNeedSlug(t *testing.T) {
 		t.Fatalf("slug on another line must not count, got %+v, %v", findings, err)
 	}
 
-	// A unique number needs no slug.
+	// With several features even a unique number needs the slug on the line.
 	writeFile(t, root, "docs/prd/billing-v2.md", "---\nfeature: billing-v2\n---\n## Akzeptanzkriterien\n- AC-3 c\n")
 	writeFile(t, root, "pkg/v2_test.go", "// AC-3\n")
+	findings, err = checkSDD022(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-022"})
+	flagged := false
+	for _, f := range findings {
+		flagged = flagged || (f.Path == "docs/prd/billing-v2.md" && strings.HasPrefix(f.Message, "AC-3 "))
+	}
+	if err != nil || !flagged {
+		t.Fatalf("unique number without slug must not count with several features, got %+v, %v", findings, err)
+	}
+	writeFile(t, root, "pkg/v2_test.go", "// billing-v2 AC-3\n")
 	writeFile(t, root, "pkg/billing_test.go", "// billing AC-1, AC-2\n")
 	if findings, err = checkSDD022(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-022"}); err != nil || len(findings) != 0 {
 		t.Fatalf("expected no findings, got %+v, %v", findings, err)
+	}
+}
+
+// sdd-core-v1 AC-9: with more than one known feature (archived ones included) a reference must name the slug,
+// even when the number is unique among active PRDs.
+func TestSDD022ForeignSlugDoesNotCount(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "docs/prd/new.md", "---\nfeature: new\n---\n## Akzeptanzkriterien\n- AC-1 a\n- AC-2 b\n- AC-3 c\n")
+	writeFile(t, root, "docs/archive/prd/old.md", "---\nfeature: old\nstatus: archived\n---\n## Akzeptanzkriterien\n- AC-1 x\n- AC-2 y\n")
+	writeFile(t, root, "pkg/a_test.go", "// old AC-1: archived feature\nfunc TestOld(t *testing.T) {}\n// new AC-2\nfunc TestNew(t *testing.T) {}\n// AC-3 without slug\nfunc TestPlain(t *testing.T) {}\n")
+	cfg := featureConfig()
+	cfg.Artifacts.Archive = "docs/archive"
+	cfg.Tests.Include = []string{"**/*_test.go"}
+
+	findings, err := checkSDD022(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-022"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, f := range findings {
+		got = append(got, strings.Fields(f.Message)[0])
+	}
+	if want := []string{"AC-1", "AC-3"}; fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("got %v, want %v (%+v)", got, want, findings)
+	}
+
+	// A single-feature project needs no slug.
+	if err := os.RemoveAll(filepath.Join(root, "docs/archive")); err != nil {
+		t.Fatal(err)
+	}
+	writeFile(t, root, "pkg/a_test.go", "// AC-1\n// AC-2\n// AC-3\n")
+	if findings, err = checkSDD022(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-022"}); err != nil || len(findings) != 0 {
+		t.Fatalf("single feature: %+v, %v", findings, err)
 	}
 }

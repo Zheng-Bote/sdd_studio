@@ -234,10 +234,11 @@ func loadTestFiles(ctx *Context) ([]testFile, string, error) {
 // acMatcher decides whether a test file line references an AC definition (SDD-022 contract, items 3 and 4).
 type acMatcher struct {
 	definedBy map[string]map[string]bool // AC number -> PRD paths defining it
+	slugs     []string                   // feature slugs of all PRDs, archived ones included
 }
 
-func newACMatcher(defs []acDefinition) acMatcher {
-	m := acMatcher{definedBy: map[string]map[string]bool{}}
+func newACMatcher(defs []acDefinition, slugs []string) acMatcher {
+	m := acMatcher{definedBy: map[string]map[string]bool{}, slugs: slugs}
 	for _, d := range defs {
 		if m.definedBy[d.Number] == nil {
 			m.definedBy[d.Number] = map[string]bool{}
@@ -251,7 +252,8 @@ func (m acMatcher) ambiguous(d acDefinition) bool {
 	return len(m.definedBy[d.Number]) > 1
 }
 
-// refers reports whether line references d; for an ambiguous number the same line must name the feature slug.
+// refers reports whether line references d. As soon as more than one feature is known (archived ones included),
+// the line must also name d's feature slug; a single-feature project needs no slug.
 func (m acMatcher) refers(line string, d acDefinition) bool {
 	found := false
 	for _, re := range acRefRegexes {
@@ -261,7 +263,48 @@ func (m acMatcher) refers(line string, d acDefinition) bool {
 			}
 		}
 	}
-	return found && (!m.ambiguous(d) || anyMentionsSlug([]string{line}, d.Feature))
+	if !found {
+		return false
+	}
+	if len(m.slugs) <= 1 && !m.ambiguous(d) {
+		return true
+	}
+	return anyMentionsSlug([]string{line}, d.Feature)
+}
+
+// knownFeatureSlugs returns the feature slugs of all PRDs, active and archived (frontmatter or file name).
+func knownFeatureSlugs(ctx *Context) ([]string, error) {
+	seen := map[string]bool{}
+	var out []string
+	for _, spec := range []string{ctx.Config.Artifacts.PRD, ctx.Config.Artifacts.Archive} {
+		if strings.TrimSpace(spec) == "" {
+			continue
+		}
+		list, err := scan.ListArtifacts(ctx.RepoRoot, spec, ctx.Config.Exclude)
+		if err != nil {
+			return nil, fmt.Errorf("Artefakte unter %s nicht lesbar: %w", spec, err)
+		}
+		for _, a := range list {
+			slug := a.Frontmatter.Feature
+			if slug == "" {
+				slug = strings.TrimSuffix(path.Base(a.Path), path.Ext(a.Path))
+			}
+			if !seen[slug] {
+				seen[slug] = true
+				out = append(out, slug)
+			}
+		}
+	}
+	return out, nil
+}
+
+// newMatcherFor builds the AC matcher for the given definitions with all known feature slugs.
+func newMatcherFor(ctx *Context, defs []acDefinition) (acMatcher, error) {
+	slugs, err := knownFeatureSlugs(ctx)
+	if err != nil {
+		return acMatcher{}, err
+	}
+	return newACMatcher(defs, slugs), nil
 }
 
 // checkSDD022 (SDD-022): Every AC ID of an active PRD occurs in at least one test file (presence, not coverage).
@@ -284,13 +327,19 @@ func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 		}}, nil
 	}
 
-	m := newACMatcher(defs)
+	m, err := newMatcherFor(ctx, defs)
+	if err != nil {
+		return nil, err
+	}
 	var findings []report.Finding
 	for _, d := range defs {
 		if referencedAnywhere(files, m, d) {
 			continue
 		}
 		msg := fmt.Sprintf("%s ist in keiner Testdatei (%s) referenziert", d.ID, source)
+		if len(m.slugs) > 1 {
+			msg = fmt.Sprintf("%s (Feature %s) ist in keiner Zeile einer Testdatei (%s) zusammen mit dem Feature-Slug referenziert — Konvention `// %s %s: …`", d.ID, d.Feature, source, d.Feature, d.ID)
+		}
 		if m.ambiguous(d) {
 			msg = fmt.Sprintf("%s ist in %d PRDs vergeben; keine Zeile einer Testdatei (%s) referenziert %s und nennt zugleich den Feature-Slug %s", d.ID, len(m.definedBy[d.Number]), source, d.ID, d.Feature)
 		}

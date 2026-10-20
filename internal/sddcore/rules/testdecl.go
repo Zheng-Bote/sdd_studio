@@ -82,7 +82,10 @@ func checkSDD025(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 		regions[i] = declRegions(f.Lines)
 	}
 
-	m := newACMatcher(defs)
+	m, err := newMatcherFor(ctx, defs)
+	if err != nil {
+		return nil, err
+	}
 	var findings []report.Finding
 	for _, d := range defs {
 		if !referencedAnywhere(files, m, d) {
