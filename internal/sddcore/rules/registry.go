@@ -13,6 +13,7 @@ import (
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/report"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scan"
 )
 
 // Context holds all inputs required to evaluate a rule check.
@@ -24,6 +25,15 @@ type Context struct {
 	Gate        string // "" for default `sdd lint`, or "pre-implementation", "pre-merge", "pre-release"
 	Feature     string
 	Paths       []string
+	Git         scan.Git // nil means the git CLI in RepoRoot
+
+	// per-run caches, filled lazily by the feature checks
+	diffDone      bool
+	diff          []string
+	diffErr       error
+	artifactsDone bool
+	artifacts     []scan.Artifact
+	artifactsErr  error
 }
 
 // ReadHandbookFile reads a handbook file relative to RepoRoot if present on disk,
@@ -37,7 +47,8 @@ func (c *Context) ReadHandbookFile(relPath string) ([]byte, error) {
 	return fs.ReadFile(sddstudio.EmbeddedAssets, cleanRel)
 }
 
-// CheckFunc executes a single rule check and returns raw findings (severity and handbook_url are populated by the runner).
+// CheckFunc executes a single rule check and returns raw findings. The runner fills severity (unless the check set a
+// lower one explicitly, e.g. warn for "not assessable") and handbook_url.
 type CheckFunc func(ctx *Context, rule catalog.Rule) ([]report.Finding, error)
 
 type Registry struct {
@@ -133,7 +144,9 @@ func Evaluate(ctx *Context, reg *Registry) ([]report.Finding, error) {
 		}
 		for i := range findings {
 			findings[i].RuleID = rule.ID
-			findings[i].Severity = sev
+			if findings[i].Severity == "" {
+				findings[i].Severity = sev
+			}
 			if findings[i].HandbookURL == "" {
 				findings[i].HandbookURL = rule.Handbook
 			}

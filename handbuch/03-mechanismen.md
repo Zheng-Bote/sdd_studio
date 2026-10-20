@@ -51,6 +51,74 @@ Für die unter `artifacts.constitution` konfigurierte Datei gilt:
 
 ---
 
+## Feature-Artefakte bei Schwellenüberschreitung (`SDD-020`, `SDD-030`)
+
+Ab einer projektspezifischen Größenschwelle verlangt `sdd` für ein Feature ein PRD (`SDD-020`) und eine Tech Spec (`SDD-030`). Beide Regeln teilen die Feature-Auflösung, die Glob-Syntax und die Schwellenlogik; sie unterscheiden sich nur im geprüften Verzeichnis (`artifacts.prd` bzw. `artifacts.design`).
+
+### Feature-Auflösung {#feature-aufloesung}
+
+Welche Features ein Gate-Lauf prüft, wird in dieser Reihenfolge bestimmt; die erste Stufe mit Ergebnis gewinnt:
+
+1. **`--feature <slug>`** — kommagetrennt mehrere Slugs möglich. Ein Slug besteht ausschließlich aus `[a-z0-9-]`; ein ungültiger Slug bricht mit Exit-Code `2` ab.
+2. **Frontmatter im Diff** — alle Markdown-Dateien unter `artifacts.prd`, `artifacts.design` und `artifacts.plans`, die in `git diff <base>...HEAD` vorkommen und ein gültiges `feature:`-Feld tragen.
+3. **Branch-Name** — `feature/<slug>` oder `feat/<slug>` bzw. `feat/<nummer>-<slug>`. In CI mit losgelöstem `HEAD` gelten `$GITHUB_HEAD_REF`, `$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` und `$CI_COMMIT_BRANCH`.
+
+Liefert keine Stufe ein Feature, gilt der Lauf als **nicht aufgelöst** (siehe Prüfverträge). Die Merge-Basis ist `base_ref` aus `sdd.config.yaml`; leer bedeutet: `$GITHUB_BASE_REF` bzw. `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME` (bevorzugt als `origin/<name>`), sonst `@{upstream}`, sonst `main`, sonst `master`. Ist Git nicht verfügbar oder keine Basis ermittelbar, endet der Lauf mit Exit-Code `2`.
+
+### Glob-Syntax {#glob-syntax}
+
+Alle Pfadangaben (`thresholds`, `touches`, `--paths`, `exclude`, `tests.include`) sind Globs relativ zum Repository-Wurzelverzeichnis und **an der Wurzel verankert**:
+
+- `**` steht für beliebig viele Pfadsegmente (auch keines); `dir/**` trifft auch `dir` selbst.
+- `*` steht für beliebige Zeichen innerhalb eines Segments, `?` für genau ein Zeichen, `{a,b}` für Alternativen, `[...]` für eine Zeichenklasse (`[!...]` negiert).
+- Ein Glob ohne `/` trifft nur Dateien im Wurzelverzeichnis; für beliebige Tiefe ist `**/` nötig.
+
+**Überschneidung zweier Globs** (erklärte Absicht gegen Schwellen-Globs): Zwei Literale überschneiden sich, wenn sie gleich sind; ein Literal und ein Glob, wenn der Glob das Literal trifft; zwei Globs, wenn der statische Präfix (alles vor dem ersten Segment mit Platzhalter) des einen ein Präfix des anderen ist. Diese Definition ist bewusst konservativ: Im Zweifel gilt die Schwelle als berührt.
+
+### Größenschwelle {#groessenschwelle}
+
+Die Schwelle ist überschritten, wenn **mindestens einer** der Pfade einen Glob aus `thresholds.feature_artifacts_required_when.touched_paths` überschneidet **oder** mindestens `min_layers_touched` verschiedene Globs aus `thresholds.layers` überschnitten werden (`min_layers_touched ≤ 0` schaltet die Layer-Bedingung ab). Grundlage ist nie der gesamte Arbeitsbaum:
+
+- **`pre-implementation`:** die erklärte Absicht — `touches` aus dem Frontmatter aller Feature-Artefakte mit `feature: <slug>` unter `artifacts.prd`, `artifacts.design` und `artifacts.plans`, vereinigt mit `--paths`.
+- **`pre-merge`:** die Dateien aus `git diff --no-renames <base>...HEAD` (Umbenennungen zählen mit altem und neuem Pfad), ohne `exclude`-Treffer.
+
+---
+
+### SDD-020 — PRD vorhanden, wenn die Größenschwelle greift {#sdd-020}
+
+- **Schweregrad:** `error` in `pre-implementation` und `pre-merge`; `warn`, wenn die Schwelle nicht bewertbar ist. Kein `default` — `sdd lint` ohne Gate prüft die Regel nicht, weil sie ohne Gate-Kontext keine Grundlage hat.
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `feature_prd_present`
+
+**Begründung:** Ab der Größenschwelle ist eine Änderung nicht mehr allein aus Issue und Code nachvollziehbar. Das PRD hält fest, was und warum gebaut wird — und zwar bevor implementiert wird.
+
+#### SDD-020 Prüfvertrag {#sdd-020-vertrag}
+
+Die Regel wird nur in `pre-implementation` und `pre-merge` ausgewertet. Mit der [Feature-Auflösung](#feature-aufloesung), der [Glob-Syntax](#glob-syntax) und der [Größenschwelle](#groessenschwelle) gilt:
+
+1. **Feature aufgelöst:** Für jeden Slug wird die Schwelle bewertet. Ist sie überschritten und existiert unter `artifacts.prd` keine Markdown-Datei (`*.md`, rekursiv, ohne `exclude`-Treffer), deren gültiges YAML-Frontmatter `feature: <slug>` enthält, entsteht ein `error`. Dateien ohne oder mit ungültigem Frontmatter zählen nicht. Ist `artifacts.prd` nicht konfiguriert, entsteht ebenfalls ein `error`.
+2. **Feature aufgelöst, Absicht nicht erklärt** (nur `pre-implementation`: weder `touches` noch `--paths`): ein `warn` „Änderungsabsicht nicht erklärt; Schwelle nicht bewertbar".
+3. **Kein Feature aufgelöst:** In `pre-implementation` ohne `--paths` entsteht ein `warn` (wie 2.). Mit `--paths` bzw. in `pre-merge` mit dem Diff wird die Schwelle bewertet; ist sie überschritten, entsteht ein `error` mit dem Hinweis `sdd new --feature <slug>` (fail-closed).
+4. Ist die Schwelle nicht überschritten, entsteht kein Befund.
+
+---
+
+### SDD-030 — Tech Spec vorhanden, wenn die Größenschwelle greift {#sdd-030}
+
+- **Schweregrad:** wie `SDD-020`
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `feature_design_present`
+
+**Begründung:** Eine Änderung über mehrere Layer oder an öffentlichen Schnittstellen braucht ein abgestimmtes technisches Design, bevor implementiert wird. Ein PRD allein beantwortet das Was, nicht das Wie.
+
+#### SDD-030 Prüfvertrag {#sdd-030-vertrag}
+
+Wie der [Prüfvertrag von SDD-020](#sdd-020-vertrag), mit `artifacts.design` an Stelle von `artifacts.prd` und „Tech Spec" an Stelle von „PRD".
+
+---
+
 ## Selbstschutz- und Coverage-Regeln (`SDD-070` – `SDD-073`)
 
 Damit Regelkatalog, Handbuch und Prüfkern niemals auseinanderlaufen, prüft `sdd` bei jedem Lauf zuerst die Konsistenz des Katalogs selbst. Alle vier Regeln gelten ab Profil `minimal`, sind in allen Gates aktiv und tragen `baseline: forbidden`.

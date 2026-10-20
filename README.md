@@ -12,13 +12,14 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 - **Dogfooding-Konfiguration & Verfassung:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md)
 - **Selbstschutz-Regeln (`SDD-070` – `SDD-073`):** Katalog, Handbuchabschnitte, Prüfverträge und Laufzeit-Checks aktiv
 - **Verfassungsregeln `SDD-001`, `SDD-002a`:** Verfassung vorhanden und mit Pflichtabschnitten (Phase 1C)
+- **Feature-Regeln `SDD-020`, `SDD-030`:** PRD und Tech Spec bei Schwellenüberschreitung, mit Feature-Auflösung (`--feature`, Frontmatter im Diff, Branch-Name) und fail-closed-Verhalten (Phase 1C)
 - **Baseline & Ratchet:** Gate-gebundene Baseline (`.sdd/baseline.json`) mit `content_hash`, deterministischem `ordinal` und Schutz für `baseline: forbidden`
 - **CLI-Kommandos:**
   - `go run ./cmd/sdd lint [--json] [--gate <gate>]`
-  - `go run ./cmd/sdd gate <pre-implementation|pre-merge|pre-release> [--json] [--feature <slug>] [--paths <globs>]`
+  - `go run ./cmd/sdd gate <pre-implementation|pre-merge|pre-release> [--json] [--feature <slug>[,<slug>…]] [--paths <globs>]`
   - `go run ./cmd/sdd baseline [--gate <gate>] [--prune] [--accept <rule_id>]`
 
 ## Nächste Schritte (beim nächsten Mal)
 
-- **Phase 1C:** Verbleibende 5 Regeln des v1-Schnitts ergänzen (`SDD-020`, `SDD-030`, `SDD-021`, `SDD-022`, `SDD-050`) — jeweils inklusive Handbuchabschnitt, Prüfvertrag und Tests im selben Commit.
+- **Phase 1C:** Verbleibende 3 Regeln des v1-Schnitts ergänzen (`SDD-021`, `SDD-022`, `SDD-050`) — jeweils inklusive Handbuchabschnitt, Prüfvertrag und Tests im selben Commit.
 - **Schritt 2:** `sdd init`, `sdd new` (Templates) und GitHub-Action-Wrapper.

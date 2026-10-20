@@ -46,7 +46,7 @@ func runLint(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	jsonOut := fs.Bool("json", false, "Befunde im JSON-Format ausgeben")
 	gate := fs.String("gate", "", "Optionales Gate (pre-implementation, pre-merge, pre-release)")
-	feature := fs.String("feature", "", "Optionaler Feature-Slug")
+	feature := fs.String("feature", "", "Feature-Slug(s), kommagetrennt (überschreibt die Feature-Auflösung)")
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
@@ -94,7 +94,7 @@ func runGate(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("gate "+gateName, flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	jsonOut := fs.Bool("json", false, "Befunde im JSON-Format ausgeben")
-	feature := fs.String("feature", "", "Optionaler Feature-Slug")
+	feature := fs.String("feature", "", "Feature-Slug(s), kommagetrennt (überschreibt die Feature-Auflösung)")
 	pathsRaw := fs.String("paths", "", "Erklärte Änderungsabsicht als kommagetrennte Pfad-Globs")
 	if err := fs.Parse(args[1:]); err != nil {
 		return 2
