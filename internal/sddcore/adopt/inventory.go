@@ -198,14 +198,32 @@ func Classify(p string, cfg *config.Config) File {
 		}
 	}
 	if strings.TrimSpace(a.Archive) != "" && scan.InSpec(p, a.Archive) {
-		kind := KindPRD
-		switch path.Base(p) {
-		case "plan.md":
-			kind = KindDesign
-		case "tasks.md":
-			kind = KindPlan
-		}
-		return File{Path: p, Kind: kind, Archived: true, Reason: "artifacts.archive (" + a.Archive + "), Typ nach Dateiname"}
+		return classifyArchived(p, a.Archive, map[Kind]string{KindPRD: a.PRD, KindDesign: a.Design, KindPlan: a.Plans})
 	}
 	return File{Path: p, Kind: KindDoc, Reason: "kein Muster"}
+}
+
+// classifyArchived derives the type of an archived feature artifact: from the archive subfolder named like the
+// active folder (archive/prd, archive/design, archive/plans — sdd_process_3 section 11), else from the Spec Kit file
+// name (plan.md, tasks.md), else PRD.
+func classifyArchived(p, archive string, active map[Kind]string) File {
+	reason := "artifacts.archive (" + archive + ")"
+	if !scan.HasWildcard(archive) {
+		rel := strings.TrimPrefix(p, strings.TrimSuffix(archive, "/")+"/")
+		if sub, _, ok := strings.Cut(rel, "/"); ok {
+			for _, k := range []Kind{KindPRD, KindDesign, KindPlan} {
+				if spec := active[k]; spec != "" && !scan.HasWildcard(spec) && path.Base(strings.TrimSuffix(spec, "/")) == sub {
+					return File{Path: p, Kind: k, Archived: true, Reason: reason + ", Typ nach Unterordner " + sub}
+				}
+			}
+		}
+	}
+	kind := KindPRD
+	switch path.Base(p) {
+	case "plan.md":
+		kind = KindDesign
+	case "tasks.md":
+		kind = KindPlan
+	}
+	return File{Path: p, Kind: kind, Archived: true, Reason: reason + ", Typ nach Dateiname"}
 }

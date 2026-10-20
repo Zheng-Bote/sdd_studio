@@ -6,7 +6,10 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 > Es gibt **einen Regelkatalog** ([`catalog/catalog.yaml`](catalog/catalog.yaml)). Das [Handbuch](handbuch/03-mechanismen.md) erklärt ihn, das Programm setzt ihn durch. Beide sind Ausgaben derselben Quelle — und diese Quelle wird über `SDD-070` bis `SDD-073` maschinell geprüft.
 
-## Aktueller Stand (Roadmap Schritt 1 bis 4)
+## Aktueller Stand — Version 0.1.0
+
+Siehe [CHANGELOG](CHANGELOG.md). In CI: `uses: Zheng-Bote/sdd_studio@v0.1.0` (Beispiel im [Handbuch](handbuch/03-mechanismen.md#ci-einbindung)).
+
 
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md) und [`docs/sdd_process_3.md`](docs/sdd_process_3.md)
 - **Dogfooding-Konfiguration & Verfassung:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md)
@@ -27,9 +30,8 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
   - `go run ./cmd/sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` bzw. `new --type adr|doc --title …`
 - **GitHub Action:** [`action.yml`](action.yml) baut `sdd` und führt `sdd gate <gate>` aus (siehe [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#ci-einbindung))
 - **Artefaktpfade als Ordner oder Glob:** z. B. Spec Kit `specs/features/*/spec.md` ohne Umzug
-- **Feature-Artefakte des Werkzeugs selbst:** `sdd-core-v1`, `sdd-init-new`, `sdd-adopt`, `sdd-report` und `sdd-rules-v1-1` unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design)
+- **Feature-Artefakte des Werkzeugs selbst:** `sdd-core-v1`, `sdd-init-new`, `sdd-adopt`, `sdd-report` und `sdd-rules-v1-1`, mit Version 0.1.0 archiviert unter [`docs/archive`](docs/archive)
 
 ## Nächste Schritte (beim nächsten Mal)
 
 - **Später (Konzept §15):** `SDD-003` (heuristisch), `SDD-040`, `SDD-060`; Schritt 5/6 der Roadmap (`sdd ui`, Agenten-Schnittstelle).
-- **Release vorbereiten:** erledigte Features (`sdd-core-v1`, `sdd-init-new`, …) auf `status: implemented` setzen und vor dem ersten Tag archivieren (`SDD-050`).

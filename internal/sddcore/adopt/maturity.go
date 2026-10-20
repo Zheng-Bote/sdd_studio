@@ -42,13 +42,14 @@ func Assess(root string, inv *Inventory, findings []report.Finding) Maturity {
 		return n
 	}
 
+	// L2 asks whether the project separates PRD and Tech Spec and uses AC IDs at all, so archived artifacts count:
+	// archiving after a release must not lower the level. L4 looks at the active artifacts only.
 	var prds, designs, features, withoutFields int
 	acs := 0
 	for _, f := range inv.Files {
-		if !f.Kind.IsFeature() || f.Archived {
+		if !f.Kind.IsFeature() {
 			continue
 		}
-		features++
 		switch f.Kind {
 		case KindPRD:
 			prds++
@@ -58,6 +59,10 @@ func Assess(root string, inv *Inventory, findings []report.Finding) Maturity {
 		case KindDesign:
 			designs++
 		}
+		if f.Archived {
+			continue
+		}
+		features++
 		if f.Frontmatter.Feature == "" || f.Frontmatter.Status == "" {
 			withoutFields++
 		}
@@ -82,7 +87,7 @@ func Assess(root string, inv *Inventory, findings []report.Finding) Maturity {
 		{Level: 3, Name: "Baseline vorhanden", Met: inv.BaselineExists,
 			Detail: ".sdd/baseline.json",
 			Advice: "Baseline aufnehmen (Schritt „Baseline“ von sdd adopt --apply oder `sdd baseline`)"},
-		{Level: 4, Name: "Feature-Artefakte tragen feature: und status", Met: features > 0 && withoutFields == 0,
+		{Level: 4, Name: "Feature-Artefakte tragen feature: und status", Met: withoutFields == 0,
 			Detail: fmt.Sprintf("%d von %d ohne beide Felder", withoutFields, features),
 			Advice: fmt.Sprintf("Frontmatter ergänzen (%d Dateien; Schritt „Frontmatter“ von sdd adopt --apply)", withoutFields)},
 		{Level: 4, Name: "Archiv konfiguriert", Met: inv.Config.Artifacts.Archive != "",

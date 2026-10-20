@@ -1,6 +1,7 @@
 ---
 feature: sdd-core-v1
-status: active
+status: archived
+release: v0.1.0
 touches:
   - cmd/**
   - catalog/**

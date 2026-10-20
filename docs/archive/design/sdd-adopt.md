@@ -1,6 +1,7 @@
 ---
 feature: sdd-adopt
-status: active
+status: archived
+release: v0.1.0
 archive-after:
 touches:
   - cmd/**
@@ -12,7 +13,7 @@ touches:
 
 # Tech Spec — Übernahme bestehender Projekte (`sdd-adopt`)
 
-Setzt das PRD `docs/prd/sdd-adopt.md` um. Die Verfassung hat Vorrang; für schreibenden Git-Zugriff gilt [ADR 0001](../adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md).
+Setzt das PRD `docs/archive/prd/sdd-adopt.md` um. Die Verfassung hat Vorrang; für schreibenden Git-Zugriff gilt [ADR 0001](../../adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md).
 
 ## Architektur
 

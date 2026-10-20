@@ -1,6 +1,7 @@
 ---
 feature: sdd-report
-status: active
+status: archived
+release: v0.1.0
 archive-after:
 touches:
   - cmd/**
@@ -11,7 +12,7 @@ touches:
 
 # Tech Spec — Projektbericht und Schuldenstand (`sdd-report`)
 
-Setzt das PRD `docs/prd/sdd-report.md` um. Die Verfassung hat Vorrang; `sdd report` ist Git-lesend (Security 4).
+Setzt das PRD `docs/archive/prd/sdd-report.md` um. Die Verfassung hat Vorrang; `sdd report` ist Git-lesend (Security 4).
 
 ## Architektur
 
