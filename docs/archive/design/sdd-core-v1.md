@@ -1,6 +1,7 @@
 ---
 feature: sdd-core-v1
-status: active
+status: archived
+release: v0.1.0
 touches:
   - cmd/**
   - catalog/**
@@ -14,7 +15,7 @@ touches:
 
 # Tech Spec — SDD-Prüfkern v1 (`sdd-core-v1`)
 
-Setzt das PRD [`docs/prd/sdd-core-v1.md`](../prd/sdd-core-v1.md) um. Maßgeblich bleiben die [Verfassung](../../constitution.md) und das [Konzept](../sdd_konzept.md); diese Tech Spec präzisiert sie, lockert sie aber nicht.
+Setzt das PRD [`docs/archive/prd/sdd-core-v1.md`](../prd/sdd-core-v1.md) um. Maßgeblich bleiben die [Verfassung](../../../constitution.md) und das [Konzept](../../sdd_konzept.md); diese Tech Spec präzisiert sie, lockert sie aber nicht.
 
 ## Architektur
 

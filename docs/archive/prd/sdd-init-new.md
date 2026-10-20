@@ -1,6 +1,7 @@
 ---
 feature: sdd-init-new
-status: active
+status: archived
+release: v0.1.0
 archive-after:
 touches:
   - cmd/**

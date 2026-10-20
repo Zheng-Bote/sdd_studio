@@ -1,6 +1,7 @@
 ---
 feature: sdd-rules-v1-1
-status: active
+status: archived
+release: v0.1.0
 archive-after:
 touches:
   - catalog/**
@@ -11,7 +12,7 @@ touches:
 
 # Tech Spec — Regeln des v1.1-Schnitts (`sdd-rules-v1-1`)
 
-Setzt das PRD `docs/prd/sdd-rules-v1-1.md` um. Jede Regel erhält Katalogeintrag, Handbuchabschnitt und Prüfvertrag im selben Commit wie ihre Prüffunktion (`SDD-070` bis `SDD-073`). Maßgeblich für jede Regel ist ihr Prüfvertrag in `handbuch/03-mechanismen.md`.
+Setzt das PRD `docs/archive/prd/sdd-rules-v1-1.md` um. Jede Regel erhält Katalogeintrag, Handbuchabschnitt und Prüfvertrag im selben Commit wie ihre Prüffunktion (`SDD-070` bis `SDD-073`). Maßgeblich für jede Regel ist ihr Prüfvertrag in `handbuch/03-mechanismen.md`.
 
 ## Architektur
 

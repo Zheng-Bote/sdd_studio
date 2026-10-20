@@ -1,6 +1,7 @@
 ---
 feature: sdd-init-new
-status: active
+status: archived
+release: v0.1.0
 archive-after:
 touches:
   - cmd/**
@@ -14,7 +15,7 @@ touches:
 
 # Tech Spec — Projektanlage, Artefakt-Templates und CI-Baustein (`sdd-init-new`)
 
-Setzt das PRD [`docs/prd/sdd-init-new.md`](../prd/sdd-init-new.md) um und baut auf [`sdd-core-v1`](sdd-core-v1.md) auf.
+Setzt das PRD [`docs/archive/prd/sdd-init-new.md`](../prd/sdd-init-new.md) um und baut auf [`sdd-core-v1`](sdd-core-v1.md) auf.
 
 ## Architektur
 
