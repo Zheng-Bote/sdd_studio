@@ -7,7 +7,7 @@ import (
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 )
 
-// AC-10: completed feature artifacts outside the archive are reported; pre-release escalates to error.
+// sdd-core-v1 AC-10: completed feature artifacts outside the archive are reported; pre-release escalates to error.
 func TestSDD050(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "docs/prd/active.md", "---\nfeature: active\nstatus: active\narchive-after: 2026-10-20\n---\n")

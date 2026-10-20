@@ -1,12 +1,14 @@
 package rules
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 )
 
-// AC-8: every acceptance criterion in an active PRD carries a stable ID.
+// sdd-core-v1 AC-8: every acceptance criterion in an active PRD carries a stable ID.
 func TestSDD021(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "docs/prd/good.md", `---
@@ -59,7 +61,7 @@ Fließtext mit AC-ähnlichem Wort ist kein Kriterium.
 	}
 }
 
-// AC-9: every AC ID of an active PRD is referenced in at least one test file.
+// sdd-core-v1 AC-9: every AC ID of an active PRD is referenced in at least one test file.
 func TestSDD022(t *testing.T) {
 	prd := "---\nfeature: f\n---\n## Akzeptanzkriterien\n- AC-1 a\n- AC-2 b\n- ~~AC-3~~ entfallen\n- AC-4 d, siehe auch AC-1\n- AC-12 e\n"
 
@@ -100,4 +102,39 @@ func TestSDD022(t *testing.T) {
 			t.Fatalf("expected one warn finding, got %+v, %v", findings, err)
 		}
 	})
+}
+
+// sdd-core-v1 AC-9: an AC number defined by several PRDs needs the feature slug in the referencing test file.
+func TestSDD022AmbiguousNumbersNeedSlug(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "docs/prd/billing.md", "---\nfeature: billing\n---\n## Akzeptanzkriterien\n- AC-1 a\n- AC-2 b\n")
+	writeFile(t, root, "docs/prd/billing-v2.md", "---\nfeature: billing-v2\n---\n## Akzeptanzkriterien\n- AC-1 c\n")
+	writeFile(t, root, "docs/prd/no-frontmatter.md", "## Akzeptanzkriterien\n- AC-2 d\n")
+	// AC-1 of billing-v2 and AC-2 of no-frontmatter (slug from file name) are covered; billing's AC-1 and AC-2 are not:
+	// the token "billing" inside "billing-v2" does not count.
+	writeFile(t, root, "pkg/v2_test.go", "// billing-v2 AC-1\n")
+	writeFile(t, root, "pkg/legacy_test.go", "// no-frontmatter: AC-2\n")
+	cfg := featureConfig()
+	cfg.Tests.Include = []string{"**/*_test.go"}
+
+	findings, err := checkSDD022(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-022"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]bool{}
+	for _, f := range findings {
+		got[f.Path+" "+strings.Fields(f.Message)[0]] = true
+	}
+	want := map[string]bool{"docs/prd/billing.md AC-1": true, "docs/prd/billing.md AC-2": true}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("want %v, got %+v", want, findings)
+	}
+
+	// A unique number needs no slug.
+	writeFile(t, root, "docs/prd/billing-v2.md", "---\nfeature: billing-v2\n---\n## Akzeptanzkriterien\n- AC-3 c\n")
+	writeFile(t, root, "pkg/v2_test.go", "// AC-3\n")
+	writeFile(t, root, "pkg/billing_test.go", "// billing AC-1, AC-2\n")
+	if findings, err = checkSDD022(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-022"}); err != nil || len(findings) != 0 {
+		t.Fatalf("expected no findings, got %+v, %v", findings, err)
+	}
 }

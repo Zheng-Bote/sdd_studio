@@ -14,7 +14,7 @@ import (
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/rules"
 )
 
-// AC-3: the sdd repository passes its own lint.
+// sdd-core-v1 AC-3: the sdd repository passes its own lint.
 func TestSelfDogfoodingClean(t *testing.T) {
 	// Run sdd check against the repository root itself.
 	repoRoot := filepath.Clean("../..")
@@ -29,7 +29,7 @@ func TestSelfDogfoodingClean(t *testing.T) {
 	}
 }
 
-// AC-1: a missing sdd.config.yaml is an execution error, never silent defaults.
+// sdd-core-v1 AC-1: a missing sdd.config.yaml is an execution error, never silent defaults.
 func TestMissingConfigReturnsErrConfigNotFound(t *testing.T) {
 	tmp := t.TempDir()
 	_, err := sddcore.RunCheck(sddcore.RunOptions{
@@ -40,7 +40,7 @@ func TestMissingConfigReturnsErrConfigNotFound(t *testing.T) {
 	}
 }
 
-// AC-2: SDD-070..073 report broken catalog rules.
+// sdd-core-v1 AC-2: SDD-070..073 report broken catalog rules.
 func TestSelfChecksDetectViolations(t *testing.T) {
 	cfg := &config.Config{
 		Version: 1,
@@ -127,7 +127,7 @@ func TestSelfChecksDetectViolations(t *testing.T) {
 	}
 }
 
-// AC-4: gate-bound baseline with deterministic ordinal; baseline: forbidden is never suppressed.
+// sdd-core-v1 AC-4: gate-bound baseline with deterministic ordinal; baseline: forbidden is never suppressed.
 func TestBaselineRespectsForbiddenAndOrdinal(t *testing.T) {
 	tmp := t.TempDir()
 	cat := &catalog.Catalog{

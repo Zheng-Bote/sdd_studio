@@ -57,7 +57,7 @@ type featureResult struct {
 	contains string
 }
 
-// AC-7: PRD above the size threshold, warn on undeclared intent, fail-closed when unresolved.
+// sdd-core-v1 AC-7: PRD above the size threshold, warn on undeclared intent, fail-closed when unresolved.
 func TestSDD020(t *testing.T) {
 	root := t.TempDir()
 	// billing has a PRD declaring its intent; reports has only a Tech Spec; notes has no frontmatter.
@@ -127,7 +127,7 @@ func TestSDD020(t *testing.T) {
 	}
 }
 
-// AC-7: Tech Spec above the size threshold.
+// sdd-core-v1 AC-7: Tech Spec above the size threshold.
 func TestSDD030UsesDesignDirectory(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "docs/prd/billing.md", "---\nfeature: billing\ntouches: [cmd/**]\n---\n")

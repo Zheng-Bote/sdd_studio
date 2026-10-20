@@ -27,7 +27,7 @@ func runSDD001(t *testing.T, root, constitution string) []string {
 	return msgs
 }
 
-// AC-5: SDD-001 constitution present.
+// sdd-core-v1 AC-5: SDD-001 constitution present.
 func TestSDD001(t *testing.T) {
 	root := t.TempDir()
 	write := func(name, content string) {
@@ -72,7 +72,7 @@ func TestSDD001(t *testing.T) {
 	}
 }
 
-// AC-6: SDD-002a required constitution sections.
+// sdd-core-v1 AC-6: SDD-002a required constitution sections.
 func TestSDD002a(t *testing.T) {
 	root := t.TempDir()
 	write := func(name, content string) {

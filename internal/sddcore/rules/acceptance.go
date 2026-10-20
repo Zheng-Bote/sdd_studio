@@ -3,6 +3,7 @@ package rules
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -166,6 +167,7 @@ var (
 type acDefinition struct {
 	ID         string
 	Number     string
+	Feature    string // feature: of the PRD, or the file name without extension
 	Path       string
 	Line       int
 	ByteOffset int
@@ -183,6 +185,10 @@ func definedACs(ctx *Context) ([]acDefinition, error) {
 		if err != nil {
 			return nil, fmt.Errorf("PRD %s nicht lesbar: %w", prd.Path, err)
 		}
+		feature := prd.Frontmatter.Feature
+		if feature == "" {
+			feature = strings.TrimSuffix(path.Base(prd.Path), path.Ext(prd.Path))
+		}
 		seen := map[string]bool{}
 		for _, l := range markdownLines(data) {
 			text := acTombstoneRegex.ReplaceAllString(l.Text, "")
@@ -191,7 +197,7 @@ func definedACs(ctx *Context) ([]acDefinition, error) {
 					continue
 				}
 				seen[m[0]] = true
-				defs = append(defs, acDefinition{ID: m[0], Number: m[1], Path: prd.Path, Line: l.Number, ByteOffset: l.ByteOffset})
+				defs = append(defs, acDefinition{ID: m[0], Number: m[1], Feature: feature, Path: prd.Path, Line: l.Number, ByteOffset: l.ByteOffset})
 			}
 		}
 	}
@@ -223,31 +229,65 @@ func checkSDD022(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 		}}, nil
 	}
 
-	referenced := map[string]bool{}
+	// referencedIn maps an AC number to the contents of all test files referencing it.
+	referencedIn := map[string][]string{}
 	for _, f := range testFiles {
 		data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(f)))
 		if err != nil {
 			return nil, fmt.Errorf("Testdatei %s nicht lesbar: %w", f, err)
 		}
+		numbers := map[string]bool{}
 		for _, re := range acRefRegexes {
 			for _, m := range re.FindAllStringSubmatch(string(data), -1) {
-				referenced[m[1]] = true
+				numbers[m[1]] = true
 			}
 		}
+		for n := range numbers {
+			referencedIn[n] = append(referencedIn[n], string(data))
+		}
+	}
+
+	// An AC number defined by several active PRDs is ambiguous: the test file must also name the feature slug.
+	definedBy := map[string]map[string]bool{}
+	for _, d := range defs {
+		if definedBy[d.Number] == nil {
+			definedBy[d.Number] = map[string]bool{}
+		}
+		definedBy[d.Number][d.Path] = true
 	}
 
 	var findings []report.Finding
 	for _, d := range defs {
-		if referenced[d.Number] {
+		files := referencedIn[d.Number]
+		ambiguous := len(definedBy[d.Number]) > 1
+		if !ambiguous && len(files) > 0 {
 			continue
+		}
+		if ambiguous && anyMentionsSlug(files, d.Feature) {
+			continue
+		}
+		msg := fmt.Sprintf("%s ist in keiner Testdatei (%s) referenziert", d.ID, source)
+		if ambiguous {
+			msg = fmt.Sprintf("%s ist in %d PRDs vergeben; keine Testdatei (%s) referenziert %s und nennt zugleich den Feature-Slug %s", d.ID, len(definedBy[d.Number]), source, d.ID, d.Feature)
 		}
 		findings = append(findings, report.Finding{
 			Path:        d.Path,
 			Line:        d.Line,
 			ByteOffset:  d.ByteOffset,
-			Message:     fmt.Sprintf("%s ist in keiner Testdatei (%s) referenziert", d.ID, source),
+			Message:     msg,
 			ContentHash: HashContent(rule.ID + ":" + d.Path + ":" + d.ID),
 		})
 	}
 	return findings, nil
+}
+
+// anyMentionsSlug reports whether one of the contents contains slug as a whole token (not as part of a longer slug).
+func anyMentionsSlug(contents []string, slug string) bool {
+	re := regexp.MustCompile(`(?:^|[^a-z0-9-])` + regexp.QuoteMeta(slug) + `(?:[^a-z0-9-]|$)`)
+	for _, c := range contents {
+		if re.MatchString(c) {
+			return true
+		}
+	}
+	return false
 }

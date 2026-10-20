@@ -37,7 +37,7 @@ sdd new --type adr|doc --title <text> [--slug <slug>]
 - Trägt im Zielverzeichnis bereits eine Datei `feature: <slug>`, wird für diesen Typ nichts angelegt, auch wenn der Dateiname abweicht.
 - `archive-after` bleibt ohne Angabe leer (kein Stichtag); `touches` ohne `--touches` eine leere Liste — `pre-implementation` meldet dann „Absicht nicht erklärt".
 - Die ADR-Nummer ist die größte vierstellige Präfixnummer im ADR-Verzeichnis plus eins; der Slug wird aus dem Titel abgeleitet (Umlaute transliteriert).
-- Das PRD-Template enthält `AC-1` als Platzhalter: Es erfüllt `SDD-021`, verlangt nach `SDD-022` aber einen Test.
+- Das PRD-Template enthält `AC-1` als Platzhalter: Es erfüllt `SDD-021`, verlangt nach `SDD-022` aber einen Test — bei mehreren PRDs mit Slug im Testkommentar (`// <slug> AC-1: …`).
 - Ohne `sdd.config.yaml` verwendet `sdd new` die Standardpfade von `sdd init` und weist darauf hin.
 
 ### CI-Einbindung (GitHub Action) {#ci-einbindung}
@@ -137,10 +137,9 @@ Für die unter `artifacts.constitution` konfigurierte Datei gilt:
    - `ac` in beliebiger Schreibweise, optional `_`, dann `<n>`, wobei davor der Dateianfang oder ein Zeichen außer Buchstabe und Ziffer steht — z. B. `test_ac_3`, `ac3`.
 
    Ein `\b`-basiertes Muster genügt nicht: `\b` trennt weder CamelCase- noch snake_case-Teile und träfe `TestAC3_Login` nicht.
-4. Für jede definierte, nicht referenzierte Kennung entsteht ein `error` an ihrem ersten Vorkommen im PRD.
-5. Trifft die Glob-Liste keine einzige Datei, entsteht statt Einzelbefunden genau ein `warn`: Ein fehlender Testpfad ist ein Konfigurationsproblem, kein Projektverstoß.
-
-**Bekannte Grenze:** Kennungen sind je PRD vergeben, Referenzen aber nicht nach Feature getrennt. Ein Test mit `AC-1` erfüllt `AC-1` in jedem PRD.
+4. **Eindeutigkeit:** Ist die Nummer `<n>` nur in einem aktiven PRD definiert, genügt eine Referenz nach 3. Definieren mehrere aktive PRDs dieselbe Nummer, zählt für ein PRD nur eine Testdatei, die die Referenz enthält **und** den Feature-Slug dieses PRDs als ganzes Token nennt (`feature:` aus dem Frontmatter, ohne Feld der Dateiname ohne Endung). Als Token gilt der Slug, wenn davor und danach kein Zeichen aus `[a-z0-9-]` steht — `billing` in `billing-v2` zählt also nicht. Konvention: `// <slug> AC-<n>: …` im Kommentar über dem Test.
+5. Für jede definierte, nicht referenzierte Kennung entsteht ein `error` an ihrem ersten Vorkommen im PRD.
+6. Trifft die Glob-Liste keine einzige Datei, entsteht statt Einzelbefunden genau ein `warn`: Ein fehlender Testpfad ist ein Konfigurationsproblem, kein Projektverstoß.
 
 ---
 
