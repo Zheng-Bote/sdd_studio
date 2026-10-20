@@ -11,3 +11,7 @@ config/llm.env
 /apps/desk/node_modules/
 /apps/desk/dist/
 /apps/desk/.angular/
+# Tauri-Hülle: Build-Ausgabe, generierte Schemas, gebaute Sidecars
+/apps/desk/src-tauri/target/
+/apps/desk/src-tauri/gen/
+/apps/desk/src-tauri/binaries/

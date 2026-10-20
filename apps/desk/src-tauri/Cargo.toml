@@ -1,0 +1,24 @@
+[package]
+name = "sdd-desk-app"
+version = "0.1.0"
+description = "Tauri v2 shell for sdd-desk, the optional AI desktop of SDD Studio"
+authors = ["Zheng-Bote"]
+license = "Apache-2.0"
+repository = "https://github.com/Zheng-Bote/sdd_studio"
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "sdd_desk_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.3", features = [] }
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tauri = { version = "2.12.4", features = [] }
+tauri-plugin-dialog = "2.8.3"
+tauri-plugin-shell = "2.5.0"
+tokio = { version = "1.53.3", features = ["time"] }

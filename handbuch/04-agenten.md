@@ -65,16 +65,24 @@ Ressourcen: `sdd://constitution`, `sdd://catalog`, `sdd://handbook` und `sdd://a
 
 `sdd-desk` ist ein **getrenntes, optionales Programm** ([ADR 0002](../docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)): Es führt im Gespräch mit einem frei wählbaren Sprachmodell durch den Prozess und nutzt dafür `sdd mcp`. `sdd` selbst bleibt KI-frei und offline.
 
-**Bauen und starten** (bis zur Tauri-Hülle als lokale Web-Oberfläche):
+**Als Desktop-Anwendung** (Tauri v2, `apps/desk/src-tauri`): Sie bringt `sdd-desk` und `sdd` als Sidecars mit und öffnet das Startargument, sonst das zuletzt genutzte Projekt, sonst einen Ordnerdialog. Projektwechsel über **Datei → Projekt öffnen …** (Strg+O).
+
+```text
+cd apps/desk && npm ci
+npm run tauri:dev        # Entwicklung: baut Oberfläche und Sidecars, startet die Anwendung
+npm run tauri:build      # Bündel unter src-tauri/target/release/bundle/
+```
+
+**Als lokale Web-Oberfläche** im Browser:
 
 ```text
 cd apps/desk && npm ci && npm run build:desk     # Oberfläche bauen und einbetten
 go build -o bin/sdd ./cmd/sdd
 go build -o bin/sdd-desk ./cmd/sdd-desk
-bin/sdd-desk --project <repository> --open        # gibt URL mit Sitzungstoken aus
+bin/sdd-desk --project . --open                   # gibt URL mit Sitzungstoken aus
 ```
 
-**Modelle:** `config/llm.env` neben der ausführbaren Datei (Vorlage: `config/llm.env.example`), Rechte `0600`. Lokales Ollama, Ollama Cloud, OpenRouter, NVIDIA NIM, Claude und Gemini; Prozessvariablen haben Vorrang. Ohne Datei steht nur lokales Ollama zur Verfügung.
+**Modelle:** `config/llm.env` neben der ausführbaren Datei (Vorlage: `config/llm.env.example`), Rechte `0600`. Die Desktop-Anwendung nimmt stattdessen `llm.env` im Konfigurationsordner der Anwendung, falls vorhanden (Linux `~/.config/io.github.zhengbote.sdddesk/`, macOS `~/Library/Application Support/io.github.zhengbote.sdddesk/`, Windows `%APPDATA%\io.github.zhengbote.sdddesk\`) — bei installierten Bündeln ist das der richtige Ort. Lokales Ollama, Ollama Cloud, OpenRouter, NVIDIA NIM, Claude und Gemini; Prozessvariablen haben Vorrang. Ohne Datei steht nur lokales Ollama zur Verfügung.
 
 **Was der Desktop darf:**
 
@@ -82,3 +90,4 @@ bin/sdd-desk --project <repository> --open        # gibt URL mit Sitzungstoken a
 - Jeder Aufruf braucht eine Freigabe: **einmal**, **für die Sitzung** (nur lesende Werkzeuge) oder **Ablehnen**. Ein schreibender Aufruf (`sdd_new` mit `apply`) zeigt vorher die Vorschau mit Dateien und Inhalt und lässt sich nur einzeln freigeben.
 - Vor dem ersten Aufruf eines Cloud-Anbieters muss der Hinweis „Inhalte verlassen dieses Gerät“ bestätigt sein; ohne Bestätigung lehnt das Backend ab. Inhalte werden nicht geschwärzt.
 - Lokaler Server nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken für jeden API-Aufruf, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.
+- In der Desktop-Anwendung zeigt das Fenster nur die eigene Startseite und den laufenden Sidecar; andere Web-Adressen öffnet der Standardbrowser. Keine Seite erhält Tauri-Rechte, das Token erscheint weder im Protokoll noch auf der Fehlerseite, und stirbt die Anwendung, enden `sdd-desk` und `sdd mcp` mit ihr.

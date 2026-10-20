@@ -1,0 +1,33 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "SDD Studio Desktop",
+  "mainBinaryName": "sdd-desk-app",
+  "version": "0.1.0",
+  "identifier": "io.github.zhengbote.sdddesk",
+  "build": {
+    "frontendDist": "splash",
+    "beforeDevCommand": "npm run desk:sidecars",
+    "beforeBuildCommand": "npm run desk:sidecars"
+  },
+  "app": {
+    "windows": [],
+    "withGlobalTauri": false,
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; frame-src 'none'; object-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "shortDescription": "Spec-Driven Development im Gespräch mit einem Sprachmodell",
+    "externalBin": ["binaries/sdd-desk", "binaries/sdd"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

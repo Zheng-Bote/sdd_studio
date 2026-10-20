@@ -8,6 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"syscall"
 	"time"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/desk"
@@ -32,6 +34,7 @@ func run() int {
 	sddPath := flag.String("sdd", "", "Pfad zu sdd (Standard: neben sdd-desk, sonst PATH)")
 	port := flag.Int("port", 0, "Port auf 127.0.0.1 (0 = freier Port)")
 	open := flag.Bool("open", false, "im Standardbrowser öffnen")
+	exitWithStdin := flag.Bool("exit-with-stdin", false, "beenden, sobald stdin geschlossen wird (Sidecar der Desktop-Anwendung)")
 	flag.Parse()
 
 	root, err := filepath.Abs(*project)
@@ -84,6 +87,7 @@ func run() int {
 		HTTP: &http.Client{Timeout: 3 * time.Second}}
 	httpSrv := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 5 * time.Second}
 
+	// The URL line is an interface: the Tauri shell recognises it and loads it into its window.
 	url := "http://" + srv.Addr + "/?token=" + token
 	fmt.Printf("sdd-desk läuft auf %s für %s (Konfiguration: %s). Beenden mit Strg+C.\n%s\n", srv.Addr, root, cfg.Path, url)
 	for _, w := range cfg.Warnings {
@@ -92,8 +96,15 @@ func run() int {
 	if *open {
 		_ = openBrowser(url)
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if *exitWithStdin {
+		// The parent holds the other end of stdin; when it dies in any way, stdin closes and so do we.
+		go func() {
+			_, _ = io.Copy(io.Discard, os.Stdin)
+			stop()
+		}()
+	}
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 3*time.Second)

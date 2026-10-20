@@ -32,7 +32,7 @@ Die Oberfläche lädt das Fenster **direkt vom Sidecar** (`http://127.0.0.1:<por
 
 ## Schnittstellen
 
-**Start des Sidecars:** `sdd-desk --project <projekt> --port 0 [--config <app_config_dir>/llm.env]`. Tauri legt Sidecars neben das Programm; `findSdd` in `cmd/sdd-desk` findet `sdd` dort.
+**Start des Sidecars:** `sdd-desk --project <projekt> --port 0 --exit-with-stdin [--config <app_config_dir>/llm.env]`. Mit `--exit-with-stdin` beendet sich `sdd-desk`, sobald seine Standardeingabe schließt — das geschieht, wenn die Hülle endet, auch durch Absturz oder `SIGTERM`, bei dem Tauri kein Exit-Ereignis mehr auslöst. Tauri legt Sidecars neben das Programm; `findSdd` in `cmd/sdd-desk` findet `sdd` dort.
 
 **Bereitschaft:** `sdd-desk` schreibt die Zeile `http://127.0.0.1:<port>/?token=<hex>` auf stdout. Sie ist damit eine Schnittstelle: die Hülle erkennt sie am Präfix `http://127.0.0.1:` und `/?token=`, nimmt sie nicht ins Protokoll auf und navigiert dorthin. Kommt sie nicht binnen 30 Sekunden, gilt der Start als fehlgeschlagen.
 
@@ -47,7 +47,7 @@ Die Oberfläche lädt das Fenster **direkt vom Sidecar** (`http://127.0.0.1:<por
 - **Navigationsregel** (`on_navigation`): erlaubt sind nur der Ursprung der Startseite und `http://127.0.0.1:<port>` des laufenden Sidecars. Andere `http`/`https`-Adressen öffnet der Standardbrowser, alles andere wird verworfen.
 - **Kein IPC:** keine Capability-Datei, keine eigenen Kommandos; die Sidecar-Seite ist eine entfernte Herkunft ohne Tauri-Rechte, die Startseite braucht keine.
 - **Schlüssel:** die Hülle übergibt nur einen Pfad; `sdd-desk` prüft Rechte (`0600`) und liest die Schlüssel selbst.
-- Der Sidecar wird bei Projektwechsel und Programmende beendet; `sdd mcp` endet mit seinem Eingabekanal.
+- Der Sidecar wird bei Projektwechsel und Programmende beendet; stirbt die Hülle, enden `sdd-desk` (`--exit-with-stdin`) und `sdd mcp` mit ihrem Eingabekanal. Kein Token-Server bleibt verwaist zurück.
 
 ## Umsetzung der Akzeptanzkriterien
 
@@ -59,7 +59,7 @@ Die Oberfläche lädt das Fenster **direkt vom Sidecar** (`http://127.0.0.1:<por
 | AC-4 | `lib.rs` (`navigation`) | `navigation_allows_only_splash_and_sidecar` |
 | AC-5 | keine Capabilities, `tauri.conf.json` | `no_capabilities_are_granted` |
 | AC-6 | `sidecar.rs` (`config_arg`) | `config_is_passed_only_when_present` |
-| AC-7 | `sidecar.rs` (Generationen, `stop`), `splash/` | `splash_url_carries_error_without_token` |
+| AC-7 | `sidecar.rs` (Generationen, `stop`), `--exit-with-stdin` in `cmd/sdd-desk`, `splash/` | `splash_url_carries_error_without_token`, `sidecar_ends_with_the_shell` |
 | AC-8 | `package.json` (`tauri:build`, `desk:sidecars`), `tauri.conf.json` (`beforeBuildCommand`) | `build_runs_ui_then_sidecars` |
 
 ## Offene Punkte

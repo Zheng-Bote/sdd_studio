@@ -10,11 +10,11 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 ## Stand
 
-Letzte Version: **0.1.0** ([CHANGELOG](CHANGELOG.md)). Seitdem auf `main`: `SDD-003`, `SDD-040`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und `sdd-desk`.
+Letzte Version: **0.1.0** ([CHANGELOG](CHANGELOG.md)). Seitdem auf `main`: `SDD-003`, `SDD-040`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und `sdd-desk`, auch als Tauri-v2-Anwendung.
 
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** aktiv unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design) (`sdd-rules-003-040`, `sdd-ui`, `sdd-guidance`, `sdd-desk`), mit 0.1.0 archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** aktiv unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design) (`sdd-rules-003-040`, `sdd-ui`, `sdd-guidance`, `sdd-desk`, `sdd-desk-tauri`), mit 0.1.0 archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -82,7 +82,19 @@ Kein Agent kann die Baseline ändern, Befunde quittieren, das ADR-Lockfile schre
 
 `sdd-desk` führt im Gespräch mit einem frei wählbaren Sprachmodell von der Produkt-Idee über PRD, Tech Spec, ADR und Plan bis zum Gate. Es ist ein **getrenntes Programm**: Werkzeuge erreicht es nur über einen selbst gestarteten `sdd mcp --allow-write`, jeder Aufruf braucht deine Erlaubnis.
 
-### Bauen
+### Als Desktop-Anwendung (Tauri v2)
+
+Voraussetzung zusätzlich: Rust und die [Tauri-Systemabhängigkeiten](https://v2.tauri.app/start/prerequisites/).
+
+```text
+cd apps/desk && npm ci
+npm run tauri:dev        # Oberfläche und Sidecars bauen, Anwendung starten
+npm run tauri:build      # Bündel (deb, rpm, AppImage, dmg, msi …) unter src-tauri/target/release/bundle/
+```
+
+Die Anwendung bringt `sdd-desk` und `sdd` als Sidecars mit. Sie öffnet das Projekt aus dem Startargument, sonst das zuletzt genutzte, sonst einen Ordnerdialog; **Datei → Projekt öffnen …** (Strg+O) wechselt es. Die Modelle stehen in `llm.env` im Konfigurationsordner der Anwendung, unter Linux `~/.config/io.github.zhengbote.sdddesk/llm.env` (Rechte `0600`).
+
+### Als lokale Web-Oberfläche: bauen
 
 ```text
 cd apps/desk && npm ci && npm run build:desk && cd ../..   # Oberfläche bauen und in das Go-Programm einbetten
@@ -94,7 +106,7 @@ go build -o bin/sdd-desk ./cmd/sdd-desk
 
 ### Modelle einrichten
 
-Die Anbieter stehen in `config/llm.env` **neben der ausführbaren Datei**, beim Bau oben also in `bin/config/llm.env` — nie im Projekt:
+Für die Web-Oberfläche stehen die Anbieter in `config/llm.env` **neben der ausführbaren Datei**, beim Bau oben also in `bin/config/llm.env` — nie im Projekt:
 
 ```text
 mkdir -p bin/config
@@ -119,6 +131,7 @@ bin/sdd-desk --project . --open
 | `--config <pfad>` | `llm.env` (Standard: `config/llm.env` neben `sdd-desk`) |
 | `--sdd <pfad>` | `sdd`-Programm (Standard: neben `sdd-desk`, sonst `PATH`) |
 | `--port <n>` | Port auf `127.0.0.1` (Standard: `0` = freier Port) |
+| `--exit-with-stdin` | beenden, sobald stdin schließt (setzt die Desktop-Anwendung für ihren Sidecar) |
 
 `sdd-desk` gibt Adresse und URL mit Sitzungstoken aus; ohne `--open` diese URL im Browser öffnen. Beenden mit Strg+C.
 
@@ -130,6 +143,7 @@ In der Oberfläche Anbieter und Modell wählen, links einen geführten Ablauf st
 - **Jeder Aufruf braucht eine Freigabe:** einmal, für die Sitzung (nur lesende Werkzeuge) oder ablehnen. `sdd_new` mit `apply` zeigt vorher Dateien und Inhalt und lässt sich nur einzeln freigeben; bestehende Dateien ändert es nie.
 - **Cloud-Anbieter erst nach Bestätigung**, dass Inhalte das Gerät verlassen. Inhalte werden **nicht geschwärzt**; mit lokalem Ollama bleibt alles auf dem Rechner.
 - **Lokaler Server** nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.
+- **Desktop-Anwendung:** Das Fenster zeigt nur die eigene Startseite und den laufenden Sidecar, andere Web-Adressen öffnet der Standardbrowser; keine Seite erhält Tauri-Rechte. Stirbt die Anwendung, enden `sdd-desk` und `sdd mcp` mit ihr.
 
 Entwicklung der Oberfläche mit Live-Reload: `bin/sdd-desk --port 47900` starten, dann `cd apps/desk && npm start` (leitet `/api` an `127.0.0.1:47900` weiter) und die ausgegebene `?token=…` an `http://localhost:4200/` anhängen. Details: [`apps/desk/README.md`](apps/desk/README.md), [Handbuch: KI-Desktop](handbuch/04-agenten.md#sdd-desk).
 
@@ -138,10 +152,11 @@ Entwicklung der Oberfläche mit Live-Reload: `bin/sdd-desk --port 47900` starten
 ```text
 go test ./...
 cd apps/desk && npm test
+cd apps/desk/src-tauri && cargo test
 go run ./cmd/sdd lint
 ```
 
 ## Nächste Schritte
 
-- **Tauri-v2-Hülle für `sdd-desk`:** `apps/desk/src-tauri`, Go-Backend als Sidecar; Streaming der Modellantworten.
+- **Streaming der Modellantworten** in `sdd-desk`.
 - **Entscheidung offen:** `SDD-060` (Widersprüche Verfassung ↔ Tech Spec) ist laut Konzept nur assistiert über ein lokales Sprachmodell möglich (§9.6) — Kandidat für `sdd-desk`, nicht für `sdd`.

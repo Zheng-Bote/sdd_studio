@@ -46,5 +46,5 @@ Tauri-v2-Hülle unter `apps/desk/src-tauri`: Fenster, Menü, Projektwahl, Lebens
 - **AC-4** Das Fenster navigiert nur zur eigenen Startseite und zum Ursprung des laufenden Sidecars; andere `http`- und `https`-Adressen öffnet der Standardbrowser, alle übrigen Adressen werden verworfen.
 - **AC-5** Keine Seite im Fenster erhält Zugriff auf Tauri-Schnittstellen.
 - **AC-6** `config/llm.env` wird wie bei `sdd-desk` neben dem Programm gesucht; liegt eine `llm.env` im Konfigurationsordner der Anwendung, wird sie mit `--config` übergeben. Die Hülle liest keine Schlüssel.
-- **AC-7** Beendet sich der Sidecar unerwartet oder meldet er sich nicht rechtzeitig, zeigt die Startseite den Fehler mit den letzten Protokollzeilen; beim Schließen der Anwendung wird der Sidecar beendet.
+- **AC-7** Beendet sich der Sidecar unerwartet oder meldet er sich nicht rechtzeitig, zeigt die Startseite den Fehler mit den letzten Protokollzeilen; beim Schließen der Anwendung wird der Sidecar beendet — auch wenn die Anwendung abstürzt oder hart beendet wird.
 - **AC-8** Ein Befehl baut Oberfläche, Sidecars und Bündel in der richtigen Reihenfolge.

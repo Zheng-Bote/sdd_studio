@@ -7,7 +7,11 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "build:desk": "ng build && node scripts/sync-webdist.mjs"
+    "build:desk": "ng build && node scripts/sync-webdist.mjs",
+    "desk:sidecars": "npm run build:desk && node scripts/build-sidecars.mjs",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "private": true,
   "packageManager": "npm@11.19.0",
@@ -34,6 +38,7 @@
     "@angular/compiler-cli": "^22.2.0",
     "@spartan-ng/cli": "^1.8.0",
     "@tailwindcss/postcss": "^4.1.12",
+    "@tauri-apps/cli": "^2.12.3",
     "jsdom": "^30.0.0",
     "postcss": "^8.5.3",
     "prettier": "^3.8.1",

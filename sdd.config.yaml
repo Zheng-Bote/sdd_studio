@@ -18,6 +18,7 @@ tests:
   include:
     - "**/*_test.go"
     - "apps/desk/src/**/*.spec.ts"
+    - "apps/desk/src-tauri/src/**/*.rs"
 
 thresholds:
   layers:
@@ -44,6 +45,9 @@ exclude:
   - "**/node_modules/**"
   - apps/desk/dist/**
   - apps/desk/.angular/**
+  - apps/desk/src-tauri/target/**
+  - apps/desk/src-tauri/gen/**
+  - apps/desk/src-tauri/binaries/**
   - internal/desk/webdist/**
   - vendor/**
   - node_modules/**
