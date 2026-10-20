@@ -143,3 +143,61 @@ func checkSDD031(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 	}
 	return findings, nil
 }
+
+// indentOf counts leading whitespace; a tab counts as four spaces.
+func indentOf(line string) int {
+	n := 0
+	for _, r := range line {
+		switch r {
+		case ' ':
+			n++
+		case '\t':
+			n += 4
+		default:
+			return n
+		}
+	}
+	return n
+}
+
+// checkSDD041 (SDD-041): Every task (checkbox line in an active plan) carries an AC ID in its line or continuation lines.
+func checkSDD041(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
+	plans, err := activeArtifacts(ctx, ctx.Config.Artifacts.Plans)
+	if err != nil {
+		return nil, err
+	}
+	var findings []report.Finding
+	for _, plan := range plans {
+		lines, err := readLines(ctx, plan.Path)
+		if err != nil {
+			return nil, err
+		}
+		for i, l := range lines {
+			if !checkboxRegex.MatchString(l.Text) {
+				continue
+			}
+			indent := indentOf(l.Text)
+			text := l.Text
+			for _, c := range lines[i+1:] {
+				if strings.TrimSpace(c.Text) == "" {
+					continue
+				}
+				if c.Heading > 0 || indentOf(c.Text) <= indent || checkboxRegex.MatchString(c.Text) {
+					break
+				}
+				text += "\n" + c.Text
+			}
+			if acIDRegex.MatchString(acTombstoneRegex.ReplaceAllString(text, "")) {
+				continue
+			}
+			findings = append(findings, report.Finding{
+				Path:        plan.Path,
+				Line:        l.Number,
+				ByteOffset:  l.ByteOffset,
+				Message:     fmt.Sprintf("Task ohne AC-Kennung: %q", strings.TrimSpace(l.Text)),
+				ContentHash: HashContent(rule.ID + ":" + plan.Path + ":" + l.Text),
+			})
+		}
+	}
+	return findings, nil
+}

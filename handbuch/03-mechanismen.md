@@ -326,6 +326,26 @@ Für jedes aktive PRD gilt:
 
 ---
 
+### SDD-041 — Jede Task referenziert mindestens ein Akzeptanzkriterium {#sdd-041}
+
+- **Schweregrad:** `error` (`default`, `pre-merge`)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `tasks_reference_acs`
+
+**Begründung:** Eine Task ohne Akzeptanzkriterium ist Arbeit ohne prüfbares Ziel: Sie erweitert den Umfang, ohne dass das PRD es zeigt.
+
+#### SDD-041 Prüfvertrag {#sdd-041-vertrag}
+
+Geprüft werden die aktiven Feature-Artefakte unter `artifacts.plans` (bei Spec Kit z. B. `specs/features/*/tasks.md`).
+
+1. **Task** ist jede Checkbox-Zeile: nach optionalem Einzug `-`, `*`, `+` oder `<zahl>.`/`<zahl>)`, Leerraum, dann `[ ]`, `[x]` oder `[X]`.
+2. **Fortsetzungszeilen** einer Task sind die folgenden Zeilen, die tiefer eingerückt sind als die Task (Tab = vier Leerzeichen). Leerzeilen werden übersprungen. Der Bereich endet an der ersten nicht-leeren Zeile, die gleich tief oder flacher eingerückt ist, an einer Überschrift oder an einer weiteren Checkbox-Zeile — eine eingerückte Unteraufgabe ist eine eigene Task.
+3. Task-Zeile und Fortsetzungszeilen zusammen müssen eine Kennung `\bAC-[1-9][0-9]*\b` enthalten, die nicht durchgestrichen ist (`~~…~~` zählt nicht).
+4. Für jede andere Task entsteht ein `error` an ihrer Zeile.
+
+---
+
 ## Archivierung (`SDD-050`)
 
 PRD, Tech Spec und Plan gelten bis zum Release. Danach sind sie Historie: Sie werden nach `artifacts.archive` verschoben, nicht gelöscht, und tragen `status: archived`. Der Archivierungsschritt gehört in den Release-Vorbereitungs-Commit, zusammen mit dem Changelog, unmittelbar vor dem Git-Tag.

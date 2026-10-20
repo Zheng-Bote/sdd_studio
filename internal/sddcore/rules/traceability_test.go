@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -62,5 +63,42 @@ func TestSDD031(t *testing.T) {
 	}
 	if len(findings) != 1 || findings[0].Path != "docs/design/billing-api.md" || !strings.Contains(findings[0].Message, "AC-2 aus docs/prd/billing.md") {
 		t.Fatalf("expected one finding for billing AC-2, got %+v", findings)
+	}
+}
+
+// sdd-rules-v1-1 AC-3: every task carries an AC ID in its line or continuation lines.
+func TestSDD041(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "docs/plans/billing.md", "---\nfeature: billing\n---\n# Plan\n"+
+		"- [ ] AC-1 direkt\n"+ // 5 ok
+		"- [x] Fortsetzung\n"+ // 6 ok via continuation
+		"  setzt AC-2 um\n"+
+		"- [ ] ohne Kennung\n"+ // 8 finding
+		"  - Detail ohne Kennung\n"+
+		"  - [ ] Unteraufgabe AC-3\n"+ // 10 ok; its AC must not count for line 8
+		"* [ ] Stern ohne\n"+ // 11 ok via indented continuation after a blank line
+		"\n"+
+		"  AC-4 nach Leerzeile, eingerückt\n"+ // continuation of 11 -> ok
+		"1. [ ] nummeriert ~~AC-5~~\n"+ // 14 finding: tombstone only
+		"Text AC-6 auf gleicher Ebene\n"+
+		"- [ ] letzte\n"+ // 16 finding
+		"## Nächster Abschnitt\n"+
+		"  AC-7 nach Überschrift zählt nicht\n")
+	writeFile(t, root, "docs/plans/done.md", "---\nfeature: done\nstatus: archived\n---\n- [ ] alt\n")
+	writeFile(t, root, "docs/prd/billing.md", "- [ ] Checkbox im PRD ist kein Task\n")
+
+	findings, err := checkSDD041(&Context{RepoRoot: root, Config: featureConfig()}, catalog.Rule{ID: "SDD-041"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var lines []int
+	for _, f := range findings {
+		if f.Path != "docs/plans/billing.md" {
+			t.Errorf("unexpected path %s", f.Path)
+		}
+		lines = append(lines, f.Line)
+	}
+	if want := []int{8, 14, 16}; fmt.Sprint(lines) != fmt.Sprint(want) {
+		t.Fatalf("finding lines %v, want %v (%+v)", lines, want, findings)
 	}
 }

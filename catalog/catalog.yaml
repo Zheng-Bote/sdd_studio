@@ -133,6 +133,20 @@ rules:
       durch welchen Teil des technischen Designs erfüllt wird.
     handbook: handbuch/03-mechanismen.md#sdd-031
 
+  - id: SDD-041
+    title: Jede Task referenziert mindestens ein Akzeptanzkriterium
+    severity:
+      default: error
+    profile: standard
+    check: tasks_reference_acs
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-041-vertrag
+    rationale: >
+      Eine Task ohne Akzeptanzkriterium ist Arbeit ohne prüfbares Ziel; sie
+      wächst den Umfang, ohne dass das PRD es zeigt.
+    handbook: handbuch/03-mechanismen.md#sdd-041
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:
