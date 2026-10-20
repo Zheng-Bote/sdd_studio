@@ -283,6 +283,31 @@ Fortsetzungszeilen und Fließtext sind keine Kriterien. Jede erkannte Zeile muss
 
 ---
 
+## Zusammenhang der Feature-Artefakte (`SDD-023`, `SDD-031`, `SDD-041`, `SDD-051`)
+
+Diese Regeln prüfen, ob PRD, Tech Spec und Plan eines Features zueinander passen. Als **aktives Feature-Artefakt** gilt jede Markdown-Datei, die `artifacts.prd`, `artifacts.design` bzw. `artifacts.plans` auswählt ([Ordner oder Glob](#artefaktpfade)), nicht unter `artifacts.archive` liegt und deren `status` weder `archived` noch `superseded` ist. Frontmatter und Codeblöcke werden wie bei `SDD-021` übersprungen.
+
+---
+
+### SDD-023 — PRD nennt Nicht-Ziele {#sdd-023}
+
+- **Schweregrad:** `warn` (`default`, `pre-merge`)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `prd_non_goals`
+
+**Begründung:** Ein PRD ohne Nicht-Ziele lädt dazu ein, den Umfang während der Umsetzung still zu erweitern. Was ausgeschlossen ist, muss so sichtbar sein wie das Ziel.
+
+#### SDD-023 Prüfvertrag {#sdd-023-vertrag}
+
+Für jedes aktive PRD gilt:
+
+1. Es gibt eine Überschrift, deren Text nach Entfernen von `{#…}`-Anker und schließenden `#` und in Kleinschreibung genau `nicht-ziele`, `nichtziele`, `non-goals`, `nongoals` oder `out of scope` lautet. Maßgeblich ist die erste solche Überschrift.
+2. Zwischen ihr und der nächsten Überschrift beliebiger Ebene steht mindestens eine Zeile, die nicht nur aus Leerraum besteht. Ein Unterabschnitt allein füllt den Abschnitt nicht.
+3. Fehlt die Überschrift oder ist der Abschnitt leer, entsteht genau ein `warn` je Datei.
+
+---
+
 ## Archivierung (`SDD-050`)
 
 PRD, Tech Spec und Plan gelten bis zum Release. Danach sind sie Historie: Sie werden nach `artifacts.archive` verschoben, nicht gelöscht, und tragen `status: archived`. Der Archivierungsschritt gehört in den Release-Vorbereitungs-Commit, zusammen mit dem Changelog, unmittelbar vor dem Git-Tag.

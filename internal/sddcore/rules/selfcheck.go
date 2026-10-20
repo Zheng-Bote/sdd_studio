@@ -23,6 +23,7 @@ func registerBuiltins(r *Registry) {
 	r.Register("acceptance_criteria_ids", checkSDD021)
 	r.Register("acceptance_criteria_tested", checkSDD022)
 	r.Register("archive_state", checkSDD050)
+	r.Register("prd_non_goals", checkSDD023)
 	r.Register("catalog_handbook_section", checkSDD070)
 	r.Register("catalog_check_registered", func(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 		return checkSDD071(ctx, rule, r)
