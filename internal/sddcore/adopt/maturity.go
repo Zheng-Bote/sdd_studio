@@ -77,7 +77,7 @@ func Assess(root string, inv *Inventory, findings []report.Finding) Maturity {
 			Detail: fmt.Sprintf("%d AC-Kennungen, %d Befunde SDD-021", acs, count("SDD-021")),
 			Advice: fmt.Sprintf("Akzeptanzkriterien in den PRDs mit AC-<n> kennzeichnen (%d Zeilen ohne Kennung)", count("SDD-021"))},
 		{Level: 3, Name: "CI ruft sdd gate auf", Met: inv.CallsGate,
-			Detail: fmt.Sprintf("%d Workflow-Dateien", len(inv.Workflows)),
+			Detail: fmt.Sprintf("%d Workflow-Datei(en)", len(inv.Workflows)),
 			Advice: "den Workflow aus `sdd init` übernehmen (.github/workflows/sdd.yml) oder `sdd gate pre-merge` in die CI einbauen"},
 		{Level: 3, Name: "Baseline vorhanden", Met: inv.BaselineExists,
 			Detail: ".sdd/baseline.json",
