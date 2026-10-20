@@ -70,3 +70,49 @@ func TestSDD001(t *testing.T) {
 		})
 	}
 }
+
+func TestSDD002a(t *testing.T) {
+	root := t.TempDir()
+	write := func(name, content string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("full.md", "# V\n## Architektur/Layering\n### SECURITY\n#### strikte   regeln {#strikt}\n")
+	write("spaced.md", "## Architektur / Layering\n## Security ##\n## Strikte Regeln\n")
+	write("partial.md", "## Architektur/Layering\n```\n## Security\n```\n")
+	write("grammar.sdd", "Spec: Demo\n")
+
+	cases := []struct {
+		name         string
+		constitution string
+		wantMissing  []string
+	}{
+		{"all sections", "full.md", nil},
+		{"whitespace and closing hashes", "spaced.md", nil},
+		{"heading in code fence does not count", "partial.md", []string{"Security", "Strikte Regeln"}},
+		{".sdd is SDD-002b territory", "grammar.sdd", nil},
+		{"missing file is SDD-001 territory", "missing.md", nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := &Context{
+				RepoRoot: root,
+				Config:   &config.Config{Version: 1, Profile: "minimal", Artifacts: config.ArtifactsConfig{Constitution: tc.constitution}},
+			}
+			findings, err := checkSDD002a(ctx, catalog.Rule{ID: "SDD-002a"})
+			if err != nil {
+				t.Fatalf("checkSDD002a returned error: %v", err)
+			}
+			if len(findings) != len(tc.wantMissing) {
+				t.Fatalf("expected %d findings, got %+v", len(tc.wantMissing), findings)
+			}
+			for i, section := range tc.wantMissing {
+				if !strings.Contains(findings[i].Message, `"`+section+`"`) {
+					t.Errorf("finding %d: expected section %q, got %q", i, section, findings[i].Message)
+				}
+			}
+		})
+	}
+}

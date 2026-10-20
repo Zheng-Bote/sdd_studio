@@ -81,3 +81,75 @@ func repoRelative(p string) (string, bool) {
 	}
 	return clean, true
 }
+
+// requiredConstitutionSections lists the headings every Markdown constitution must contain (SDD-002a).
+var requiredConstitutionSections = []string{"Architektur/Layering", "Security", "Strikte Regeln"}
+
+// checkSDD002a (SDD-002a): A Markdown constitution (any extension except .sdd) contains all required section headings.
+// Missing or unreadable constitutions are reported by SDD-001 and skipped here.
+func checkSDD002a(ctx *Context, selfRule catalog.Rule) ([]report.Finding, error) {
+	cleanRel, ok := repoRelative(strings.TrimSpace(ctx.Config.Artifacts.Constitution))
+	if !ok || strings.HasSuffix(strings.ToLower(cleanRel), ".sdd") {
+		return nil, nil
+	}
+	data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(cleanRel)))
+	if err != nil {
+		return nil, nil
+	}
+
+	present := make(map[string]bool)
+	for _, h := range markdownHeadings(string(data)) {
+		present[normalizeSectionTitle(h)] = true
+	}
+
+	var findings []report.Finding
+	for idx, section := range requiredConstitutionSections {
+		if present[normalizeSectionTitle(section)] {
+			continue
+		}
+		findings = append(findings, report.Finding{
+			Path:        cleanRel,
+			Line:        1,
+			ByteOffset:  idx,
+			Message:     fmt.Sprintf("Verfassung %s enthält keinen Pflichtabschnitt %q", cleanRel, section),
+			ContentHash: HashContent("constitution:section:" + cleanRel + ":" + section),
+		})
+	}
+	return findings, nil
+}
+
+// markdownHeadings returns the text of all ATX headings outside fenced code blocks, without explicit {#anchor} IDs.
+func markdownHeadings(markdown string) []string {
+	var headings []string
+	fence := ""
+	for _, line := range strings.Split(markdown, "\n") {
+		line = strings.TrimRight(line, "\r")
+		trimmed := strings.TrimLeft(line, " ")
+		if fence != "" {
+			if strings.HasPrefix(trimmed, fence) {
+				fence = ""
+			}
+			continue
+		}
+		if strings.HasPrefix(trimmed, "```") {
+			fence = "```"
+			continue
+		}
+		if strings.HasPrefix(trimmed, "~~~") {
+			fence = "~~~"
+			continue
+		}
+		m := headingRegex.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		headings = append(headings, strings.TrimSpace(explicitAnchorRegex.ReplaceAllString(m[2], "")))
+	}
+	return headings
+}
+
+// normalizeSectionTitle lowercases a heading and removes all whitespace and trailing closing hashes.
+func normalizeSectionTitle(title string) string {
+	title = strings.TrimRight(strings.TrimSpace(title), "#")
+	return strings.ToLower(strings.Join(strings.Fields(title), ""))
+}

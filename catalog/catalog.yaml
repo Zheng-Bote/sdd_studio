@@ -14,6 +14,21 @@ rules:
       Architektur- oder Sicherheitsregel wäre nur implizit.
     handbook: handbuch/03-mechanismen.md#sdd-001
 
+  - id: SDD-002a
+    title: Markdown-Verfassung enthält die Pflichtabschnitte
+    severity:
+      default: error
+    profile: minimal
+    check: constitution_markdown_sections
+    gate_default: [pre-implementation, pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-002a-vertrag
+    rationale: >
+      Architektur, Sicherheit und strikte Regeln sind die Abschnitte, auf die
+      Feature-Artefakte und Agenten verweisen. Fehlt einer, ist die Verfassung
+      an dieser Stelle stumm.
+    handbook: handbuch/03-mechanismen.md#sdd-002a
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:

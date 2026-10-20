@@ -4,7 +4,7 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
-## Verfassungsregeln (`SDD-001` – `SDD-002`)
+## Verfassungsregeln (`SDD-001`, `SDD-002a`)
 
 Die Verfassung ist das ranghöchste Artefakt eines Projekts. Diese Regeln stellen sicher, dass sie existiert und ihr Strukturschema erfüllt.
 
@@ -28,6 +28,26 @@ Für den in `sdd.config.yaml` unter `artifacts.constitution` konfigurierten Pfad
 4. Die Datei enthält mindestens ein Zeichen, das kein Leerraum ist.
 
 Der Inhalt wird nicht geprüft — das ist Aufgabe von `SDD-002`.
+
+---
+
+### SDD-002a — Markdown-Verfassung enthält die Pflichtabschnitte {#sdd-002a}
+
+- **Schweregrad:** `error` (`default`, `pre-implementation`, `pre-merge`)
+- **Profil:** ab `minimal`
+- **Baseline:** `allowed`
+- **Check:** `constitution_markdown_sections`
+
+**Begründung:** Architektur/Layering, Security und Strikte Regeln sind die Abschnitte, auf die Feature-Artefakte, Reviews und Agenten verweisen. Fehlt einer, ist die Verfassung an genau dieser Stelle stumm. Welcher Modus gilt, entscheidet die Dateiendung: `.sdd` ⇒ `SDD-002b` (formale Grammatik), jede andere Endung ⇒ `SDD-002a`.
+
+#### SDD-002a Prüfvertrag {#sdd-002a-vertrag}
+
+Für die unter `artifacts.constitution` konfigurierte Datei gilt:
+1. Endet der Pfad (ohne Beachtung der Groß-/Kleinschreibung) auf `.sdd`, ist die Regel nicht anwendbar.
+2. Fehlt die Datei oder ist sie nicht lesbar, meldet die Regel nichts; der Befund gehört zu `SDD-001`.
+3. Als Überschrift zählt jede ATX-Überschrift (`#` bis `######`) außerhalb von Codeblöcken (```` ``` ```` oder `~~~`). Eine explizite Anker-ID `{#...}` am Ende sowie schließende `#`-Zeichen werden entfernt.
+4. Überschrift und Pflichtabschnitt werden normalisiert verglichen: Kleinschreibung, sämtlicher Leerraum entfernt. Die Ebene der Überschrift ist unerheblich.
+5. Pflichtabschnitte (für alle Profile gleich): `Architektur/Layering`, `Security`, `Strikte Regeln`. Für jeden fehlenden Abschnitt entsteht genau ein Befund.
 
 ---
 
