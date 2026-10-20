@@ -16,7 +16,7 @@ Diese Verfassung definiert die systemweiten, dauerhaften Architektur-, Sicherhei
 
 ## Security
 
-1. **Vollständig offline und ohne Telemetrie:** Das Werkzeug baut keine ausgehenden Netzwerkverbindungen zu Cloud-Diensten auf.
+1. **Vollständig offline und ohne Telemetrie:** `sdd` — Kern, CLI, `sdd ui` und `sdd mcp` — baut keine ausgehenden Netzwerkverbindungen auf und enthält keinen LLM-Code. Ausgehende Verbindungen gibt es nur im getrennten, optionalen KI-Desktop `sdd-desk`, und nur zu dem Anbieter, den der Nutzer gewählt hat; Telemetrie gibt es nirgends ([ADR 0002](docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)).
 2. **Lokale Oberfläche (`sdd ui`):** Bindung ausschließlich an `127.0.0.1`, strikte `Host`/`Origin`-Prüfung, Sitzungstoken für alle Schreiboperationen und Schreibzugriffe nur über den Plan/Apply-Pfad.
 3. **Pfad-Sicherheit:** Dateioperationen dürfen niemals außerhalb des konfigurierten Repository-Wurzelverzeichnisses lesen oder schreiben.
 4. **Git ist lesend — mit einer Ausnahme:** Nur `sdd adopt --apply` darf schreibend auf Git zugreifen: ausschließlich bei sauberem Arbeitsbaum, auf einem neu angelegten Branch, mit einem Commit je Schritt. Kein `push`, `merge`, `rebase` oder `reset`; der Ausgangsbranch bleibt unverändert ([ADR 0001](docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md)).

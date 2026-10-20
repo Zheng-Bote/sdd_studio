@@ -1,6 +1,7 @@
 {
   "version": 1,
   "entries": {
-    "docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md": "88b319e77006bbccf91e6277534d75148d490ef07b75d3c2eef699f0f50073c9"
+    "docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md": "88b319e77006bbccf91e6277534d75148d490ef07b75d3c2eef699f0f50073c9",
+    "docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md": "536b4f0667dff6eaebd957018965211a2ce927a985a0b2560ce9a03bb9fcf16b"
   }
 }

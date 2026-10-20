@@ -716,15 +716,13 @@ Diese Liste steht **nur hier** und im Handbuch; andere Abschnitte verweisen dara
 
 ### 9.6 KI-Assistenz
 
-`sdd_process_3` verlangt Mechanismen statt Disziplin. Ein LLM ist kein Mechanismus — es ist ein Vorschlagswesen. Deshalb:
+`sdd_process_3` verlangt Mechanismen statt Disziplin. Ein LLM ist kein Mechanismus — es ist ein Vorschlagswesen. Deshalb gilt seit [ADR 0002](adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md):
 
-- **Standardmäßig aus.** Einschalten ist eine bewusste Handlung.
-- **Nur lokal**, über eine vorhandene Ollama-Instanz. Kein Cloud-Provider in dieser Funktion.
-- **Nur Vorschläge**, niemals Schreibvorgänge. Das Programm zeigt einen Entwurf, der Mensch übernimmt ihn.
-- **Keine Bewertung von Code oder Architektur.** Aufgaben sind: Dokumente klassifizieren, fehlende Abschnitte benennen, ein ADR-Gerüst aus einer Diskussion ziehen.
-- **Redaction vor jedem Aufruf**, wie im Referenzprojekt bereits Pflicht.
-
-Der Nutzen liegt bei `adopt`: Ein Bestand von 200 Dateien lässt sich leichter zuordnen, wenn ein Modell vorsortiert. Die Entscheidung bleibt beim Menschen, sichtbar als Vorschlag.
+- **`sdd` bleibt KI-frei und offline.** Kern, CLI, `sdd ui` und `sdd mcp` enthalten keinen LLM-Code und bauen keine ausgehenden Verbindungen auf.
+- **KI-Assistenz ist ein getrenntes, optionales Programm** (`sdd-desk`): Es führt durch den Prozess — von der Produkt-Idee über PRD, Tech Spec, ADR und Plan bis zu Tests, Gate und Archiv —, stellt Fragen und formuliert Entwürfe.
+- **Modellwahl:** lokales Ollama oder ein Cloud-Anbieter (Ollama Cloud, OpenRouter, NVIDIA NIM, Claude, Gemini), konfiguriert in `config/llm.env` im Programmverzeichnis des Desktops. Inhalte gehen ungeschwärzt an den gewählten Anbieter; der Desktop zeigt das vor dem ersten Aufruf an.
+- **Werkzeuge nur mit Erlaubnis:** Der Desktop führt `sdd`-Werkzeuge über `sdd mcp` aus — jeder Aufruf einzeln bestätigt oder für die Sitzung freigegeben, schreibende nur nach Vorschau.
+- **Die KI entscheidet nichts, was ein Gate bestehen lässt.** Sie formuliert; abnehmen muss der Mensch.
 
 **Wichtig für das Ratchet:** Eine KI darf niemals Baseline-Einträge erzeugen, entfernen oder begründen. Sonst wäre die einzige Bremse im System maschinell verhandelbar.
 

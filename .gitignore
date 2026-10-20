@@ -1,0 +1,6 @@
+# Schlüssel des KI-Desktops (ADR 0002) — nie einchecken
+config/llm.env
+**/config/llm.env
+
+# Build-Ausgaben
+/bin/
