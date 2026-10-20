@@ -119,6 +119,35 @@ Wie der [Prüfvertrag von SDD-020](#sdd-020-vertrag), mit `artifacts.design` an 
 
 ---
 
+## Akzeptanzkriterien (`SDD-021`)
+
+Akzeptanzkriterien sind das Bindeglied zwischen PRD, Tests und Tasks. Sie tragen deshalb eine stabile Kennung `AC-<n>`, die nie umnummeriert wird.
+
+**Tombstone-Prinzip:** Entfällt ein Kriterium, bleibt seine Nummer vergeben. Die Kennung wird durchgestrichen (`~~AC-2~~`); solche Zeilen gelten als entfallen und werden von den AC-Regeln ignoriert.
+
+---
+
+### SDD-021 — Jedes Akzeptanzkriterium hat eine stabile Kennung {#sdd-021}
+
+- **Schweregrad:** `error` (`default`, `pre-merge`)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `acceptance_criteria_ids`
+
+**Begründung:** Ohne stabile Kennung lässt sich ein Akzeptanzkriterium weder in Tests (`SDD-022`) noch in Tasks referenzieren. Die Rückverfolgbarkeit vom Test zur Anforderung wäre dann behauptet, nicht prüfbar.
+
+#### SDD-021 Prüfvertrag {#sdd-021-vertrag}
+
+Geprüft werden alle Markdown-Dateien unter `artifacts.prd` (rekursiv, ohne `exclude`-Treffer), deren Frontmatter-`status` weder `archived` noch `superseded` ist. Frontmatter und Codeblöcke (```` ``` ````, `~~~`) werden übersprungen. Eine **Listenzeile** beginnt (nach optionalem Einzug) mit `-`, `*`, `+` oder `<zahl>.`/`<zahl>)`, gefolgt von Leerraum und Inhalt. Als Akzeptanzkriterium gilt:
+
+1. jede Checkbox-Zeile (`- [ ]`, `- [x]`, `* [ ]`, `1. [ ]` …), unabhängig vom Abschnitt;
+2. jede Listenzeile, die die Zeichenfolge `AC-` enthält;
+3. jede Listenzeile im Abschnitt unter einer Überschrift, die `Akzeptanzkriterien` oder `Acceptance Criteria` enthält (Groß-/Kleinschreibung egal). Der Abschnitt reicht bis zur nächsten Überschrift gleicher oder höherer Ebene; Unterabschnitte gehören dazu.
+
+Fortsetzungszeilen und Fließtext sind keine Kriterien. Jede erkannte Zeile muss eine Kennung enthalten, die `\bAC-[1-9][0-9]*\b` erfüllt (positive Ganzzahl ohne führende Null), oder eine durchgestrichene Kennung `~~… AC-<n> …~~` (Tombstone). Für jede andere erkannte Zeile entsteht genau ein Befund mit Datei und Zeilennummer.
+
+---
+
 ## Selbstschutz- und Coverage-Regeln (`SDD-070` – `SDD-073`)
 
 Damit Regelkatalog, Handbuch und Prüfkern niemals auseinanderlaufen, prüft `sdd` bei jedem Lauf zuerst die Konsistenz des Katalogs selbst. Alle vier Regeln gelten ab Profil `minimal`, sind in allen Gates aktiv und tragen `baseline: forbidden`.

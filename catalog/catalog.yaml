@@ -45,6 +45,20 @@ rules:
       Code nachvollziehbar. Das PRD hält fest, was und warum gebaut wird.
     handbook: handbuch/03-mechanismen.md#sdd-020
 
+  - id: SDD-021
+    title: Jedes Akzeptanzkriterium hat eine stabile Kennung
+    severity:
+      default: error
+    profile: standard
+    check: acceptance_criteria_ids
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-021-vertrag
+    rationale: >
+      Ohne stabile Kennung lässt sich ein Akzeptanzkriterium weder in Tests
+      noch in Tasks referenzieren; die Rückverfolgbarkeit wäre behauptet.
+    handbook: handbuch/03-mechanismen.md#sdd-021
+
   - id: SDD-030
     title: Tech Spec vorhanden, wenn die Größenschwelle greift
     severity:
