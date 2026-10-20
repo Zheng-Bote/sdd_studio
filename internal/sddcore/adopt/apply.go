@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/adrlock"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/baseline"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scaffold"
@@ -115,7 +116,25 @@ func Apply(root string, p *Proposal, git scan.GitWriter) (*Result, error) {
 			return res, err
 		}
 		res.BaselineEntries = len(entries)
-		if err := commitStep("Baseline", scaffold.Plan{Ops: []scaffold.Op{{Path: baseline.DefaultBaselineRelPath, Content: append(data, '\n')}}}); err != nil {
+		ops := []scaffold.Op{{Path: baseline.DefaultBaselineRelPath, Content: append(data, '\n')}}
+		// The ADR lockfile (SDD-011) belongs to the same recorded state; an existing one is never touched.
+		lock, hasLock, err := adrlock.Load(root)
+		if err != nil {
+			return res, fmt.Errorf("Schritt Baseline: %w", err)
+		}
+		if !hasLock {
+			adrs, err := adrlock.Collect(root, p.Inventory.Config)
+			if err != nil {
+				return res, fmt.Errorf("Schritt Baseline: %w", err)
+			}
+			adrlock.Update(lock, adrs, false)
+			lockData, err := lock.Marshal()
+			if err != nil {
+				return res, err
+			}
+			ops = append(ops, scaffold.Op{Path: adrlock.RelPath, Content: lockData})
+		}
+		if err := commitStep("Baseline", scaffold.Plan{Ops: ops}); err != nil {
 			return res, err
 		}
 	}

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/adrlock"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/baseline"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
@@ -172,7 +174,7 @@ func runBaseline(args []string, repoRoot string, stdout, stderr io.Writer) int {
 			fmt.Fprintf(stderr, "sdd baseline: unbekannte Regel %q\n", *acceptRule)
 			return 2
 		}
-		if found.Baseline == "forbidden" {
+		if found.Baseline == "forbidden" && found.ID != adrlockRule {
 			fmt.Fprintf(stderr, "sdd baseline: Regel %s trägt baseline: forbidden und darf nicht unterdrückt werden\n", *acceptRule)
 			return 2
 		}
@@ -249,8 +251,35 @@ func runBaseline(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	fmt.Fprintf(stdout, "Baseline geschrieben (%s): %d Einträge\n", baseline.DefaultBaselineRelPath, len(bf.Entries))
+
+	// SDD-011: lock decided ADRs; changed ones only with --accept SDD-011.
+	lock, hasLock, err := adrlock.Load(repoRoot)
+	if err != nil {
+		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
+		return 2
+	}
+	adrs, err := adrlock.Collect(repoRoot, cfg)
+	if err != nil {
+		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
+		return 2
+	}
+	added, updated := adrlock.Update(lock, adrs, *acceptRule == adrlockRule)
+	if !hasLock || added > 0 || updated > 0 {
+		data, err := lock.Marshal()
+		if err == nil {
+			err = os.WriteFile(filepath.Join(repoRoot, filepath.FromSlash(adrlock.RelPath)), data, 0o644)
+		}
+		if err != nil {
+			fmt.Fprintf(stderr, "sdd baseline: %s nicht schreibbar: %v\n", adrlock.RelPath, err)
+			return 2
+		}
+	}
+	fmt.Fprintf(stdout, "ADR-Lockfile (%s): %d neu gelockt, %d quittiert, %d gesamt\n", adrlock.RelPath, added, updated, len(lock.Entries))
 	return 0
 }
+
+// adrlockRule is quitted through the ADR lockfile instead of baseline entries.
+const adrlockRule = "SDD-011"
 
 func isValidGate(g string) bool {
 	for _, valid := range catalog.AllGates {
@@ -267,7 +296,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Befehle:")
 	fmt.Fprintln(w, "  lint       Prüft Verfassung, Katalog und Artefakte (--json, --gate, --feature)")
 	fmt.Fprintln(w, "  gate       Führt ein Gate aus: pre-implementation | pre-merge | pre-release")
-	fmt.Fprintln(w, "  baseline   Verwaltet .sdd/baseline.json (--gate, --prune, --accept)")
+	fmt.Fprintln(w, "  baseline   Verwaltet .sdd/baseline.json und .sdd/adr-lock.json (--gate, --prune, --accept)")
 	fmt.Fprintln(w, "  init       Legt ein neues Projekt an (--profile, --dry-run, --no-ci)")
 	fmt.Fprintln(w, "  report     Reifegrad, Befunde, Gates und Schuldenstand mit Trend (--format markdown|json, --since <ref>)")
 	fmt.Fprintln(w, "  adopt      Übernimmt ein bestehendes Projekt: Bericht, mit --apply auf neuem Branch (--profile, --branch)")

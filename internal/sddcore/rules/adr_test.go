@@ -1,9 +1,12 @@
 package rules
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/adrlock"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 )
 
@@ -59,5 +62,85 @@ func TestSDD010(t *testing.T) {
 				t.Errorf("unexpected message %q", findings[0].Message)
 			}
 		})
+	}
+}
+
+// sdd-rules-v1-1 AC-6: decided ADRs are locked; a changed body is an error, an unlocked ADR a warn,
+// frontmatter and proposed ADRs stay free; only Update with accept acknowledges a change.
+func TestSDD011(t *testing.T) {
+	root := t.TempDir()
+	cfg := featureConfig()
+	cfg.Artifacts.ADR = "docs/adr"
+	writeFile(t, root, "docs/adr/0001-a.md", "---\nstatus: proposed\n---\n# A\nEntscheidung A\n")
+	writeFile(t, root, "docs/adr/0002-b.md", "---\nstatus: accepted\n---\n# B\nEntscheidung B\n")
+	writeFile(t, root, "docs/adr/notes.md", "kein ADR-Dateiname\n")
+	check := func() map[string]string {
+		t.Helper()
+		findings, err := checkSDD011(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-011"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]string{}
+		for _, f := range findings {
+			sev := f.Severity
+			if sev == "" {
+				sev = "error"
+			}
+			out[f.Path] = sev
+		}
+		return out
+	}
+	lockNow := func(accept bool) (int, int) {
+		t.Helper()
+		lock, _, err := adrlock.Load(root)
+		if err != nil {
+			t.Fatal(err)
+		}
+		adrs, err := adrlock.Collect(root, cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		added, updated := adrlock.Update(lock, adrs, accept)
+		data, _ := lock.Marshal()
+		writeFile(t, root, adrlock.RelPath, string(data))
+		return added, updated
+	}
+
+	if got := check(); len(got) != 1 || got["docs/adr/0002-b.md"] != "warn" {
+		t.Fatalf("before locking: %v", got)
+	}
+	if added, _ := lockNow(false); added != 1 {
+		t.Fatalf("expected one ADR to be locked, got %d", added)
+	}
+	if got := check(); len(got) != 0 {
+		t.Fatalf("after locking: %v", got)
+	}
+
+	// Status change and reformatting keep the hash; the proposed ADR may change freely and gets locked once decided.
+	writeFile(t, root, "docs/adr/0002-b.md", "---\nstatus: superseded\nsuperseded-by: 0003\n---\n\n#  B\r\nEntscheidung   B\n")
+	writeFile(t, root, "docs/adr/0001-a.md", "---\nstatus: proposed\n---\n# A\nganz anders\n")
+	if got := check(); len(got) != 0 {
+		t.Fatalf("frontmatter/format/proposed changes must not count: %v", got)
+	}
+
+	// A changed decision text is an error; plain Update does not acknowledge it, accept does.
+	writeFile(t, root, "docs/adr/0002-b.md", "---\nstatus: accepted\n---\n# B\nEntscheidung B, nachträglich geändert\n")
+	if got := check(); got["docs/adr/0002-b.md"] != "error" {
+		t.Fatalf("changed ADR: %v", got)
+	}
+	if _, updated := lockNow(false); updated != 0 || check()["docs/adr/0002-b.md"] != "error" {
+		t.Fatalf("Update without accept must not acknowledge the change")
+	}
+	if _, updated := lockNow(true); updated != 1 || len(check()) != 0 {
+		t.Fatalf("Update with accept must acknowledge the change: %v", check())
+	}
+
+	// Deleted ADRs stay in the lockfile.
+	if err := os.Remove(filepath.Join(root, "docs/adr/0002-b.md")); err != nil {
+		t.Fatal(err)
+	}
+	lockNow(false)
+	if lock, _, _ := adrlock.Load(root); lock.Entries["docs/adr/0002-b.md"] == "" {
+		t.Errorf("deleted ADR removed from lockfile")
 	}
 }

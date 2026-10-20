@@ -177,6 +177,20 @@ rules:
       Begründung. Eine Regeländerung ohne ADR verliert ihr Warum.
     handbook: handbuch/03-mechanismen.md#sdd-010
 
+  - id: SDD-011
+    title: ADRs sind unveränderlich; Ablösung über supersedes
+    severity:
+      default: error
+    profile: standard
+    check: adr_immutable
+    gate_default: [pre-merge]
+    baseline: forbidden
+    contract: handbuch/03-mechanismen.md#sdd-011-vertrag
+    rationale: >
+      Ein nachträglich umgeschriebenes ADR fälscht die Begründung der Verfassung.
+      Abweichungen werden über das Lockfile quittiert, nicht über die Baseline.
+    handbook: handbuch/03-mechanismen.md#sdd-011
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:

@@ -196,6 +196,25 @@ Die Verfassung hält den *aktuell gültigen Zustand*, das ADR die *unveränderli
 
 ---
 
+### SDD-011 — ADRs sind unveränderlich; Ablösung über supersedes {#sdd-011}
+
+- **Schweregrad:** `error` (`default`, `pre-merge`); `warn` für ein entschiedenes, noch nicht gelocktes ADR
+- **Profil:** ab `standard`
+- **Baseline:** `forbidden` — Abweichungen werden über das Lockfile quittiert (`sdd baseline --accept SDD-011`), nicht über Baseline-Einträge.
+- **Check:** `adr_immutable`
+
+**Begründung:** Ein nachträglich umgeschriebenes ADR fälscht die Begründung der Verfassung. Eine Entscheidung wird abgelöst, indem ein neues ADR sie mit `supersedes` ersetzt; das alte bleibt, wie es war.
+
+#### SDD-011 Prüfvertrag {#sdd-011-vertrag}
+
+1. **Lockfile** `.sdd/adr-lock.json`: `{"version": 1, "entries": {"<pfad>": "<sha256>"}}`. Es wird ausschließlich von `sdd baseline` und `sdd adopt` geschrieben, nie von `lint` oder `gate`.
+2. **Hash:** SHA-256 über den Text **ohne Frontmatter**, normalisiert wie bei [`SDD-010`](#sdd-010-vertrag). Das Frontmatter bleibt änderbar, weil Statuswechsel (`proposed` → `accepted` → `superseded`) und neue `references` zum Lebenszyklus gehören.
+3. **Entschieden** ist ein ADR, dessen `status` nicht `proposed` ist; vorgeschlagene ADRs sind Entwürfe und werden weder gelockt noch geprüft.
+4. Für jedes entschiedene ADR gilt: Ist es nicht gelockt, entsteht ein `warn`; weicht sein Hash vom gelockten ab, ein `error`.
+5. `sdd baseline` lockt neue entschiedene ADRs, verändert aber nie einen vorhandenen Eintrag. Nur `sdd baseline --accept SDD-011` übernimmt geänderte Hashes — sichtbar als Änderung des Lockfiles im Review. Einträge gelöschter ADRs bleiben erhalten (Historie).
+
+---
+
 ## Feature-Artefakte bei Schwellenüberschreitung (`SDD-020`, `SDD-030`)
 
 Ab einer projektspezifischen Größenschwelle verlangt `sdd` für ein Feature ein PRD (`SDD-020`) und eine Tech Spec (`SDD-030`). Beide Regeln teilen die Feature-Auflösung, die Glob-Syntax und die Schwellenlogik; sie unterscheiden sich nur im geprüften Verzeichnis (`artifacts.prd` bzw. `artifacts.design`).

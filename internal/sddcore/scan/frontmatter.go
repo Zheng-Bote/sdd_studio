@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -44,4 +45,38 @@ func ParseFrontmatter(data []byte) (Frontmatter, bool) {
 	fm.Feature = strings.TrimSpace(fm.Feature)
 	fm.Status = strings.TrimSpace(fm.Status)
 	return fm, true
+}
+
+var adrFileRegex = regexp.MustCompile(`^[0-9]{4}-.*\.md$`)
+
+// IsADRFileName reports whether a file name follows the ADR convention NNNN-*.md.
+func IsADRFileName(name string) bool {
+	return adrFileRegex.MatchString(name)
+}
+
+// NormalizeText unifies line endings, drops whitespace-only lines and collapses whitespace runs to one space
+// (SDD-010 formatting exception, SDD-011 content hash).
+func NormalizeText(s string) string {
+	var out []string
+	for _, line := range strings.Split(strings.ReplaceAll(s, "\r\n", "\n"), "\n") {
+		if fields := strings.Fields(line); len(fields) > 0 {
+			out = append(out, strings.Join(fields, " "))
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
+// Body returns the file content after a leading frontmatter block (or the whole content if there is none).
+func Body(data []byte) string {
+	text := strings.ReplaceAll(strings.TrimPrefix(string(data), "\uFEFF"), "\r\n", "\n")
+	if !strings.HasPrefix(text, "---\n") {
+		return text
+	}
+	if end := strings.Index(text[4:], "\n---\n"); end >= 0 {
+		return text[4+end+5:]
+	}
+	if strings.HasSuffix(text, "\n---") {
+		return ""
+	}
+	return text
 }
