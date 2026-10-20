@@ -93,3 +93,53 @@ func normalizedHeading(line string) string {
 	text := strings.TrimSpace(explicitAnchorRegex.ReplaceAllString(m[2], ""))
 	return strings.TrimSpace(strings.TrimRight(text, "#"))
 }
+
+// checkSDD031 (SDD-031): Every AC ID of a feature's PRD occurs in at least one Tech Spec of the same feature.
+// Features without a Tech Spec are left to SDD-030.
+func checkSDD031(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
+	defs, err := definedACs(ctx)
+	if err != nil || len(defs) == 0 {
+		return nil, err
+	}
+	designs, err := activeArtifacts(ctx, ctx.Config.Artifacts.Design)
+	if err != nil {
+		return nil, err
+	}
+	specsOf := map[string][]string{}          // feature -> Tech Spec paths
+	mentioned := map[string]map[string]bool{} // feature -> AC IDs mentioned in its Tech Specs
+	for _, d := range designs {
+		feature := d.Frontmatter.Feature
+		if feature == "" {
+			continue
+		}
+		lines, err := readLines(ctx, d.Path)
+		if err != nil {
+			return nil, err
+		}
+		specsOf[feature] = append(specsOf[feature], d.Path)
+		if mentioned[feature] == nil {
+			mentioned[feature] = map[string]bool{}
+		}
+		for _, l := range lines {
+			for _, id := range acIDRegex.FindAllString(acTombstoneRegex.ReplaceAllString(l.Text, ""), -1) {
+				mentioned[feature][id] = true
+			}
+		}
+	}
+
+	var findings []report.Finding
+	for _, d := range defs {
+		specs := specsOf[d.Feature]
+		if len(specs) == 0 || mentioned[d.Feature][d.ID] {
+			continue
+		}
+		findings = append(findings, report.Finding{
+			Path:        specs[0],
+			Line:        1,
+			ByteOffset:  d.ByteOffset,
+			Message:     fmt.Sprintf("%s aus %s (Feature %s) wird in keiner Tech Spec des Features referenziert", d.ID, d.Path, d.Feature),
+			ContentHash: HashContent(rule.ID + ":" + d.Feature + ":" + d.ID),
+		})
+	}
+	return findings, nil
+}

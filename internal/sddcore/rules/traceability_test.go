@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
@@ -43,5 +44,23 @@ func TestSDD023(t *testing.T) {
 		if got[p] != 1 {
 			t.Errorf("expected one finding for %s, got %v", p, got)
 		}
+	}
+}
+
+// sdd-rules-v1-1 AC-2: every AC of the PRD appears in a Tech Spec of the same feature.
+func TestSDD031(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "docs/prd/billing.md", "---\nfeature: billing\n---\n## Akzeptanzkriterien\n- AC-1 a\n- AC-2 b\n- ~~AC-3~~ entfallen\n- AC-4 d\n")
+	writeFile(t, root, "docs/design/billing.md", "---\nfeature: billing\n---\n| AC-1 | x |\n```\nAC-2 im Codeblock zählt nicht\n```\n")
+	writeFile(t, root, "docs/design/billing-api.md", "---\nfeature: billing\n---\nSetzt AC-4 um, ~~AC-2~~ nicht.\n")
+	writeFile(t, root, "docs/prd/search.md", "---\nfeature: search\n---\n## Akzeptanzkriterien\n- AC-1 a\n") // no Tech Spec: SDD-030
+	writeFile(t, root, "docs/design/other.md", "---\nfeature: other\n---\nAC-1\n")
+
+	findings, err := checkSDD031(&Context{RepoRoot: root, Config: featureConfig()}, catalog.Rule{ID: "SDD-031"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(findings) != 1 || findings[0].Path != "docs/design/billing-api.md" || !strings.Contains(findings[0].Message, "AC-2 aus docs/prd/billing.md") {
+		t.Fatalf("expected one finding for billing AC-2, got %+v", findings)
 	}
 }

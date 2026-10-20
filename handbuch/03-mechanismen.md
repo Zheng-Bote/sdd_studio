@@ -308,6 +308,24 @@ Für jedes aktive PRD gilt:
 
 ---
 
+### SDD-031 — Tech Spec referenziert die AC-Kennungen, die sie umsetzt {#sdd-031}
+
+- **Schweregrad:** `warn` (`default`, `pre-merge`)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `design_references_acs`
+
+**Begründung:** Ohne Bezug auf die Akzeptanzkriterien bleibt offen, welches Kriterium durch welchen Teil des technischen Designs erfüllt wird. Eine Tabelle „AC → Umsetzung → Test“ genügt.
+
+#### SDD-031 Prüfvertrag {#sdd-031-vertrag}
+
+1. **Kennungen eines Features:** die definierten AC-Kennungen der aktiven PRDs mit ihrem Feature (`feature:` aus dem Frontmatter, ohne Feld der Dateiname ohne Endung) — dieselbe Menge wie bei [`SDD-022`](#sdd-022-vertrag), Tombstones ausgenommen.
+2. **Tech Specs eines Features:** aktive Feature-Artefakte unter `artifacts.design` mit `feature: <slug>`.
+3. Hat ein Feature mindestens eine Tech Spec, muss jede seiner Kennungen in mindestens einer dieser Tech Specs als `\bAC-<n>\b` vorkommen (außerhalb von Codeblöcken, nicht durchgestrichen). Für jede fehlende Kennung entsteht ein `warn` an der ersten Tech Spec des Features.
+4. Features ohne Tech Spec prüft diese Regel nicht; ob eine nötig ist, entscheidet [`SDD-030`](#sdd-030).
+
+---
+
 ## Archivierung (`SDD-050`)
 
 PRD, Tech Spec und Plan gelten bis zum Release. Danach sind sie Historie: Sie werden nach `artifacts.archive` verschoben, nicht gelöscht, und tragen `status: archived`. Der Archivierungsschritt gehört in den Release-Vorbereitungs-Commit, zusammen mit dem Changelog, unmittelbar vor dem Git-Tag.

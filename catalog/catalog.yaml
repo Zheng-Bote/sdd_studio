@@ -119,6 +119,20 @@ rules:
       still zu erweitern. Was ausgeschlossen ist, muss so sichtbar sein wie das Ziel.
     handbook: handbuch/03-mechanismen.md#sdd-023
 
+  - id: SDD-031
+    title: Tech Spec referenziert die AC-Kennungen, die sie umsetzt
+    severity:
+      default: warn
+    profile: standard
+    check: design_references_acs
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-031-vertrag
+    rationale: >
+      Ohne Bezug auf die Akzeptanzkriterien bleibt offen, welches Kriterium
+      durch welchen Teil des technischen Designs erfüllt wird.
+    handbook: handbuch/03-mechanismen.md#sdd-031
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:
