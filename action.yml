@@ -1,0 +1,47 @@
+name: SDD Gate
+description: Baut sdd aus diesem Quellstand und führt `sdd gate <gate>` im Repository aus.
+author: Zheng-Bote
+
+inputs:
+  gate:
+    description: "Gate: pre-implementation, pre-merge oder pre-release"
+    required: true
+  feature:
+    description: Optionale Feature-Slugs, kommagetrennt (überschreibt die Feature-Auflösung)
+    required: false
+    default: ""
+  paths:
+    description: Optionale erklärte Änderungsabsicht als kommagetrennte Pfad-Globs (pre-implementation)
+    required: false
+    default: ""
+  working-directory:
+    description: Repository-Wurzel, in der sdd.config.yaml liegt
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/go.mod
+        cache: false
+
+    - name: Build sdd
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: go build -o "$RUNNER_TEMP/sdd" ./cmd/sdd
+
+    # Eingaben nur über env: — nie per Ausdruck in den Skripttext interpolieren (Skript-Injection).
+    - name: sdd gate
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        SDD_GATE: ${{ inputs.gate }}
+        SDD_FEATURE: ${{ inputs.feature }}
+        SDD_PATHS: ${{ inputs.paths }}
+      run: |
+        args=(gate "$SDD_GATE")
+        if [ -n "$SDD_FEATURE" ]; then args+=(--feature "$SDD_FEATURE"); fi
+        if [ -n "$SDD_PATHS" ]; then args+=(--paths "$SDD_PATHS"); fi
+        "$RUNNER_TEMP/sdd" "${args[@]}"
