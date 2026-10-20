@@ -1,0 +1,43 @@
+version: 1
+profile: {{.Profile}}
+language: de
+
+# Basis für `git diff <base>...HEAD` in pre-merge. Leer = automatisch ermitteln
+# ($GITHUB_BASE_REF, @{upstream}, main, master).
+base_ref: ""
+
+artifacts:
+  constitution: {{.Artifacts.Constitution}}
+  adr: {{.Artifacts.ADR}}
+  prd: {{.Artifacts.PRD}}
+  design: {{.Artifacts.Design}}
+  plans: {{.Artifacts.Plans}}
+  archive: {{.Artifacts.Archive}}
+  # Doku/Exploration: lösen keine Feature-Prüfung aus.
+  docs:
+{{- range .Artifacts.Docs}}
+    - {{.}}
+{{- end}}
+
+tests:
+  # Leer = Fallback-Liste aus dem Handbuch (SDD-022), z. B. **/*_test.go, **/*.spec.ts.
+  include: []
+
+thresholds:
+  # Layer des Projekts als Pfad-Globs, z. B.:
+  #   - internal/api/**
+  #   - internal/storage/**
+  layers: []
+  # PRD und Tech Spec sind Pflicht, wenn touched_paths getroffen wird
+  # ODER mindestens min_layers_touched Layer berührt werden.
+  # Solange beide Listen leer sind, greift die Schwelle nie.
+  feature_artifacts_required_when:
+    min_layers_touched: 2
+    touched_paths: []
+    #   - openapi.yaml
+    #   - cmd/**
+
+exclude:
+  - vendor/**
+  - node_modules/**
+  - .git/**

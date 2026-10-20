@@ -1,0 +1,35 @@
+---
+feature: {{.Slug}}
+status: draft
+archive-after:{{if .ArchiveAfter}} {{.ArchiveAfter}}{{end}}
+touches:{{if not .Touches}} []{{end}}
+{{- range .Touches}}
+  - {{.}}
+{{- end}}
+---
+
+# PRD — {{.Title}} (`{{.Slug}}`)
+
+## Problem
+
+<Welches Problem wird gelöst, und für wen?>
+
+## Ziel
+
+<Was ist nach der Umsetzung anders?>
+
+## Nutzer
+
+- <Wer nutzt das Ergebnis?>
+
+## Umfang
+
+<Was gehört dazu?>
+
+## Nicht-Ziele
+
+- <Was ausdrücklich nicht dazugehört>
+
+## Akzeptanzkriterien
+
+- **AC-1** <Prüfbares Kriterium; Kennungen werden nie umnummeriert, entfallene als ~~AC-n~~ markiert>

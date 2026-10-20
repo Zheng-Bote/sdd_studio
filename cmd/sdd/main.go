@@ -31,6 +31,10 @@ func run(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return runGate(args[1:], repoRoot, stdout, stderr)
 	case "baseline":
 		return runBaseline(args[1:], repoRoot, stdout, stderr)
+	case "init":
+		return runInit(args[1:], repoRoot, stdout, stderr)
+	case "new":
+		return runNew(args[1:], repoRoot, stdout, stderr)
 	case "-h", "--help", "help":
 		printUsage(stdout)
 		return 0
@@ -100,14 +104,7 @@ func runGate(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	var paths []string
-	if strings.TrimSpace(*pathsRaw) != "" {
-		for _, p := range strings.Split(*pathsRaw, ",") {
-			if trimmed := strings.TrimSpace(p); trimmed != "" {
-				paths = append(paths, trimmed)
-			}
-		}
-	}
+	paths := splitList(*pathsRaw)
 
 	rep, err := sddcore.RunCheck(sddcore.RunOptions{
 		RepoRoot: repoRoot,
@@ -281,4 +278,6 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  lint       Prüft Verfassung, Katalog und Artefakte (--json, --gate, --feature)")
 	fmt.Fprintln(w, "  gate       Führt ein Gate aus: pre-implementation | pre-merge | pre-release")
 	fmt.Fprintln(w, "  baseline   Verwaltet .sdd/baseline.json (--gate, --prune, --accept)")
+	fmt.Fprintln(w, "  init       Legt ein neues Projekt an (--profile, --dry-run, --no-ci)")
+	fmt.Fprintln(w, "  new        Legt Artefakte aus Templates an (--feature, --type, --title, --touches, --archive-after, --dry-run)")
 }

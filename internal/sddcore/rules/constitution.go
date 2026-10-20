@@ -10,6 +10,7 @@ import (
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/report"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scan"
 )
 
 // checkSDD001 (SDD-001): The file configured in artifacts.constitution exists, is a regular file inside the repository and is not empty.
@@ -72,14 +73,8 @@ func checkSDD001(ctx *Context, selfRule catalog.Rule) ([]report.Finding, error) 
 
 // repoRelative normalizes a configured path and reports whether it stays inside the repository root.
 func repoRelative(p string) (string, bool) {
-	if filepath.IsAbs(p) || strings.HasPrefix(p, "/") {
-		return "", false
-	}
-	clean := filepath.ToSlash(filepath.Clean(filepath.FromSlash(p)))
-	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") {
-		return "", false
-	}
-	return clean, true
+	clean, err := scan.CleanRel(p)
+	return clean, err == nil
 }
 
 // requiredConstitutionSections lists the headings every Markdown constitution must contain (SDD-002a).

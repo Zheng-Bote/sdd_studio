@@ -4,6 +4,61 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
+## Projektanlage und Artefakt-Templates (`sdd init`, `sdd new`)
+
+Beide Befehle schreiben ausschließlich **additiv**: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
+
+### `sdd init` {#sdd-init}
+
+```text
+sdd init [--profile minimal|standard|regulated] [--dry-run] [--no-ci]
+```
+
+Legt an: `sdd.config.yaml` (Profil, Standardpfade, leere Schwellen), `constitution.md` mit den Pflichtabschnitten aus `SDD-002a`, die Verzeichnisse `docs/{adr,prd,design,plans,archive,notes}` (je mit `.gitkeep`, nur wenn das Verzeichnis fehlt), den Workflow `.github/workflows/sdd.yml` und eine leere `.sdd/baseline.json` — ein neues Projekt startet ohne Altlasten.
+
+**Danach:** `thresholds.layers` und `thresholds.feature_artifacts_required_when.touched_paths` an das Projekt anpassen. Solange beide leer sind, ist die [Größenschwelle](#groessenschwelle) nie überschritten.
+
+### `sdd new` {#sdd-new}
+
+```text
+sdd new --feature <slug> [--type prd,design,plan] [--title <text>] [--touches <globs>] [--archive-after YYYY-MM-DD]
+sdd new --type adr|doc --title <text> [--slug <slug>]
+```
+
+| Typ | Ziel | Frontmatter |
+|---|---|---|
+| `prd` | `<artifacts.prd>/<slug>.md` | `feature`, `status: draft`, `archive-after`, `touches` |
+| `design` | `<artifacts.design>/<slug>.md` | wie `prd` |
+| `plan` | `<artifacts.plans>/<slug>.md` | `feature`, `status: draft`, `archive-after` |
+| `adr` | `<artifacts.adr>/<NNNN>-<slug>.md` | `status: proposed`, `date`, `supersedes`, `references` |
+| `doc` | `<artifacts.docs[0]>/<slug>.md` | `status: active` |
+
+- Ohne `--type` legt `--feature` PRD und Tech Spec an — genau das Paar, das `SDD-020`/`SDD-030` verlangen.
+- Trägt im Zielverzeichnis bereits eine Datei `feature: <slug>`, wird für diesen Typ nichts angelegt, auch wenn der Dateiname abweicht.
+- `archive-after` bleibt ohne Angabe leer (kein Stichtag); `touches` ohne `--touches` eine leere Liste — `pre-implementation` meldet dann „Absicht nicht erklärt".
+- Die ADR-Nummer ist die größte vierstellige Präfixnummer im ADR-Verzeichnis plus eins; der Slug wird aus dem Titel abgeleitet (Umlaute transliteriert).
+- Das PRD-Template enthält `AC-1` als Platzhalter: Es erfüllt `SDD-021`, verlangt nach `SDD-022` aber einen Test.
+- Ohne `sdd.config.yaml` verwendet `sdd new` die Standardpfade von `sdd init` und weist darauf hin.
+
+### CI-Einbindung (GitHub Action) {#ci-einbindung}
+
+Die Action im Wurzelverzeichnis von `sdd_studio` baut `sdd` aus ihrem eigenen Quellstand und führt `sdd gate <gate>` im Arbeitsverzeichnis aus; der Exit-Code des Gates ist der Exit-Code des Schritts.
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0          # git diff <base>...HEAD braucht die Historie
+- uses: Zheng-Bote/sdd_studio@main
+  with:
+    gate: pre-merge         # pre-implementation | pre-merge | pre-release
+    feature: ""             # optional, kommagetrennte Slugs
+    paths: ""               # optional, erklärte Absicht für pre-implementation
+```
+
+Ohne `fetch-depth: 0` fehlt die Merge-Basis, und das Gate endet mit Exit-Code `2`. Der von `sdd init` erzeugte Workflow führt `pre-merge` für Pull Requests aus und `pre-release` für Pushes auf `release/**` sowie manuell — also vor dem Tag, nicht danach.
+
+---
+
 ## Verfassungsregeln (`SDD-001`, `SDD-002a`)
 
 Die Verfassung ist das ranghöchste Artefakt eines Projekts. Diese Regeln stellen sicher, dass sie existiert und ihr Strukturschema erfüllt.

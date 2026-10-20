@@ -11,10 +11,7 @@ import (
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scan"
 )
 
-var (
-	slugRegex          = regexp.MustCompile(`^[a-z0-9-]+$`)
-	featureBranchRegex = regexp.MustCompile(`^(?:feature/([a-z0-9-]+)|feat/(?:[0-9]+-)?([a-z0-9-]+))$`)
-)
+var featureBranchRegex = regexp.MustCompile(`^(?:feature/([a-z0-9-]+)|feat/(?:[0-9]+-)?([a-z0-9-]+))$`)
 
 // featureScope is the result of the feature resolution (concept section 5.1).
 type featureScope struct {
@@ -86,7 +83,7 @@ func resolveFeatures(ctx *Context) (featureScope, error) {
 			if s == "" {
 				continue
 			}
-			if !slugRegex.MatchString(s) {
+			if !scan.IsSlug(s) {
 				return featureScope{}, fmt.Errorf("ungültiger Feature-Slug %q (erlaubt: [a-z0-9-]+)", s)
 			}
 			slugs = append(slugs, s)
@@ -108,7 +105,7 @@ func resolveFeatures(ctx *Context) (featureScope, error) {
 	}
 	var slugs []string
 	for _, a := range artifacts {
-		if inDiff[a.Path] && slugRegex.MatchString(a.Frontmatter.Feature) {
+		if inDiff[a.Path] && scan.IsSlug(a.Frontmatter.Feature) {
 			slugs = append(slugs, a.Frontmatter.Feature)
 		}
 	}

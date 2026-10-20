@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -195,5 +196,17 @@ func TestWalkFiles(t *testing.T) {
 	}
 	if want := []string{"a_test.go", "pkg/b_test.go", "web/e.spec.ts"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("WalkFiles = %v, want %v", got, want)
+	}
+}
+
+func TestListArtifactsRejectsPathsOutsideRoot(t *testing.T) {
+	parent := t.TempDir()
+	root := filepath.Join(parent, "repo")
+	mustWrite(t, filepath.Join(parent, "outside/secret.md"), "---\nfeature: x\n---\n")
+	mustWrite(t, filepath.Join(root, "keep"), "")
+	for _, dir := range []string{"../outside", "/etc", "docs/../../outside"} {
+		if _, err := ListArtifacts(root, dir, nil); !errors.Is(err, ErrUnsafePath) {
+			t.Errorf("%s: expected ErrUnsafePath, got %v", dir, err)
+		}
 	}
 }

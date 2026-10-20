@@ -1,0 +1,39 @@
+---
+feature: {{.Slug}}
+status: draft
+archive-after:{{if .ArchiveAfter}} {{.ArchiveAfter}}{{end}}
+touches:{{if not .Touches}} []{{end}}
+{{- range .Touches}}
+  - {{.}}
+{{- end}}
+---
+
+# Tech Spec — {{.Title}} (`{{.Slug}}`)
+
+Setzt das PRD `{{.PRDPath}}` um. Die Verfassung hat Vorrang; diese Tech Spec darf sie präzisieren, nie lockern.
+
+## Architektur
+
+<Betroffene Komponenten und ihr Zusammenspiel>
+
+## Schnittstellen
+
+<APIs, CLI, Formate>
+
+## Datenmodell
+
+<Datenstrukturen, Persistenz, Migrationen>
+
+## Umsetzung der Akzeptanzkriterien
+
+| AC | Umsetzung | Test |
+|---|---|---|
+| AC-1 | <Komponente> | <Testname> |
+
+## Sicherheit
+
+<Auswirkungen auf die Security-Regeln der Verfassung>
+
+## Offene Punkte
+
+- <Offene Frage>
