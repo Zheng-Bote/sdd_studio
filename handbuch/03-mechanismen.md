@@ -81,7 +81,7 @@ Für die unter `artifacts.constitution` konfigurierte Datei gilt:
    - `AC` in Großbuchstaben, optional `_`, dann `<n>`, wobei davor der Dateianfang oder ein Zeichen außer Großbuchstabe und Ziffer steht — z. B. `TestAC3_Login`, `TestAC_3`;
    - `ac` in beliebiger Schreibweise, optional `_`, dann `<n>`, wobei davor der Dateianfang oder ein Zeichen außer Buchstabe und Ziffer steht — z. B. `test_ac_3`, `ac3`.
 
-   *Präzisierung gegenüber dem Konzept (§9.5):* Dort steht `(?i)\bAC_?<n>\b`. Weil `\b` weder CamelCase- noch snake_case-Teile trennt, träfe dieses Muster `TestAC3_Login` nicht; die obigen Muster ersetzen es.
+   Ein `\b`-basiertes Muster genügt nicht: `\b` trennt weder CamelCase- noch snake_case-Teile und träfe `TestAC3_Login` nicht.
 4. Für jede definierte, nicht referenzierte Kennung entsteht ein `error` an ihrem ersten Vorkommen im PRD.
 5. Trifft die Glob-Liste keine einzige Datei, entsteht statt Einzelbefunden genau ein `warn`: Ein fehlender Testpfad ist ein Konfigurationsproblem, kein Projektverstoß.
 
