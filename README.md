@@ -15,6 +15,7 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 - **Feature-Regeln `SDD-020`, `SDD-030`:** PRD und Tech Spec bei Schwellenüberschreitung, mit Feature-Auflösung (`--feature`, Frontmatter im Diff, Branch-Name) und fail-closed-Verhalten (Phase 1C)
 - **AC-Regeln `SDD-021`, `SDD-022`:** Akzeptanzkriterien in PRDs tragen eine stabile Kennung `AC-<n>` und sind in Testdateien referenziert (Phase 1C)
 - **Archivregel `SDD-050`:** abgeschlossene Features liegen vor dem Release im Archiv (Phase 1C)
+- **Regeln aus v1.1:** `SDD-002b` (`.sdd`-Grammatik), `SDD-010`/`SDD-011` (ADR bei Verfassungsänderung, unveränderliche ADRs mit `.sdd/adr-lock.json`), `SDD-023`, `SDD-024`, `SDD-025`, `SDD-031`, `SDD-041`, `SDD-051`
 - **Baseline & Ratchet:** Gate-gebundene Baseline (`.sdd/baseline.json`) mit `content_hash`, deterministischem `ordinal` und Schutz für `baseline: forbidden`
 - **CLI-Kommandos:**
   - `go run ./cmd/sdd lint [--json] [--gate <gate>]`
@@ -26,8 +27,9 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
   - `go run ./cmd/sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` bzw. `new --type adr|doc --title …`
 - **GitHub Action:** [`action.yml`](action.yml) baut `sdd` und führt `sdd gate <gate>` aus (siehe [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#ci-einbindung))
 - **Artefaktpfade als Ordner oder Glob:** z. B. Spec Kit `specs/features/*/spec.md` ohne Umzug
-- **Feature-Artefakte des Werkzeugs selbst:** `sdd-core-v1`, `sdd-init-new`, `sdd-adopt` und `sdd-report` unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design)
+- **Feature-Artefakte des Werkzeugs selbst:** `sdd-core-v1`, `sdd-init-new`, `sdd-adopt`, `sdd-report` und `sdd-rules-v1-1` unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design)
 
 ## Nächste Schritte (beim nächsten Mal)
 
-- **Schritt 4 (Rest):** Regeln aus v1.1 — `SDD-002b`, `SDD-010`, `SDD-011`, `SDD-023`, `SDD-024`, `SDD-025`, `SDD-031`, `SDD-041`, `SDD-051`.
+- **Später (Konzept §15):** `SDD-003` (heuristisch), `SDD-040`, `SDD-060`; Schritt 5/6 der Roadmap (`sdd ui`, Agenten-Schnittstelle).
+- **Release vorbereiten:** erledigte Features (`sdd-core-v1`, `sdd-init-new`, …) auf `status: implemented` setzen und vor dem ersten Tag archivieren (`SDD-050`).

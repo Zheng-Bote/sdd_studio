@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -116,5 +117,58 @@ func TestSDD002a(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// sdd-rules-v1-1 AC-9: a .sdd constitution follows the formal grammar; known labels are configurable.
+func TestSDD002b(t *testing.T) {
+	root := t.TempDir()
+	write := func(name, content string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("ok.sdd", "# Kommentar\n\nSpec: md-indexer\n\nArchitecture:\n  Layer A darf B nicht kennen.\n    Detail\nSecurity:\n  Nur lokal.\nCan modify:\n  - team-core\n")
+	write("bad.sdd", "# SpecDD: md-indexer\n"+ // comment, skipped
+		"## 1. System Intent\n"+ // 2: also a comment line
+		"Architecture:\n"+ // 3: first content line is not Spec:
+		"   drei Leerzeichen\n"+ // 4: odd indent
+		"\tTab\n"+ // 5: tab
+		"Roadmap:\n"+ // 6: unknown label
+		"freier Text\n") // 7: no label
+	write("custom.sdd", "Spec: x\nRoadmap:\n  ok\n")
+	write("constitution.md", "# Markdown ist SDD-002a\n")
+
+	run := func(file string, labels []string) []int {
+		t.Helper()
+		cfg := &config.Config{Version: 1, Profile: "minimal", Artifacts: config.ArtifactsConfig{Constitution: file}, ConstitutionSections: labels}
+		findings, err := checkSDD002b(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-002b"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var lines []int
+		for _, f := range findings {
+			lines = append(lines, f.Line)
+		}
+		return lines
+	}
+	if got := run("ok.sdd", nil); len(got) != 0 {
+		t.Errorf("valid grammar: findings at %v", got)
+	}
+	if got, want := run("bad.sdd", nil), []int{3, 4, 5, 6, 7}; fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("bad grammar: findings at %v, want %v", got, want)
+	}
+	if got := run("custom.sdd", nil); len(got) != 1 {
+		t.Errorf("Roadmap is unknown by default, got %v", got)
+	}
+	if got := run("custom.sdd", []string{"roadmap"}); len(got) != 0 {
+		t.Errorf("constitution_sections must override the labels (case-insensitive), got %v", got)
+	}
+	if got := run("constitution.md", nil); len(got) != 0 {
+		t.Errorf("Markdown constitutions are SDD-002a territory, got %v", got)
+	}
+	if got := run("missing.sdd", nil); len(got) != 0 {
+		t.Errorf("missing file is SDD-001 territory, got %v", got)
 	}
 }

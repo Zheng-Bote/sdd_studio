@@ -26,7 +26,7 @@ Der Katalog setzt die Rückverfolgbarkeit Verfassung → ADR → PRD → Tech Sp
 
 ## Umfang
 
-Die Regeln `SDD-023`, `SDD-031`, `SDD-041`, `SDD-051`, `SDD-010`, `SDD-011`, `SDD-024` und `SDD-025`, jeweils mit Katalogeintrag, Handbuchabschnitt, Prüfvertrag und Tests, sowie das ADR-Lockfile `.sdd/adr-lock.json`. `SDD-002b` folgt, sobald die Section-Labels der `.sdd`-Grammatik festgelegt sind.
+Die Regeln `SDD-023`, `SDD-031`, `SDD-041`, `SDD-051`, `SDD-010`, `SDD-011`, `SDD-024` und `SDD-025`, jeweils mit Katalogeintrag, Handbuchabschnitt, Prüfvertrag und Tests, `SDD-002b` sowie das ADR-Lockfile `.sdd/adr-lock.json`.
 
 ## Nicht-Ziele
 
@@ -44,3 +44,4 @@ Die Regeln `SDD-023`, `SDD-031`, `SDD-041`, `SDD-051`, `SDD-010`, `SDD-011`, `SD
 - **AC-6** `SDD-011` meldet einen `error`, wenn sich der Text eines gelockten ADRs geändert hat, und ein `warn` für ein entschiedenes ADR, das noch nicht gelockt ist; nur `sdd baseline` schreibt das Lockfile, eine Abweichung nur mit `--accept SDD-011`.
 - **AC-7** `SDD-024` meldet in `pre-merge` ein `warn` für jede geänderte Datei außerhalb der in `touches` erklärten Absicht der aufgelösten Features.
 - **AC-8** `SDD-025` meldet ein `warn` für jede Kennung, die zwar in einer Testdatei, aber nicht im Bereich einer Testdeklaration vorkommt.
+- **AC-9** `SDD-002b` meldet für eine `.sdd`-Verfassung einen `error` je Verstoß gegen die Grammatik: erste inhaltliche Zeile nicht `Spec: <Name>`, Tabulator, Einrückung kein Vielfaches von zwei, unbekanntes Section-Label oder Text ohne Label auf oberster Ebene; die bekannten Labels sind über `constitution_sections` überschreibbar.

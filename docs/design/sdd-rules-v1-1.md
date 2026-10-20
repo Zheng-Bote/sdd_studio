@@ -41,6 +41,7 @@ internal/sddcore/adrlock   .sdd/adr-lock.json lesen, Hash bilden, schreiben (nur
 | SDD-011 | error | standard | pre-merge | allowed |
 | SDD-024 | warn | standard | pre-merge | allowed |
 | SDD-025 | warn | standard | pre-merge | allowed |
+| SDD-002b | error | minimal | pre-implementation, pre-merge | allowed |
 
 **ADR-Lockfile** (`.sdd/adr-lock.json`): `{"version": 1, "entries": {"<pfad>": "<sha256>"}}`. Der Hash läuft über den normalisierten Text **ohne Frontmatter** (Zeilenenden vereinheitlicht, Zeilen nur aus Leerraum entfernt, Leerraumfolgen zu einem Leerzeichen). Frontmatter bleibt änderbar, weil Statuswechsel (`proposed` → `accepted` → `superseded`) und neue `references` zum Lebenszyklus gehören. Gelockt werden nur entschiedene ADRs (`status` nicht `proposed`); gelöschte bleiben im Lockfile.
 
@@ -56,6 +57,7 @@ internal/sddcore/adrlock   .sdd/adr-lock.json lesen, Hash bilden, schreiben (nur
 | AC-6 | `checkSDD011`, `adrlock` | `TestSDD011` |
 | AC-7 | `checkSDD024` | `TestSDD024` |
 | AC-8 | `checkSDD025` | `TestSDD025` |
+| AC-9 | `checkSDD002b`, `config.ConstitutionSections` | `TestSDD002b` |
 
 ## Sicherheit
 
@@ -64,5 +66,4 @@ internal/sddcore/adrlock   .sdd/adr-lock.json lesen, Hash bilden, schreiben (nur
 
 ## Offene Punkte
 
-- `SDD-002b`: Liste der Section-Labels.
-- `SDD-025`: Die Konvention `// <slug> AC-<n>` steht über dem Test; laut Konzept zählen Kommentare vor der Deklaration nicht.
+- Die Standardliste der `.sdd`-Section-Labels ist aus `sdd_process_3` §10 abgeleitet; ein echtes `.sdd`-Projekt legt seine Grammatik über `constitution_sections` fest.

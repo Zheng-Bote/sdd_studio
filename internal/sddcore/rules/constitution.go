@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
@@ -147,4 +148,79 @@ func markdownHeadings(markdown string) []string {
 func normalizeSectionTitle(title string) string {
 	title = strings.TrimRight(strings.TrimSpace(title), "#")
 	return strings.ToLower(strings.Join(strings.Fields(title), ""))
+}
+
+// DefaultConstitutionSections are the known section labels of a .sdd constitution (sdd_process_3, section 10:
+// the five section types plus SpecDD ownership), overridable via constitution_sections.
+var DefaultConstitutionSections = []string{"Architecture", "Security", "Data", "Standards", "References", "Owns", "Can modify"}
+
+var sddLabelRegex = regexp.MustCompile(`^([A-Za-z][A-Za-z -]*[A-Za-z]|[A-Za-z]):(?:\s|$)`)
+
+// checkSDD002b (SDD-002b): A .sdd constitution follows the formal grammar.
+func checkSDD002b(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
+	cleanRel, ok := repoRelative(strings.TrimSpace(ctx.Config.Artifacts.Constitution))
+	if !ok || !strings.HasSuffix(strings.ToLower(cleanRel), ".sdd") {
+		return nil, nil
+	}
+	data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(cleanRel)))
+	if err != nil {
+		return nil, nil // SDD-001
+	}
+	labels := ctx.Config.ConstitutionSections
+	if len(labels) == 0 {
+		labels = DefaultConstitutionSections
+	}
+	known := map[string]bool{}
+	for _, l := range labels {
+		known[strings.ToLower(strings.TrimSpace(l))] = true
+	}
+
+	var findings []report.Finding
+	add := func(line, offset int, text, msg string) {
+		findings = append(findings, report.Finding{
+			Path:        cleanRel,
+			Line:        line,
+			ByteOffset:  offset,
+			Message:     msg,
+			ContentHash: HashContent(rule.ID + ":" + cleanRel + ":" + msg + ":" + text),
+		})
+	}
+	seenSpec := false
+	offset := 0
+	for i, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		n, lineOffset := i+1, offset
+		offset += len(line) + 1
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") || strings.HasPrefix(trimmed, "//") {
+			continue
+		}
+		if strings.Contains(line, "\t") {
+			add(n, lineOffset, line, fmt.Sprintf("Zeile %d enthält einen Tabulator", n))
+		}
+		indent := len(line) - len(strings.TrimLeft(line, " \t"))
+		if strings.TrimLeft(line, " ") == strings.TrimLeft(line, " \t") && indent%2 != 0 {
+			add(n, lineOffset, line, fmt.Sprintf("Zeile %d: Einrückung von %d Leerzeichen ist kein Vielfaches von zwei", n, indent))
+		}
+		if !seenSpec {
+			seenSpec = true
+			if !regexp.MustCompile(`^Spec:\s*\S`).MatchString(line) {
+				add(n, lineOffset, line, fmt.Sprintf("Erste inhaltliche Zeile %d ist nicht `Spec: <Name>`", n))
+			}
+			continue
+		}
+		if indent > 0 {
+			continue
+		}
+		m := sddLabelRegex.FindStringSubmatch(line)
+		switch {
+		case m == nil:
+			add(n, lineOffset, line, fmt.Sprintf("Zeile %d auf oberster Ebene ist kein Section-Label (`Label:`)", n))
+		case !known[strings.ToLower(m[1])]:
+			add(n, lineOffset, line, fmt.Sprintf("Zeile %d: unbekanntes Section-Label %q (bekannt: %s)", n, m[1], strings.Join(labels, ", ")))
+		}
+	}
+	if !seenSpec {
+		add(1, 0, "", "Verfassung enthält keine Zeile `Spec: <Name>`")
+	}
+	return findings, nil
 }

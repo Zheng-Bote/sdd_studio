@@ -220,6 +220,20 @@ rules:
       Test ist die schärfere, sprachadaptive Aussage — daher nur warn.
     handbook: handbuch/03-mechanismen.md#sdd-025
 
+  - id: SDD-002b
+    title: .sdd-Verfassung erfüllt die formale Grammatik
+    severity:
+      default: error
+    profile: minimal
+    check: constitution_sdd_grammar
+    gate_default: [pre-implementation, pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-002b-vertrag
+    rationale: >
+      Eine Verfassung, die die eigene Grammatik nicht erfüllt, ist kein Vertrag,
+      sondern Prosa; Agenten können Präzedenz und Eigentum dann nicht auflösen.
+    handbook: handbuch/03-mechanismen.md#sdd-002b
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:

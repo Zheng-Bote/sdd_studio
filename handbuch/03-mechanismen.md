@@ -474,6 +474,34 @@ Ein **Feature-Artefakt** ist eine Markdown-Datei unter `artifacts.prd`, `artifac
 
 ---
 
+## Strikter Modus der Verfassung (`SDD-002b`)
+
+### SDD-002b — `.sdd`-Verfassung erfüllt die formale Grammatik {#sdd-002b}
+
+- **Schweregrad:** `error` (`default`, `pre-implementation`, `pre-merge`)
+- **Profil:** ab `minimal`
+- **Baseline:** `allowed`
+- **Check:** `constitution_sdd_grammar`
+
+**Begründung:** Eine Verfassung, die ihre eigene Grammatik nicht erfüllt, ist kein Vertrag, sondern Prosa. Der Wert des `.sdd`-Formats liegt in maschinell auflösbarer Präzedenz und Eigentum (`Owns`, `Can modify`) — das gelingt nur bei fester Struktur.
+
+#### SDD-002b Prüfvertrag {#sdd-002b-vertrag}
+
+Die Regel gilt, wenn `artifacts.constitution` auf `.sdd` endet (Groß-/Kleinschreibung egal); fehlt die Datei, meldet `SDD-001`. Leere Zeilen und Kommentarzeilen (nach optionalem Einzug `#` oder `//`) werden übersprungen. Für jede andere Zeile gilt, je Verstoß ein `error` mit Zeilennummer:
+
+1. Die erste solche Zeile lautet `Spec: <Name>` (nicht-leerer Name). Fehlt jede inhaltliche Zeile, entsteht ein Befund an Zeile 1.
+2. Keine Zeile enthält einen Tabulator.
+3. Die Einrückung mit Leerzeichen ist ein Vielfaches von zwei.
+4. Jede nicht eingerückte Zeile nach `Spec:` ist ein **Section-Label** `Label:` (Buchstaben, Leerzeichen, Bindestriche; danach Zeilenende oder Leerraum), und das Label ist bekannt. Der Vergleich ignoriert Groß-/Kleinschreibung.
+
+**Bekannte Labels:** standardmäßig `Architecture`, `Security`, `Data`, `Standards`, `References`, `Owns`, `Can modify` — die fünf Section-Typen aus `sdd_process_3` §10 und die SpecDD-Eigentumsangaben. Ein Projekt legt seine Grammatik mit `constitution_sections` in `sdd.config.yaml` fest; die Liste ersetzt dann die Standardliste vollständig:
+
+```yaml
+constitution_sections: [System Intent, Architecture, Security, Data, Owns, Can modify]
+```
+
+---
+
 ## Selbstschutz- und Coverage-Regeln (`SDD-070` – `SDD-073`)
 
 Damit Regelkatalog, Handbuch und Prüfkern niemals auseinanderlaufen, prüft `sdd` bei jedem Lauf zuerst die Konsistenz des Katalogs selbst. Alle vier Regeln gelten ab Profil `minimal`, sind in allen Gates aktiv und tragen `baseline: forbidden`.

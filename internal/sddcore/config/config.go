@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -23,6 +24,8 @@ type Config struct {
 	Thresholds ThresholdsConfig `yaml:"thresholds"`
 	Gates      GatesConfig      `yaml:"gates"`
 	Exclude    []string         `yaml:"exclude"`
+	// ConstitutionSections overrides the known section labels of a .sdd constitution (SDD-002b).
+	ConstitutionSections []string `yaml:"constitution_sections"`
 }
 
 type ArtifactsConfig struct {
@@ -90,6 +93,11 @@ func (c *Config) Validate() error {
 	case "minimal", "standard", "regulated":
 	default:
 		return fmt.Errorf("ungültiges Profil %q (erlaubt: minimal, standard, regulated)", c.Profile)
+	}
+	for _, l := range c.ConstitutionSections {
+		if strings.TrimSpace(l) == "" {
+			return fmt.Errorf("constitution_sections enthält einen leeren Eintrag")
+		}
 	}
 	return nil
 }
