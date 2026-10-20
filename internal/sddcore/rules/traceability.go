@@ -300,3 +300,54 @@ func checkSDD051(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 	}
 	return findings, nil
 }
+
+// featureOf returns the feature of an artifact: its feature: field, else the slug position of its spec.
+func featureOf(a scan.Artifact, spec string) string {
+	if a.Frontmatter.Feature != "" {
+		return a.Frontmatter.Feature
+	}
+	return scan.SlugInSpec(a.Path, spec)
+}
+
+// checkSDD040 (SDD-040): A feature with tasks in an active plan has an active Tech Spec ("plan before the first task").
+func checkSDD040(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
+	a := ctx.Config.Artifacts
+	plans, err := activeArtifacts(ctx, a.Plans)
+	if err != nil {
+		return nil, err
+	}
+	designs, err := activeArtifacts(ctx, a.Design)
+	if err != nil {
+		return nil, err
+	}
+	hasDesign := map[string]bool{}
+	for _, d := range designs {
+		hasDesign[featureOf(d, a.Design)] = true
+	}
+
+	var findings []report.Finding
+	for _, p := range plans {
+		feature := featureOf(p, a.Plans)
+		if hasDesign[feature] {
+			continue
+		}
+		lines, err := readLines(ctx, p.Path)
+		if err != nil {
+			return nil, err
+		}
+		for _, l := range lines {
+			if !checkboxRegex.MatchString(l.Text) {
+				continue
+			}
+			findings = append(findings, report.Finding{
+				Path:        p.Path,
+				Line:        l.Number,
+				ByteOffset:  l.ByteOffset,
+				Message:     fmt.Sprintf("Feature %s hat Tasks, aber keine aktive Tech Spec unter %s — zuerst den technischen Plan anlegen (`sdd new --feature %s --type design`)", feature, a.Design, feature),
+				ContentHash: HashContent(rule.ID + ":" + p.Path + ":" + feature),
+			})
+			break // one finding per plan, at its first task
+		}
+	}
+	return findings, nil
+}

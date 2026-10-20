@@ -407,6 +407,23 @@ Für jedes aktive PRD gilt:
 
 ---
 
+### SDD-040 — Plan existiert vor der ersten Task {#sdd-040}
+
+- **Schweregrad:** `warn` (`default`, `pre-merge`)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `plan_before_tasks`
+
+**Begründung:** Tasks ohne technischen Plan zerlegen ein Vorgehen, das niemand abgestimmt hat; Schnittstellen und Datenmodell entstehen dann nebenbei. Der „Plan“ ist hier das technische Vorgehen, also die Tech Spec — in Spec Kit die `plan.md` neben der `tasks.md`.
+
+#### SDD-040 Prüfvertrag {#sdd-040-vertrag}
+
+1. Das **Feature** eines Artefakts ist sein `feature:`-Feld, ohne Feld das `*`-Segment des Globs bzw. der Dateiname ohne Endung.
+2. Für jedes aktive Feature-Artefakt unter `artifacts.plans`, das mindestens eine Task enthält (Erkennung wie bei [`SDD-041`](#sdd-041-vertrag)), muss eine aktive Tech Spec unter `artifacts.design` mit demselben Feature existieren.
+3. Fehlt sie, entsteht genau ein `warn` je Plan, an seiner ersten Task. Geprüft wird der aktuelle Stand, nicht die Reihenfolge in der Git-Historie.
+
+---
+
 ### SDD-041 — Jede Task referenziert mindestens ein Akzeptanzkriterium {#sdd-041}
 
 - **Schweregrad:** `error` (`default`, `pre-merge`)

@@ -132,3 +132,39 @@ func TestSDD051(t *testing.T) {
 		t.Fatalf("got %v, want %v", got, want)
 	}
 }
+
+// sdd-rules-003-040 AC-2: a feature with tasks needs an active Tech Spec.
+func TestSDD040(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "docs/plans/billing.md", "---\nfeature: billing\n---\n# Plan\n- [ ] AC-1 erste Task\n- [ ] AC-2 zweite\n") // no Tech Spec -> line 5
+	writeFile(t, root, "docs/plans/search.md", "---\nfeature: search\n---\n- [ ] AC-1 x\n")                                       // has Tech Spec
+	writeFile(t, root, "docs/design/search.md", "---\nfeature: search\n---\n")
+	writeFile(t, root, "docs/plans/notes.md", "---\nfeature: notes\n---\nNoch keine Tasks.\n")       // no tasks
+	writeFile(t, root, "docs/plans/old.md", "---\nfeature: old\nstatus: archived\n---\n- [ ] alt\n") // inactive
+	writeFile(t, root, "docs/plans/retired.md", "---\nfeature: retired\n---\n- [ ] AC-1 x\n")
+	writeFile(t, root, "docs/design/retired.md", "---\nfeature: retired\nstatus: superseded\n---\n") // inactive Tech Spec does not count
+
+	got := map[string]int{}
+	findings, err := checkSDD040(&Context{RepoRoot: root, Config: featureConfig()}, catalog.Rule{ID: "SDD-040"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range findings {
+		got[fmt.Sprintf("%s:%d", f.Path, f.Line)]++
+	}
+	if want := map[string]int{"docs/plans/billing.md:5": 1, "docs/plans/retired.md:4": 1}; fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+
+	// Spec Kit: tasks.md without plan.md in the same feature folder.
+	kit := t.TempDir()
+	writeFile(t, kit, "specs/features/001-a/tasks.md", "- [ ] T1\n")
+	writeFile(t, kit, "specs/features/002-b/tasks.md", "- [ ] T1\n")
+	writeFile(t, kit, "specs/features/002-b/plan.md", "# Plan\n")
+	cfg := featureConfig()
+	cfg.Artifacts.PRD, cfg.Artifacts.Design, cfg.Artifacts.Plans = "specs/features/*/spec.md", "specs/features/*/plan.md", "specs/features/*/tasks.md"
+	findings, err = checkSDD040(&Context{RepoRoot: kit, Config: cfg}, catalog.Rule{ID: "SDD-040"})
+	if err != nil || len(findings) != 1 || findings[0].Path != "specs/features/001-a/tasks.md" {
+		t.Fatalf("Spec Kit: %+v, %v", findings, err)
+	}
+}

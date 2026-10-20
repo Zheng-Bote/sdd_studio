@@ -18,6 +18,7 @@ Siehe [CHANGELOG](CHANGELOG.md). In CI: `uses: Zheng-Bote/sdd_studio@v0.1.0` (Be
 - **Feature-Regeln `SDD-020`, `SDD-030`:** PRD und Tech Spec bei Schwellenüberschreitung, mit Feature-Auflösung (`--feature`, Frontmatter im Diff, Branch-Name) und fail-closed-Verhalten (Phase 1C)
 - **AC-Regeln `SDD-021`, `SDD-022`:** Akzeptanzkriterien in PRDs tragen eine stabile Kennung `AC-<n>` und sind in Testdateien referenziert (Phase 1C)
 - **Archivregel `SDD-050`:** abgeschlossene Features liegen vor dem Release im Archiv (Phase 1C)
+- **Seit 0.1.0:** `SDD-003` (Verfassung ohne Feature-Inhalte, heuristisch), `SDD-040` (technischer Plan vor den Tasks); AC-Verweise nennen den Feature-Slug, sobald es mehr als ein Feature gibt
 - **Regeln aus v1.1:** `SDD-002b` (`.sdd`-Grammatik), `SDD-010`/`SDD-011` (ADR bei Verfassungsänderung, unveränderliche ADRs mit `.sdd/adr-lock.json`), `SDD-023`, `SDD-024`, `SDD-025`, `SDD-031`, `SDD-041`, `SDD-051`
 - **Baseline & Ratchet:** Gate-gebundene Baseline (`.sdd/baseline.json`) mit `content_hash`, deterministischem `ordinal` und Schutz für `baseline: forbidden`
 - **CLI-Kommandos:**
@@ -34,4 +35,5 @@ Siehe [CHANGELOG](CHANGELOG.md). In CI: `uses: Zheng-Bote/sdd_studio@v0.1.0` (Be
 
 ## Nächste Schritte (beim nächsten Mal)
 
-- **Später (Konzept §15):** `SDD-003` (heuristisch), `SDD-040`, `SDD-060`; Schritt 5/6 der Roadmap (`sdd ui`, Agenten-Schnittstelle).
+- **Entscheidung offen:** `SDD-060` (Widersprüche Verfassung ↔ Tech Spec) ist laut Konzept nur assistiert über ein lokales Sprachmodell möglich (§9.6).
+- **Roadmap Schritt 5/6:** `sdd ui`, Agenten-Schnittstelle (MCP).

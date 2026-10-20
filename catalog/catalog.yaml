@@ -248,6 +248,20 @@ rules:
       und Planung veralten mit jedem Release und verwässern ihre Autorität.
     handbook: handbuch/03-mechanismen.md#sdd-003
 
+  - id: SDD-040
+    title: Plan existiert vor der ersten Task
+    severity:
+      default: warn
+    profile: standard
+    check: plan_before_tasks
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-040-vertrag
+    rationale: >
+      Tasks ohne technischen Plan zerlegen ein Vorgehen, das niemand
+      abgestimmt hat; Schnittstellen und Datenmodell entstehen dann nebenbei.
+    handbook: handbuch/03-mechanismen.md#sdd-040
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:
