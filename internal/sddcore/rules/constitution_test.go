@@ -172,3 +172,50 @@ func TestSDD002b(t *testing.T) {
 		t.Errorf("missing file is SDD-001 territory, got %v", got)
 	}
 }
+
+// sdd-rules-003-040 AC-1: feature content in the constitution is reported line by line (heuristic, warn).
+func TestSDD003(t *testing.T) {
+	root := t.TempDir()
+	write := func(name, content string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("constitution.md", "---\nstatus: active\n---\n"+
+		"# Verfassung\n"+ // 4
+		"Feature-Inhalte (User Stories, Tasklisten) gehören in PRDs.\n"+ // 5: prose mention, no finding
+		"## Security\n"+ // 6
+		"1. Als Nutzer möchte ich mich anmelden.\n"+ // 7 user story
+		"- [ ] Login bauen\n"+ // 8 task
+		"- Erfüllt AC-3\n"+ // 9 AC
+		"## Sprint 12\n"+ // 10 planning heading
+		"## Release-Roadmap\n"+ // 11 planning heading
+		"```\n- [ ] im Codeblock\n```\n"+
+		"## Strikte Regeln\n"+
+		"As an admin, I want audit logs.\n") // 16 user story (English)
+	write("c.sdd", "Spec: x\n# Roadmap ist ein Kommentar\nArchitecture:\n  - [ ] Task im Label\nRoadmap:\n  später\n")
+
+	run := func(file string) []int {
+		t.Helper()
+		cfg := &config.Config{Version: 1, Profile: "minimal", Artifacts: config.ArtifactsConfig{Constitution: file}}
+		findings, err := checkSDD003(&Context{RepoRoot: root, Config: cfg}, catalog.Rule{ID: "SDD-003"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var lines []int
+		for _, f := range findings {
+			lines = append(lines, f.Line)
+		}
+		return lines
+	}
+	if got, want := run("constitution.md"), []int{7, 8, 9, 10, 11, 16}; fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("markdown: findings at %v, want %v", got, want)
+	}
+	if got, want := run("c.sdd"), []int{4, 5}; fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf(".sdd: findings at %v, want %v", got, want)
+	}
+	if got := run("missing.md"); len(got) != 0 {
+		t.Errorf("missing constitution is SDD-001 territory, got %v", got)
+	}
+}

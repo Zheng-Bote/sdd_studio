@@ -474,6 +474,28 @@ Ein **Feature-Artefakt** ist eine Markdown-Datei unter `artifacts.prd`, `artifac
 
 ---
 
+### SDD-003 — Verfassung enthält keine Feature-Inhalte {#sdd-003}
+
+- **Schweregrad:** `warn` (`default`, `pre-merge`) — die Erkennung ist heuristisch, daher nie `error`
+- **Profil:** ab `minimal`
+- **Baseline:** `allowed`
+- **Check:** `constitution_without_feature_content`
+
+**Begründung:** Die Verfassung hält dauerhafte, systemweite Regeln. User Stories, Tasks, Akzeptanzkriterien und Planung veralten mit jedem Release; stehen sie in der Verfassung, verwässern sie deren Autorität und erzeugen Drift zum PRD.
+
+#### SDD-003 Prüfvertrag {#sdd-003-vertrag}
+
+Geprüft wird jede Zeile der Verfassung außerhalb von Frontmatter und Codeblöcken; bei einer `.sdd`-Verfassung entfallen Kommentarzeilen (`#`, `//`), und Section-Labels gelten als Überschriften. Eine Zeile ist Feature-Inhalt, wenn sie — in dieser Reihenfolge, erster Treffer zählt —
+
+1. eine Überschrift ist, die mit `Sprint`, `Backlog`, `Roadmap`, `Meilenstein`, `Milestone` oder `User Stor…` an einem Wortanfang enthält (Groß-/Kleinschreibung egal);
+2. eine User Story ist: `Als … möchte ich` bzw. `As a/an … I want`;
+3. eine Checkbox-Task ist (Erkennung wie bei [`SDD-041`](#sdd-041-vertrag));
+4. eine AC-Kennung `AC-<n>` enthält.
+
+Für jede solche Zeile entsteht ein `warn`. Fließtext, der diese Begriffe nur erwähnt („User Stories gehören ins PRD“), ist kein Treffer.
+
+---
+
 ## Strikter Modus der Verfassung (`SDD-002b`)
 
 ### SDD-002b — `.sdd`-Verfassung erfüllt die formale Grammatik {#sdd-002b}

@@ -234,6 +234,20 @@ rules:
       sondern Prosa; Agenten können Präzedenz und Eigentum dann nicht auflösen.
     handbook: handbuch/03-mechanismen.md#sdd-002b
 
+  - id: SDD-003
+    title: Verfassung enthält keine Feature-Inhalte
+    severity:
+      default: warn
+    profile: minimal
+    check: constitution_without_feature_content
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-003-vertrag
+    rationale: >
+      Die Verfassung hält dauerhafte, systemweite Regeln. User Stories, Tasks
+      und Planung veralten mit jedem Release und verwässern ihre Autorität.
+    handbook: handbuch/03-mechanismen.md#sdd-003
+
   - id: SDD-070
     title: Jede Regel ist im Handbuch dokumentiert
     severity:

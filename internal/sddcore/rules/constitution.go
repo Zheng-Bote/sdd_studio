@@ -224,3 +224,64 @@ func checkSDD002b(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 	}
 	return findings, nil
 }
+
+var (
+	userStoryRegex     = regexp.MustCompile(`(?i)\bals\s+.+?\bmöchte\s+ich\b|\bas\s+an?\s+.+?\bi\s+want\b`)
+	planningTitleRegex = regexp.MustCompile(`(?i)\b(?:sprint|backlog|roadmap|meilenstein|milestone|user\s*stor)`)
+)
+
+// checkSDD003 (SDD-003, heuristic): The constitution contains no feature content (user stories, tasks, acceptance
+// criteria, planning sections).
+func checkSDD003(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
+	cleanRel, ok := repoRelative(strings.TrimSpace(ctx.Config.Artifacts.Constitution))
+	if !ok {
+		return nil, nil
+	}
+	data, err := os.ReadFile(filepath.Join(ctx.RepoRoot, filepath.FromSlash(cleanRel)))
+	if err != nil {
+		return nil, nil // SDD-001
+	}
+	sdd := strings.HasSuffix(strings.ToLower(cleanRel), ".sdd")
+	var lines []markdownLine
+	if sdd {
+		offset := 0
+		for i, l := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+			t := strings.TrimSpace(l)
+			if t != "" && !strings.HasPrefix(t, "#") && !strings.HasPrefix(t, "//") {
+				heading := 0
+				if sddLabelRegex.MatchString(l) {
+					heading = 1 // a top-level section label plays the role of a heading
+				}
+				lines = append(lines, markdownLine{Number: i + 1, ByteOffset: offset, Text: l, Heading: heading})
+			}
+			offset += len(l) + 1
+		}
+	} else {
+		lines = markdownLines(data)
+	}
+
+	var findings []report.Finding
+	for _, l := range lines {
+		var kind string
+		switch {
+		case l.Heading > 0 && planningTitleRegex.MatchString(l.Text):
+			kind = "Planungsabschnitt"
+		case userStoryRegex.MatchString(l.Text):
+			kind = "User Story"
+		case checkboxRegex.MatchString(l.Text):
+			kind = "Task"
+		case acIDRegex.MatchString(l.Text):
+			kind = "Akzeptanzkriterium"
+		default:
+			continue
+		}
+		findings = append(findings, report.Finding{
+			Path:        cleanRel,
+			Line:        l.Number,
+			ByteOffset:  l.ByteOffset,
+			Message:     fmt.Sprintf("Verfassung enthält Feature-Inhalt (%s) — gehört in PRD, Tech Spec oder Plan: %q", kind, strings.TrimSpace(l.Text)),
+			ContentHash: HashContent(rule.ID + ":" + cleanRel + ":" + l.Text),
+		})
+	}
+	return findings, nil
+}
