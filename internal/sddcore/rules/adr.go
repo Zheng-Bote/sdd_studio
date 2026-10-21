@@ -45,6 +45,12 @@ func (l adrLinks) names(adrPath, target string) bool {
 	return false
 }
 
+// ADRNames reports whether the ADR at adrPath names target in its references or adr frontmatter, as SDD-010 reads it.
+func ADRNames(root, adrPath, target string) bool {
+	links, ok := readADRLinks(root, adrPath)
+	return ok && links.names(adrPath, target)
+}
+
 func readADRLinks(root, rel string) (adrLinks, bool) {
 	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {

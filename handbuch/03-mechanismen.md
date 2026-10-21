@@ -85,7 +85,7 @@ Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abge
 | Änderungsabsicht | `touches` in einem Artefakt des Features |
 | Tech Spec | vorhanden — oder *nicht nötig*, weil die [Größenschwelle](#groessenschwelle) nicht überschritten ist |
 | Tech Spec nennt alle Kriterien | kein `SDD-031` |
-| ADR | *nicht nötig*, wenn `touches` die Verfassung nicht berührt; sonst *manuell* (`SDD-010` prüft im Gate) |
+| ADR | *nicht nötig*, wenn `touches` die Verfassung nicht berührt; sonst erledigt, sobald ein Artefakt des Features auf ein ADR verlinkt, das die Verfassung in `references` nennt und `accepted` ist — bis dahin *manuell* (anlegen, verlinken, entscheiden; `SDD-010` prüft im Gate) |
 | Plan | *nicht nötig* ohne Plan; sonst kein `SDD-040`/`SDD-041` |
 | Tests | kein `SDD-022` für die Kennungen des PRDs |
 | Abschluss | nach dem Merge `status: implemented`; dann vor dem Release archivieren (`SDD-050`) |

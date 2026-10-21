@@ -11,8 +11,10 @@ import (
 	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/adrlock"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/report"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/rules"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scan"
 )
 
@@ -136,6 +138,51 @@ func activeFeatures(root string, cfg *config.Config) (map[string]*artifactSet, e
 	return sets, nil
 }
 
+// adrStep decides the ADR step of a feature whose touches include the constitution. Done means an artifact of the
+// feature links to an accepted ADR that names the constitution (references or adr, as SDD-010 reads it). Any ADR
+// naming the constitution is not enough: it may justify an older, unrelated change.
+func adrStep(root string, cfg *config.Config, set *artifactSet, constitution string) Step {
+	step := Step{ID: "adr", Title: "ADR für die Verfassungsänderung", State: StateManual,
+		Detail:  "touches berührt die Verfassung: ein ADR mit references auf sie anlegen, im PRD oder in der Tech Spec verlinken und entscheiden; SDD-010 prüft im Gate.",
+		Command: "sdd new --type adr --title <Titel>"}
+	adrs, err := adrlock.Collect(root, cfg)
+	if err != nil {
+		return step
+	}
+	linked := map[string]bool{}
+	for _, x := range set.all() {
+		for _, target := range rules.LinksIn(root, x.Path) {
+			linked[target] = true
+		}
+	}
+	var accepted, open, unlinked []string
+	for _, a := range adrs {
+		if !rules.ADRNames(root, a.Path, constitution) {
+			continue
+		}
+		switch {
+		case !linked[a.Path]:
+			unlinked = append(unlinked, a.Path)
+		case a.Status == "accepted":
+			accepted = append(accepted, a.Path)
+		case !a.Decided:
+			open = append(open, a.Path)
+		}
+	}
+	switch {
+	case len(accepted) > 0:
+		step.State, step.Command = StateDone, ""
+		step.Detail = strings.Join(accepted, ", ") + " (accepted)"
+	case len(open) > 0:
+		step.Title, step.Command = "ADR entscheiden", ""
+		step.Detail = strings.Join(open, ", ") + " ist verlinkt, aber noch nicht entschieden: der Mensch setzt status: accepted (oder rejected)."
+	case len(unlinked) > 0:
+		step.Detail = "touches berührt die Verfassung. Diese ADRs nennen sie: " + strings.Join(unlinked, ", ") +
+			" — das zutreffende im PRD oder in der Tech Spec verlinken, sonst ein neues anlegen; SDD-010 prüft im Gate."
+	}
+	return step
+}
+
 func findingsAt(findings []report.Finding, rule string, paths []scan.Artifact) []report.Finding {
 	var out []report.Finding
 	for _, f := range findings {
@@ -240,18 +287,15 @@ func featureGuide(root string, cfg *config.Config, slug string, set *artifactSet
 	}
 
 	// 7. ADR when the constitution is touched
+	constitution, err := scan.CleanRel(cfg.Artifacts.Constitution)
 	constitutionTouched := false
-	if c, err := scan.CleanRel(cfg.Artifacts.Constitution); err == nil {
-		for _, t := range touches {
-			if scan.Overlaps(t, c) {
-				constitutionTouched = true
-			}
+	for _, t := range touches {
+		if err == nil && scan.Overlaps(t, constitution) {
+			constitutionTouched = true
 		}
 	}
 	if constitutionTouched {
-		add(Step{ID: "adr", Title: "ADR für die Verfassungsänderung", State: StateManual,
-			Detail:  "touches berührt die Verfassung: ein ADR mit references auf sie anlegen und entscheiden; SDD-010 prüft im Gate.",
-			Command: "sdd new --type adr --title <Titel>"})
+		add(adrStep(root, cfg, set, constitution))
 	} else {
 		add(Step{ID: "adr", Title: "ADR für die Verfassungsänderung", State: StateNotNeeded, Detail: "Verfassung nicht betroffen"})
 	}

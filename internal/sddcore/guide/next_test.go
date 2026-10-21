@@ -3,6 +3,7 @@ package guide_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/guide"
@@ -109,6 +110,66 @@ func TestNextWalksTheProcess(t *testing.T) {
 				t.Errorf("%s: step %s = %s, want %s", st.name, id, states[id], want)
 			}
 		}
+	}
+}
+
+// sdd-guidance AC-2: the ADR step is done only when the feature links an accepted ADR that names the constitution,
+// the condition SDD-010 checks in the gate; an unrelated ADR naming the constitution is not enough.
+func TestNextADRStep(t *testing.T) {
+	root := project(t)
+	const body = "## Nicht-Ziele\n- nichts\n## Akzeptanzkriterien\n- AC-1 x\n"
+	prd := func(extra string) {
+		write(t, root, "docs/prd/rules.md", "---\nfeature: rules\nstatus: active\ntouches: [constitution.md]\n---\n"+body+extra)
+	}
+	adr := func(rel, status, refs string) {
+		write(t, root, rel, "---\nstatus: "+status+"\nreferences: ["+refs+"]\n---\n# ADR\n")
+	}
+	stepOf := func() guide.Step {
+		t.Helper()
+		g, err := guide.Next(root, "rules")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, s := range g.Features[0].Steps {
+			if s.ID == "adr" {
+				return s
+			}
+		}
+		t.Fatal("no adr step")
+		return guide.Step{}
+	}
+	link := "\nBegründung: [ADR 0002](../adr/0002-neue-regel.md)\n"
+
+	prd("")
+	if s := stepOf(); s.State != guide.StateManual || !strings.Contains(s.Command, "--type adr") {
+		t.Errorf("no ADR: %+v", s)
+	}
+
+	adr("docs/adr/0001-alt.md", "accepted", "constitution.md")
+	adr("docs/adr/0002-neue-regel.md", "proposed", "constitution.md")
+	adr("docs/adr/0003-anderes.md", "accepted", "README.md")
+	if s := stepOf(); s.State != guide.StateManual || !strings.Contains(s.Detail, "0001-alt.md") || strings.Contains(s.Detail, "0003") {
+		t.Errorf("unlinked ADRs must only be suggested: %+v", s)
+	}
+
+	prd(link)
+	if s := stepOf(); s.State != guide.StateManual || s.Title != "ADR entscheiden" || !strings.Contains(s.Detail, "0002-neue-regel.md") {
+		t.Errorf("linked but proposed: %+v", s)
+	}
+
+	adr("docs/adr/0002-neue-regel.md", "rejected", "constitution.md")
+	if s := stepOf(); s.State == guide.StateDone {
+		t.Errorf("a rejected ADR does not justify the change: %+v", s)
+	}
+
+	adr("docs/adr/0002-neue-regel.md", "accepted", "constitution.md")
+	if s := stepOf(); s.State != guide.StateDone || !strings.Contains(s.Detail, "0002-neue-regel.md (accepted)") {
+		t.Errorf("linked and accepted: %+v", s)
+	}
+
+	adr("docs/adr/0002-neue-regel.md", "accepted", "README.md")
+	if s := stepOf(); s.State == guide.StateDone {
+		t.Errorf("a linked ADR that does not name the constitution: %+v", s)
 	}
 }
 

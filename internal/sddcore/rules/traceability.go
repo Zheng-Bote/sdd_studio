@@ -210,6 +210,24 @@ var (
 	schemeRegex     = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*:`)
 )
 
+// LinksIn returns the repository-relative targets of the Markdown links in the file rel (external links and anchors
+// excluded); an unreadable file has none.
+func LinksIn(root, rel string) []string {
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, line := range strings.Split(string(data), "\n") {
+		for _, t := range linkTargets(line) {
+			if resolved, ok := resolveLink(rel, t); ok {
+				out = append(out, resolved)
+			}
+		}
+	}
+	return out
+}
+
 // linkTargets extracts the targets of inline links and reference definitions in one line.
 func linkTargets(line string) []string {
 	var out []string
