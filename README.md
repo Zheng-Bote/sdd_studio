@@ -92,7 +92,7 @@ npm run tauri:dev        # Oberfläche und Sidecars bauen, Anwendung starten
 npm run tauri:build      # Bündel (deb, rpm, AppImage, dmg, msi …) unter src-tauri/target/release/bundle/
 ```
 
-Die Anwendung bringt `sdd-desk` und `sdd` als Sidecars mit. Sie öffnet das Projekt aus dem Startargument, sonst das zuletzt genutzte, sonst einen Ordnerdialog; **Datei → Projekt öffnen …** (Strg+O) wechselt es. Die Modelle stehen in `llm.env` im Konfigurationsordner der Anwendung, unter Linux `~/.config/io.github.zhengbote.sdddesk/llm.env` (Rechte `0600`).
+Die Anwendung bringt `sdd-desk` und `sdd` als Sidecars mit; `sdd` heißt dort `sdd-studio-sdd`, damit ein Paket kein zweites `/usr/bin/sdd` installiert. Sie öffnet das Projekt aus dem Startargument, sonst das zuletzt genutzte, sonst einen Ordnerdialog; **Datei → Projekt öffnen …** (Strg+O) wechselt es. Die Modelle stehen in `llm.env` im Konfigurationsordner der Anwendung, unter Linux `~/.config/io.github.zhengbote.sdddesk/llm.env` (Rechte `0600`).
 
 ### Als lokale Web-Oberfläche: bauen
 
@@ -114,7 +114,7 @@ cp config/llm.env.example bin/config/llm.env
 chmod 600 bin/config/llm.env      # sdd-desk lehnt Dateien ab, die Gruppe oder andere lesen dürfen
 ```
 
-Unterstützt: Ollama lokal, Ollama Cloud, OpenRouter, NVIDIA NIM, Claude und Gemini. Je Anbieter `<ANBIETER>_API_KEY`, optional `<ANBIETER>_ENDPOINT` und `<ANBIETER>_LLM_01…`; Prozessvariablen haben Vorrang. Ohne Datei steht nur lokales Ollama zur Verfügung (Modelle über `/api/tags`). Mit `--config <pfad>` lässt sich eine andere Datei angeben.
+Unterstützt: Ollama lokal, Ollama Cloud, OpenRouter, NVIDIA NIM, Claude und Gemini. Je Anbieter `<ANBIETER>_API_KEY`, optional `<ANBIETER>_ENDPOINT`, `<ANBIETER>_LLM_01…` und `<ANBIETER>_TURN_TIMEOUT` (Frist eines Gesprächszugs, Standard 30 Minuten für lokales Ollama, 10 für Cloud-Anbieter); Prozessvariablen haben Vorrang. Ohne Datei steht nur lokales Ollama zur Verfügung (Modelle über `/api/tags`). Mit `--config <pfad>` lässt sich eine andere Datei angeben.
 
 ### Starten
 
@@ -136,7 +136,7 @@ bin/sdd-desk --project . --open
 
 `sdd-desk` gibt Adresse und URL mit Sitzungstoken aus; ohne `--open` diese URL im Browser öffnen. Beenden mit Strg+C.
 
-In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**) oder frei fragen. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
+In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
 
 ### Was der Desktop darf
 
@@ -153,10 +153,11 @@ Entwicklung der Oberfläche mit Live-Reload: `bin/sdd-desk --port 47900` starten
 ```text
 go test ./...
 cd apps/desk && npm test
-cd apps/desk/src-tauri && cargo test
+cd apps/desk && npm run desk:sidecars && cd src-tauri && cargo test   # Tauri prüft beim Bauen, ob die Sidecars existieren
 go run ./cmd/sdd lint
 ```
 
 ## Nächste Schritte
 
-- **Entscheidung offen:** `SDD-060` (Widersprüche Verfassung ↔ Tech Spec) ist laut Konzept nur assistiert über ein lokales Sprachmodell möglich (§9.6) — Kandidat für `sdd-desk`, nicht für `sdd`.
+- **Zitate prüfen:** Beim Abgleich mit der Verfassung (`sdd-conflicts`) prüft `sdd-desk` maschinell, ob die zitierten Stellen wörtlich in Verfassung und Tech Spec stehen. Kleine lokale Modelle halten die Zitierpflicht nicht zuverlässig ein.
+- **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.
