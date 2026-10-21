@@ -1,6 +1,7 @@
 ---
 feature: sdd-conflicts
-status: active
+status: archived
+release: v0.4.0
 archive-after:
 touches:
   - internal/mcp/**
@@ -12,7 +13,7 @@ touches:
 
 # Tech Spec — Assistierter Abgleich von Tech Spec und Verfassung (`SDD-060`)
 
-Setzt das PRD `docs/prd/sdd-conflicts.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-guidance.md` (`sdd mcp`) und `docs/archive/design/sdd-desk.md`; Werkzeuge, Freigaben und Grenzen von `sdd-desk` bleiben, wie sie dort beschrieben sind.
+Setzt das PRD `docs/archive/prd/sdd-conflicts.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-guidance.md` (`sdd mcp`) und `docs/archive/design/sdd-desk.md`; Werkzeuge, Freigaben und Grenzen von `sdd-desk` bleiben, wie sie dort beschrieben sind.
 
 ## Architektur
 

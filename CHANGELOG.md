@@ -2,6 +2,26 @@
 
 Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung [Semantic Versioning](https://semver.org/lang/de/). Der Regelkatalog trägt eine eigene Version (`catalog/catalog.yaml`).
 
+## [0.4.0] — 2026-10-21
+
+Regelkatalog unverändert `1.1.0` mit 22 Regeln, Berichtsformat unverändert `schema_version: 1`.
+
+### Hinzugefügt
+
+- **Abgleich mit der Verfassung** (`SDD-060`, assistiert): Der geführte Ablauf `sdd-conflicts` lässt ein Modell in `sdd-desk` die Tech Spec eines Features gegen jede Regel der Verfassung halten und nur Widersprüche melden, die es auf beiden Seiten wörtlich mit Datei und Zeile zitiert. Das Ergebnis ist ein Hinweis, kein Befund: `SDD-060` ist keine Katalogregel und erscheint in keinem Bericht und keiner Baseline.
+- **`sdd_read`** in `sdd mcp` (jetzt elf Werkzeuge): liest Artefakte (Verfassung, ADRs, PRDs, Tech Specs, Pläne, Archiv) mit Zeilennummern oder listet sie; nichts anderes, nur `.md`/`.sdd`, über 256 KiB gekürzt.
+- **Frist je Anbieter** in `sdd-desk`: `<ANBIETER>_TURN_TIMEOUT` in `llm.env` (1m bis 4h).
+
+### Geändert
+
+- Ein Gesprächszug mit lokalem Ollama darf 30 statt 10 Minuten dauern; Cloud-Anbieter bleiben bei 10 Minuten. Eine einzelne Anfrage an den Anbieter hat keine eigene, kürzere Frist mehr.
+- Konzept und Handbuch führen `SDD-060` als assistierten Abgleich statt als Katalogregel.
+- Die GitHub Action und die Workflow-Vorlage von `sdd init` verweisen auf `@v0.4.0`.
+
+### Archiviert
+
+Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.4.0`): `sdd-conflicts`, `sdd-desk-turn-timeout`.
+
 ## [0.3.0] — 2026-10-21
 
 Regelkatalog unverändert `1.1.0` mit 22 Regeln, Berichtsformat unverändert `schema_version: 1`.
@@ -72,6 +92,7 @@ Erste Version. Regelkatalog `1.0.0` mit 20 Regeln, Berichtsformat `schema_versio
 
 Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.1.0`): `sdd-core-v1`, `sdd-init-new`, `sdd-adopt`, `sdd-report`, `sdd-rules-v1-1`.
 
+[0.4.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.1.0

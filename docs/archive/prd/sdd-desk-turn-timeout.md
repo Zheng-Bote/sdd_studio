@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-turn-timeout
-status: active
+status: archived
+release: v0.4.0
 archive-after:
 touches:
   - cmd/sdd-desk/**
