@@ -71,8 +71,10 @@ func DefaultConfigPath() string {
 }
 
 // LoadConfig reads the provider configuration. A missing file at the default location means "no cloud providers";
-// a missing explicit file is an error. Values from the process environment (getenv) take precedence.
-func LoadConfig(path string, explicit bool, getenv func(string) string) (*Config, error) {
+// a missing explicit file is an error. Values from the process environment (getenv) take precedence. hint is where
+// the user should create the file (the desktop application's config directory); it is only named in the warning,
+// never read. Empty means path.
+func LoadConfig(path string, explicit bool, hint string, getenv func(string) string) (*Config, error) {
 	cfg := &Config{Path: path, Providers: []Provider{}, Warnings: []string{}}
 	vars := map[string]string{}
 	info, err := os.Stat(path)
@@ -85,7 +87,10 @@ func LoadConfig(path string, explicit bool, getenv func(string) string) (*Config
 			return nil, err
 		}
 	case errors.Is(err, os.ErrNotExist) && !explicit:
-		cfg.Warnings = append(cfg.Warnings, "keine Konfiguration unter "+path+"; nur lokales Ollama verfügbar")
+		if hint == "" {
+			hint = path
+		}
+		cfg.Warnings = append(cfg.Warnings, "keine Konfiguration — llm.env unter "+hint+" anlegen (Rechte 0600); nur lokales Ollama verfügbar")
 	default:
 		return nil, fmt.Errorf("Konfiguration %s nicht lesbar: %w", path, err)
 	}

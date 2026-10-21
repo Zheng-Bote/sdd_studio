@@ -31,6 +31,7 @@ func main() {
 func run() int {
 	project := flag.String("project", ".", "Projektverzeichnis (Repository mit sdd.config.yaml)")
 	configPath := flag.String("config", "", "llm.env (Standard: config/llm.env neben sdd-desk)")
+	configHint := flag.String("config-hint", "", "Ort für llm.env, den die Warnung nennt, wenn ohne --config keine Datei gefunden wird")
 	sddPath := flag.String("sdd", "", "Pfad zu sdd (Standard: neben sdd-desk, sonst PATH)")
 	port := flag.Int("port", 0, "Port auf 127.0.0.1 (0 = freier Port)")
 	open := flag.Bool("open", false, "im Standardbrowser öffnen")
@@ -46,7 +47,7 @@ func run() int {
 	if !explicit {
 		*configPath = desk.DefaultConfigPath()
 	}
-	cfg, err := desk.LoadConfig(*configPath, explicit, os.Getenv)
+	cfg, err := desk.LoadConfig(*configPath, explicit, *configHint, os.Getenv)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "sdd-desk: %v\n", err)
 		return 2

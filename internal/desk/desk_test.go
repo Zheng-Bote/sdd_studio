@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	path := filepath.Join(dir, "config", "llm.env")
 	writeFile(t, path, "# Kommentar\nexport CLAUDE_API_KEY=\"sk-file\"\nCLAUDE_LLM_01=claude-a\nOPENROUTER_API_KEY=none\nOPENROUTER_LLM_01=x\nGEMINI_API_KEY=\nNVIDIA_API_KEY=nv\nNVIDIA_LLM_01=n1\nNVIDIA_LLM_02=n2\nOLLAMA_LOCAL_ENDPOINT=http://127.0.0.1:1/\n", 0o600)
 
-	cfg, err := LoadConfig(path, true, env(map[string]string{"CLAUDE_API_KEY": "sk-env", "CLAUDE_LLM_01": "claude-env"}))
+	cfg, err := LoadConfig(path, true, "", env(map[string]string{"CLAUDE_API_KEY": "sk-env", "CLAUDE_LLM_01": "claude-env"}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,13 +69,13 @@ func TestLoadConfig(t *testing.T) {
 	if err := os.Chmod(path, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := LoadConfig(path, true, env(nil)); !errors.Is(err, ErrInsecureConfig) {
+	if _, err := LoadConfig(path, true, "", env(nil)); !errors.Is(err, ErrInsecureConfig) {
 		t.Errorf("readable for others: want ErrInsecureConfig, got %v", err)
 	}
-	if _, err := LoadConfig(filepath.Join(dir, "missing.env"), true, env(nil)); err == nil {
+	if _, err := LoadConfig(filepath.Join(dir, "missing.env"), true, "", env(nil)); err == nil {
 		t.Errorf("missing explicit file must fail")
 	}
-	cfg, err = LoadConfig(filepath.Join(dir, "missing.env"), false, env(nil))
+	cfg, err = LoadConfig(filepath.Join(dir, "missing.env"), false, "", env(nil))
 	if err != nil || len(cfg.Providers) != 1 || cfg.Providers[0].ID != LocalOllamaID || len(cfg.Warnings) == 0 {
 		t.Errorf("missing default file: only local ollama with a warning, got %+v %v", cfg, err)
 	}
@@ -173,6 +173,29 @@ func TestProviders(t *testing.T) {
 			t.Errorf("want HTTP error, got %v", err)
 		}
 	})
+}
+
+// sdd-desk-config-hint AC-1: without a file at the default location the warning names the hint, otherwise the default location; the hint is never read.
+func TestLoadConfigHint(t *testing.T) {
+	dir := t.TempDir()
+	missing := filepath.Join(dir, "bin", "config", "llm.env")
+	hint := filepath.Join(dir, "app", "llm.env")
+	writeFile(t, hint, "CLAUDE_API_KEY=sk-hint\nCLAUDE_LLM_01=c\n", 0o644) // must not be read (and its permissions not checked)
+
+	cfg, err := LoadConfig(missing, false, hint, env(nil))
+	if err != nil || len(cfg.Providers) != 1 || len(cfg.Warnings) != 1 {
+		t.Fatalf("cfg %+v, err %v", cfg, err)
+	}
+	if w := cfg.Warnings[0]; !strings.Contains(w, hint) || strings.Contains(w, missing) || !strings.Contains(w, "0600") {
+		t.Errorf("warning must name the hint: %q", w)
+	}
+	cfg, _ = LoadConfig(missing, false, "", env(nil))
+	if w := cfg.Warnings[0]; !strings.Contains(w, missing) {
+		t.Errorf("without hint the default location: %q", w)
+	}
+	if _, err := LoadConfig(missing, true, hint, env(nil)); err == nil {
+		t.Error("an explicit missing file stays an error, whatever the hint")
+	}
 }
 
 // ---------- agent with a scripted model and a real in-process sdd mcp ----------

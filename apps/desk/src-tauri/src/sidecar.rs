@@ -23,7 +23,7 @@ const CONFIG_FILE: &str = "llm.env";
 
 /// Arguments for `sdd-desk`: the project, a free port on 127.0.0.1 (`sdd-desk` binds only there) and
 /// `--exit-with-stdin`, so it also ends when the shell dies without running its exit handler.
-pub fn desk_args(project: &Path, config: Option<&Path>) -> Vec<String> {
+pub fn desk_args(project: &Path, config: Option<&ConfigArg>) -> Vec<String> {
     let mut args = vec![
         "--project".to_string(),
         project.to_string_lossy().into_owned(),
@@ -31,17 +31,31 @@ pub fn desk_args(project: &Path, config: Option<&Path>) -> Vec<String> {
         "0".to_string(),
         "--exit-with-stdin".to_string(),
     ];
-    if let Some(config) = config {
-        args.extend(["--config".to_string(), config.to_string_lossy().into_owned()]);
+    match config {
+        Some(ConfigArg::File(path)) => args.extend(["--config".to_string(), path.to_string_lossy().into_owned()]),
+        Some(ConfigArg::Hint(path)) => args.extend(["--config-hint".to_string(), path.to_string_lossy().into_owned()]),
+        None => {}
     }
     args
 }
 
-/// `<app_config_dir>/llm.env` if it exists. Otherwise `sdd-desk` uses `config/llm.env` next to itself.
+/// Where `sdd-desk` finds `llm.env`: the file in the app config dir, or, if it is missing, only the hint naming that
+/// location in the warning while `sdd-desk` falls back to `config/llm.env` next to itself.
+#[derive(Debug, PartialEq, Eq)]
+pub enum ConfigArg {
+    File(PathBuf),
+    Hint(PathBuf),
+}
+
+/// `<app_config_dir>/llm.env` as `File` if it exists, otherwise as `Hint`.
 /// Only the path is passed on; `sdd-desk` checks the file's permissions and reads the keys.
-pub fn config_arg(app_config_dir: &Path) -> Option<PathBuf> {
+pub fn config_arg(app_config_dir: &Path) -> ConfigArg {
     let path = app_config_dir.join(CONFIG_FILE);
-    path.is_file().then_some(path)
+    if path.is_file() {
+        ConfigArg::File(path)
+    } else {
+        ConfigArg::Hint(path)
+    }
 }
 
 /// Recognises the line in which `sdd-desk` announces its address with the session token.
@@ -122,9 +136,9 @@ impl SidecarManager {
         };
         crate::show_splash(app, "starting", Some(&project), None);
 
-        let config = app.path().app_config_dir().ok().and_then(|dir| config_arg(&dir));
+        let config = app.path().app_config_dir().ok().map(|dir| config_arg(&dir));
         let command = match app.shell().sidecar(SIDECAR) {
-            Ok(command) => command.args(desk_args(&project, config.as_deref())),
+            Ok(command) => command.args(desk_args(&project, config.as_ref())),
             Err(e) => return self.fail(app, generation, format!("{SIDECAR} nicht gefunden: {e}")),
         };
         let (mut events, child) = match command.spawn() {
@@ -244,7 +258,7 @@ fn kill(inner: &mut Inner) {
 
 #[cfg(test)]
 mod tests {
-    use super::{config_arg, desk_args, origin_key, ready_url, redact};
+    use super::{config_arg, desk_args, origin_key, ready_url, redact, ConfigArg};
     use crate::settings::tests::temp_dir;
     use std::path::Path;
 
@@ -257,28 +271,34 @@ mod tests {
             desk_args(Path::new("/work/repo"), None),
             ["--project", "/work/repo", "--port", "0", "--exit-with-stdin"]
         );
-        let args = desk_args(Path::new("/work/repo"), Some(Path::new("/cfg/llm.env")));
+        let args = desk_args(Path::new("/work/repo"), Some(&ConfigArg::File("/cfg/llm.env".into())));
         assert!(args.ends_with(&["--config".to_string(), "/cfg/llm.env".to_string()]));
         assert!(!args.iter().any(|a| a == "--open"));
+        // sdd-desk-config-hint AC-2: a missing llm.env in the app config dir is named as hint, not passed as config
+        let args = desk_args(Path::new("/work/repo"), Some(&ConfigArg::Hint("/cfg/llm.env".into())));
+        assert!(args.ends_with(&["--config-hint".to_string(), "/cfg/llm.env".to_string()]));
+        assert!(!args.iter().any(|a| a == "--config"));
     }
 
     // sdd-desk-tauri AC-7: sdd-desk ends with the shell even if the shell is killed (stdin closes)
     #[test]
     fn sidecar_ends_with_the_shell() {
-        let args = desk_args(Path::new("/work/repo"), Some(Path::new("/cfg/llm.env")));
+        let args = desk_args(Path::new("/work/repo"), Some(&ConfigArg::File("/cfg/llm.env".into())));
         assert!(args.iter().any(|a| a == "--exit-with-stdin"));
     }
 
     // sdd-desk-tauri AC-6: llm.env in the app config dir is passed as a path, otherwise sdd-desk's default applies
+    // sdd-desk-config-hint AC-2: without the file the same path becomes the hint for the warning
     #[test]
     fn config_is_passed_only_when_present() {
         let dir = temp_dir("config");
-        assert_eq!(config_arg(&dir), None);
-        std::fs::write(dir.join("llm.env"), b"OLLAMA_API_KEY=\n").unwrap();
-        assert_eq!(config_arg(&dir), Some(dir.join("llm.env")));
-        std::fs::remove_file(dir.join("llm.env")).unwrap();
-        std::fs::create_dir(dir.join("llm.env")).unwrap();
-        assert_eq!(config_arg(&dir), None);
+        let path = dir.join("llm.env");
+        assert_eq!(config_arg(&dir), ConfigArg::Hint(path.clone()));
+        std::fs::write(&path, b"OLLAMA_API_KEY=\n").unwrap();
+        assert_eq!(config_arg(&dir), ConfigArg::File(path.clone()));
+        std::fs::remove_file(&path).unwrap();
+        std::fs::create_dir(&path).unwrap();
+        assert_eq!(config_arg(&dir), ConfigArg::Hint(path));
     }
 
     // sdd-desk-tauri AC-3: only sdd-desk's address line on 127.0.0.1 with a hex token counts as ready
