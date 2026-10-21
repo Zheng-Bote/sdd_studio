@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-turn-timeout
-status: active
+status: archived
+release: v0.4.0
 archive-after:
 touches:
   - cmd/sdd-desk/**
@@ -11,7 +12,7 @@ touches:
 
 # Tech Spec — Einstellbare Frist für einen Gesprächszug in `sdd-desk`
 
-Setzt das PRD `docs/prd/sdd-desk-turn-timeout.md` um. Grundlage ist die Tech Spec `docs/archive/design/sdd-desk.md` (Konfiguration, HTTP-API).
+Setzt das PRD `docs/archive/prd/sdd-desk-turn-timeout.md` um. Grundlage ist die Tech Spec `docs/archive/design/sdd-desk.md` (Konfiguration, HTTP-API).
 
 ## Architektur
 

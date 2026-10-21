@@ -1,6 +1,7 @@
 ---
 feature: sdd-conflicts
-status: active
+status: archived
+release: v0.4.0
 archive-after:
 touches:
   - internal/mcp/**
