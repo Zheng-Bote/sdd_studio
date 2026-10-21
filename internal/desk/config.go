@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Protocols spoken by the providers.
@@ -30,7 +31,17 @@ type Provider struct {
 	Cloud    bool     `json:"cloud"`
 	Models   []string `json:"models"`
 	APIKey   string   `json:"-"`
+	// TurnTimeout bounds one conversation turn with this provider.
+	TurnTimeout time.Duration `json:"-"`
 }
+
+// Turn timeouts: local models need longer for multi-step turns; <PREFIX>_TURN_TIMEOUT overrides within the bounds.
+const (
+	localTurnTimeout = 30 * time.Minute
+	cloudTurnTimeout = 10 * time.Minute
+	minTurnTimeout   = time.Minute
+	maxTurnTimeout   = 4 * time.Hour
+)
 
 type providerSpec struct {
 	prefix, id, name, protocol, endpoint string
@@ -105,6 +116,17 @@ func LoadConfig(path string, explicit bool, hint string, getenv func(string) str
 		p := Provider{ID: spec.id, Name: spec.name, Protocol: spec.protocol, Endpoint: spec.endpoint, Cloud: spec.cloud, Models: []string{}}
 		if ep := value(spec.prefix + "_ENDPOINT"); ep != "" {
 			p.Endpoint = strings.TrimRight(ep, "/")
+		}
+		p.TurnTimeout = cloudTurnTimeout
+		if !spec.cloud {
+			p.TurnTimeout = localTurnTimeout
+		}
+		if raw := value(spec.prefix + "_TURN_TIMEOUT"); raw != "" {
+			if d, err := time.ParseDuration(raw); err == nil && d >= minTurnTimeout && d <= maxTurnTimeout {
+				p.TurnTimeout = d
+			} else {
+				cfg.Warnings = append(cfg.Warnings, fmt.Sprintf("%s: %s_TURN_TIMEOUT „%s“ ungültig (1m bis 4h); es gilt %s", spec.name, spec.prefix, raw, p.TurnTimeout))
+			}
 		}
 		for i := 1; i <= 99; i++ {
 			if m := value(fmt.Sprintf("%s_LLM_%02d", spec.prefix, i)); m != "" {

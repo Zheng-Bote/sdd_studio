@@ -187,7 +187,7 @@ func (s *Server) handleTurn(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, fmt.Errorf("ungültige Anfrage: %w", err))
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), turnTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), s.turnTimeout(req.Provider))
 	defer cancel()
 	res, err := s.Agent.Turn(ctx, req)
 	if err != nil {
@@ -217,8 +217,15 @@ func (s *Server) handleModelTest(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
-// turnTimeout bounds one conversation turn.
-const turnTimeout = 10 * time.Minute
+// turnTimeout is the provider's bound for one conversation turn; unknown providers are refused by Agent.Check anyway.
+func (s *Server) turnTimeout(providerID string) time.Duration {
+	for _, p := range s.Config.Providers {
+		if p.ID == providerID && p.TurnTimeout > 0 {
+			return p.TurnTimeout
+		}
+	}
+	return cloudTurnTimeout
+}
 
 func turnErrorStatus(err error) int {
 	switch {
@@ -256,7 +263,7 @@ func (s *Server) handleTurnStream(w http.ResponseWriter, r *http.Request) {
 		_ = enc.Encode(e)
 		_ = rc.Flush()
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), turnTimeout)
+	ctx, cancel := context.WithTimeout(r.Context(), s.turnTimeout(req.Provider))
 	defer cancel()
 	res, err := s.Agent.TurnStream(ctx, req, emit)
 	if err != nil {

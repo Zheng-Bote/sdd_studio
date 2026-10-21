@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/mcp"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scaffold"
@@ -173,6 +174,66 @@ func TestProviders(t *testing.T) {
 			t.Errorf("want HTTP error, got %v", err)
 		}
 	})
+}
+
+// sdd-desk-turn-timeout AC-1: 30 minutes for local Ollama, 10 for cloud providers without an entry.
+// sdd-desk-turn-timeout AC-2: <PREFIX>_TURN_TIMEOUT from llm.env or the environment within 1m..4h; otherwise a warning and the default.
+func TestTurnTimeoutConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "llm.env")
+	writeFile(t, path, "CLAUDE_API_KEY=k\nCLAUDE_LLM_01=c\nNVIDIA_API_KEY=k\nNVIDIA_LLM_01=n\nNVIDIA_TURN_TIMEOUT=1h30m\nGEMINI_API_KEY=k\nGEMINI_LLM_01=g\nGEMINI_TURN_TIMEOUT=5h\nOPENROUTER_API_KEY=k\nOPENROUTER_LLM_01=o\nOPENROUTER_TURN_TIMEOUT=bald\n", 0o600)
+	cfg, err := LoadConfig(path, true, "", env(map[string]string{"OLLAMA_LOCAL_TURN_TIMEOUT": "45m"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]time.Duration{LocalOllamaID: 45 * time.Minute, "claude": 10 * time.Minute, "nvidia": 90 * time.Minute, "gemini": 10 * time.Minute, "openrouter": 10 * time.Minute}
+	for _, p := range cfg.Providers {
+		if p.TurnTimeout != want[p.ID] {
+			t.Errorf("%s: %v, want %v", p.ID, p.TurnTimeout, want[p.ID])
+		}
+	}
+	warnings := strings.Join(cfg.Warnings, "\n")
+	if !strings.Contains(warnings, "GEMINI_TURN_TIMEOUT „5h“ ungültig") || !strings.Contains(warnings, "OPENROUTER_TURN_TIMEOUT „bald“ ungültig") || strings.Count(warnings, "TURN_TIMEOUT") != 2 {
+		t.Errorf("warnings %q", warnings)
+	}
+	cfg, _ = LoadConfig(filepath.Join(dir, "missing.env"), false, "", env(nil))
+	if cfg.Providers[0].TurnTimeout != 30*time.Minute {
+		t.Errorf("local default %v", cfg.Providers[0].TurnTimeout)
+	}
+	var fields map[string]any
+	data, _ := json.Marshal(cfg.Providers[0])
+	_ = json.Unmarshal(data, &fields)
+	for k := range fields {
+		if strings.Contains(strings.ToLower(k), "timeout") {
+			t.Errorf("timeout serialized: %s", data)
+		}
+	}
+}
+
+// sdd-desk-turn-timeout AC-3: both turn endpoints end after the selected provider's timeout.
+func TestTurnUsesProviderTimeout(t *testing.T) {
+	s, h := testServer(t)
+	s.Config.Providers[0].TurnTimeout = 50 * time.Millisecond
+	s.Agent.Providers = s.Config.Providers
+	s.Agent.NewChat = func(Provider) Chat { return &slowChat{} }
+	for _, path := range []string{"/api/turn", "/api/turn/stream"} {
+		start := time.Now()
+		rec := request(t, h, http.MethodPost, path, `{"provider":"claude","model":"m","disclosure_ack":true,"messages":[{"role":"user","content":"x"}]}`, auth)
+		if d := time.Since(start); d > 3*time.Second || !strings.Contains(rec.Body.String(), "deadline exceeded") {
+			t.Errorf("%s: %v, %d %s", path, d, rec.Code, rec.Body)
+		}
+	}
+	if d := s.turnTimeout("unbekannt"); d != 10*time.Minute {
+		t.Errorf("unknown provider: %v", d)
+	}
+}
+
+// slowChat answers only when its context ends.
+type slowChat struct{}
+
+func (slowChat) Complete(ctx context.Context, _, _ string, _ []Message, _ []ToolDef) (Message, error) {
+	<-ctx.Done()
+	return Message{}, ctx.Err()
 }
 
 // sdd-desk-config-hint AC-1: without a file at the default location the warning names the hint, otherwise the default location; the hint is never read.

@@ -66,7 +66,7 @@ func run() int {
 		return 2
 	}
 
-	httpClient := &http.Client{Timeout: 10 * time.Minute}
+	httpClient := providerClient()
 	agent := &desk.Agent{
 		Tools: tools, Runner: mcp, Providers: cfg.Providers,
 		NewChat: func(p desk.Provider) desk.Chat { return desk.NewChat(p, httpClient) },
@@ -120,6 +120,12 @@ func run() int {
 }
 
 // findSdd prefers an explicit path, then sdd next to sdd-desk (Tauri sidecar layout), then PATH.
+// providerClient talks to the model providers. It has no timeout of its own: every request runs in the context of
+// its turn (bounded per provider, see TurnTimeout) or model test and ends with it or with "Abbrechen".
+func providerClient() *http.Client {
+	return &http.Client{}
+}
+
 // bundledSdd is the name of the sdd sidecar in the desktop application; unique, so a package does not install a
 // second /usr/bin/sdd.
 const bundledSdd = "sdd-studio-sdd"

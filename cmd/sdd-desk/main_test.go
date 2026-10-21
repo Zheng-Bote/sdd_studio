@@ -52,3 +52,10 @@ func TestFindSdd(t *testing.T) {
 		t.Errorf("a directory named sdd-studio-sdd is no executable: %q", got)
 	}
 }
+
+// sdd-desk-turn-timeout AC-3: a single provider request has no shorter bound of its own than the turn.
+func TestProviderClientHasNoOwnTimeout(t *testing.T) {
+	if c := providerClient(); c.Timeout != 0 {
+		t.Errorf("provider client timeout %v; the turn's context must bound requests", c.Timeout)
+	}
+}
