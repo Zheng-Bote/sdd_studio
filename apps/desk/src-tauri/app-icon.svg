@@ -1,5 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <rect width="1024" height="1024" rx="224" fill="#171717"/>
-  <path d="M272 312h480M272 512h360M272 712h240" stroke="#fafafa" stroke-width="72" stroke-linecap="round"/>
-  <circle cx="736" cy="712" r="72" fill="#22c55e"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f2937"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <!-- spec sheet with folded corner -->
+  <path d="M264 176h336l160 160v472a40 40 0 0 1-40 40H264a40 40 0 0 1-40-40V216a40 40 0 0 1 40-40z" fill="#f8fafc"/>
+  <path d="M600 176v120a40 40 0 0 0 40 40h120z" fill="#cbd5e1"/>
+  <!-- requirement lines -->
+  <path d="M312 432h320M312 544h240M312 656h160" stroke="#334155" stroke-width="56" stroke-linecap="round"/>
+  <!-- verified seal -->
+  <circle cx="712" cy="744" r="168" fill="#22c55e" stroke="#0b1220" stroke-width="40"/>
+  <path d="M636 748l52 52 104-112" fill="none" stroke="#ffffff" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
