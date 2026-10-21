@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk
-status: active
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - cmd/sdd-desk/**
@@ -13,7 +14,7 @@ touches:
 
 # Tech Spec — KI-Desktop (`sdd-desk`)
 
-Setzt das PRD `docs/prd/sdd-desk.md` um. Rahmen: [ADR 0002](../adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md). Vorlage für Aufbau und Werkzeuge ist `md_indexer/apps/desktop` (Angular 22, Spartan-NG, Tailwind 4, Tauri v2 mit Go-Sidecar).
+Setzt das PRD `docs/archive/prd/sdd-desk.md` um. Rahmen: [ADR 0002](../../adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md). Vorlage für Aufbau und Werkzeuge ist `md_indexer/apps/desktop` (Angular 22, Spartan-NG, Tailwind 4, Tauri v2 mit Go-Sidecar).
 
 ## Architektur
 

@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-streaming
-status: active
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - internal/desk/**
@@ -11,7 +12,7 @@ touches:
 
 # Tech Spec — Gestreamte Modellantworten in `sdd-desk`
 
-Setzt das PRD `docs/prd/sdd-desk-streaming.md` um. Grundlage ist die Tech Spec `docs/design/sdd-desk.md`; Gesprächsschleife, Freigaben und Datenmodell bleiben, wie sie dort beschrieben sind.
+Setzt das PRD `docs/archive/prd/sdd-desk-streaming.md` um. Grundlage ist die Tech Spec `docs/archive/design/sdd-desk.md`; Gesprächsschleife, Freigaben und Datenmodell bleiben, wie sie dort beschrieben sind.
 
 ## Architektur
 

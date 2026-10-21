@@ -1,6 +1,7 @@
 ---
 feature: sdd-ui
-status: active
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - cmd/**
@@ -12,7 +13,7 @@ touches:
 
 # Tech Spec — Lokale Oberfläche (`sdd-ui`)
 
-Setzt das PRD `docs/prd/sdd-ui.md` um. Maßgeblich sind Verfassung (Security 2: Bindung, `Host`/`Origin`, Token, Plan/Apply) und Konzept §8.6/§10.
+Setzt das PRD `docs/archive/prd/sdd-ui.md` um. Maßgeblich sind Verfassung (Security 2: Bindung, `Host`/`Origin`, Token, Plan/Apply) und Konzept §8.6/§10.
 
 ## Architektur
 

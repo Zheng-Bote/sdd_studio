@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-tauri
-status: active
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - apps/desk/**
@@ -13,7 +14,7 @@ touches:
 
 # Tech Spec — KI-Desktop als Tauri-v2-Anwendung
 
-Setzt das PRD `docs/prd/sdd-desk-tauri.md` um. Rahmen: [ADR 0002](../adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md) und die Tech Spec `docs/design/sdd-desk.md`. Vorbild für den Sidecar-Lebenszyklus ist `md_indexer/apps/desktop/src-tauri/src/sidecar.rs`.
+Setzt das PRD `docs/archive/prd/sdd-desk-tauri.md` um. Rahmen: [ADR 0002](../../adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md) und die Tech Spec `docs/archive/design/sdd-desk.md`. Vorbild für den Sidecar-Lebenszyklus ist `md_indexer/apps/desktop/src-tauri/src/sidecar.rs`.
 
 ## Architektur
 
