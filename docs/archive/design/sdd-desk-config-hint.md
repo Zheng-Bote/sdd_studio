@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-config-hint
-status: active
+status: archived
+release: v0.3.0
 archive-after:
 touches:
   - cmd/sdd-desk/**
@@ -11,7 +12,7 @@ touches:
 
 # Tech Spec — Richtiger Ort für `llm.env` in der Warnung von `sdd-desk`
 
-Setzt das PRD `docs/prd/sdd-desk-config-hint.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-desk.md` (Konfiguration) und `docs/archive/design/sdd-desk-tauri.md` (Sidecar).
+Setzt das PRD `docs/archive/prd/sdd-desk-config-hint.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-desk.md` (Konfiguration) und `docs/archive/design/sdd-desk-tauri.md` (Sidecar).
 
 ## Architektur
 

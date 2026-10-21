@@ -10,11 +10,11 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 ## Stand
 
-Letzte Version: **0.2.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0` mit `SDD-003` und `SDD-040`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und der optionale KI-Desktop `sdd-desk`, auch als Tauri-v2-Anwendung mit gestreamten Antworten. In CI: `uses: Zheng-Bote/sdd_studio@v0.2.0`.
+Letzte Version: **0.3.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und der optionale KI-Desktop `sdd-desk`, auch als Tauri-v2-Anwendung mit gestreamten Antworten und „LLM testen“. In CI: `uses: Zheng-Bote/sdd_studio@v0.3.0`.
 
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 und 0.2.0 liegen archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.3.0 liegen archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -61,7 +61,7 @@ Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/featu
 Die [GitHub Action](action.yml) baut `sdd`, führt `sdd gate <gate>` aus und schreibt den Bericht in die Job-Zusammenfassung:
 
 ```yaml
-- uses: Zheng-Bote/sdd_studio@v0.2.0
+- uses: Zheng-Bote/sdd_studio@v0.3.0
   with:
     gate: pre-merge
 ```
@@ -129,13 +129,14 @@ bin/sdd-desk --project . --open
 | `--project <pfad>` | Projektverzeichnis mit `sdd.config.yaml` (Standard: `.`) |
 | `--open` | Oberfläche im Standardbrowser öffnen |
 | `--config <pfad>` | `llm.env` (Standard: `config/llm.env` neben `sdd-desk`) |
-| `--sdd <pfad>` | `sdd`-Programm (Standard: neben `sdd-desk`, sonst `PATH`) |
+| `--config-hint <pfad>` | Ort für `llm.env`, den die Warnung nennt, wenn keine Datei gefunden wird (setzt die Desktop-Anwendung) |
+| `--sdd <pfad>` | `sdd`-Programm (Standard: `sdd-studio-sdd` oder `sdd` neben `sdd-desk`, sonst `PATH`) |
 | `--port <n>` | Port auf `127.0.0.1` (Standard: `0` = freier Port) |
 | `--exit-with-stdin` | beenden, sobald stdin schließt (setzt die Desktop-Anwendung für ihren Sidecar) |
 
 `sdd-desk` gibt Adresse und URL mit Sitzungstoken aus; ohne `--open` diese URL im Browser öffnen. Beenden mit Strg+C.
 
-In der Oberfläche Anbieter und Modell wählen, links einen geführten Ablauf starten (z. B. **Idee → PRD**) oder frei fragen. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
+In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**) oder frei fragen. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
 
 ### Was der Desktop darf
 
