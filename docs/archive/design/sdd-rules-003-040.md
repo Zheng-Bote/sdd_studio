@@ -1,6 +1,7 @@
 ---
 feature: sdd-rules-003-040
-status: active
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - catalog/**
@@ -10,7 +11,7 @@ touches:
 
 # Tech Spec — Regeln SDD-003 und SDD-040 (`sdd-rules-003-040`)
 
-Setzt das PRD `docs/prd/sdd-rules-003-040.md` um. Maßgeblich sind die Prüfverträge im Handbuch.
+Setzt das PRD `docs/archive/prd/sdd-rules-003-040.md` um. Maßgeblich sind die Prüfverträge im Handbuch.
 
 ## Architektur
 

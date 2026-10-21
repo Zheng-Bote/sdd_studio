@@ -1,6 +1,6 @@
 [package]
 name = "sdd-desk-app"
-version = "0.1.0"
+version = "0.2.0"
 description = "Tauri v2 shell for sdd-desk, the optional AI desktop of SDD Studio"
 authors = ["Zheng-Bote"]
 license = "Apache-2.0"

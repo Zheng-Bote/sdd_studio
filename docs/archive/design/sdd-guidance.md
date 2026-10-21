@@ -1,6 +1,7 @@
 ---
 feature: sdd-guidance
-status: active
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - cmd/**
@@ -13,7 +14,7 @@ touches:
 
 # Tech Spec — Prozessführung: sdd next und sdd mcp (`sdd-guidance`)
 
-Setzt das PRD `docs/prd/sdd-guidance.md` um. Rahmen: [ADR 0002](../adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md) — `sdd` bleibt KI-frei und offline.
+Setzt das PRD `docs/archive/prd/sdd-guidance.md` um. Rahmen: [ADR 0002](../../adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md) — `sdd` bleibt KI-frei und offline.
 
 ## Architektur
 

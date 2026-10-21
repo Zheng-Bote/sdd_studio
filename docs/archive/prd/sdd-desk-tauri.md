@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-tauri
-status: active
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - apps/desk/**

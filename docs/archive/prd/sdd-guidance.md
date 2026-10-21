@@ -1,6 +1,7 @@
 ---
 feature: sdd-guidance
-status: active
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - cmd/**

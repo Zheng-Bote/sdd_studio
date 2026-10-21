@@ -10,11 +10,11 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 ## Stand
 
-Letzte Version: **0.1.0** ([CHANGELOG](CHANGELOG.md)). Seitdem auf `main`: `SDD-003`, `SDD-040`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und `sdd-desk`, auch als Tauri-v2-Anwendung und mit gestreamten Antworten.
+Letzte Version: **0.2.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0` mit `SDD-003` und `SDD-040`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und der optionale KI-Desktop `sdd-desk`, auch als Tauri-v2-Anwendung mit gestreamten Antworten. In CI: `uses: Zheng-Bote/sdd_studio@v0.2.0`.
 
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** aktiv unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design) (`sdd-rules-003-040`, `sdd-ui`, `sdd-guidance`, `sdd-desk`, `sdd-desk-tauri`, `sdd-desk-streaming`), mit 0.1.0 archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 und 0.2.0 liegen archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -61,7 +61,7 @@ Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/featu
 Die [GitHub Action](action.yml) baut `sdd`, führt `sdd gate <gate>` aus und schreibt den Bericht in die Job-Zusammenfassung:
 
 ```yaml
-- uses: Zheng-Bote/sdd_studio@v0.1.0
+- uses: Zheng-Bote/sdd_studio@v0.2.0
   with:
     gate: pre-merge
 ```

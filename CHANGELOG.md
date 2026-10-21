@@ -2,6 +2,33 @@
 
 Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung [Semantic Versioning](https://semver.org/lang/de/). Der Regelkatalog trägt eine eigene Version (`catalog/catalog.yaml`).
 
+## [0.2.0] — 2026-10-21
+
+Regelkatalog `1.1.0` mit 22 Regeln, Berichtsformat unverändert `schema_version: 1`.
+
+### Hinzugefügt
+
+- **Regeln:** `SDD-003` (Verfassung ohne Feature-Inhalte, heuristisch) und `SDD-040` (technischer Plan vor der ersten Task).
+- **`sdd ui`:** lokale Oberfläche auf `127.0.0.1` mit Übersicht, Artefakten, Befunden (live), neuem Artefakt, Übernahme und Handbuch; `Host`-, `Origin`- und Token-Prüfung, Schreiben nur über Plan/Apply.
+- **Prozessführung:** `sdd next` nennt je Feature den nächsten Prozessschritt; `sdd explain <regel-id>` zeigt Regel, Begründung und Prüfvertrag.
+- **`sdd mcp`:** MCP-Server über stdio für Agenten mit zehn Werkzeugen, Ressourcen und geführten Prompts (Idee → PRD, Tech Spec, ADR, Plan, Review); ohne KI und offline, Schreiben nur mit `--allow-write` und nur neue Artefakte.
+- **KI-Desktop `sdd-desk`** (optional, getrennt, [ADR 0002](docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)): führt im Gespräch mit einem wählbaren Sprachmodell (Ollama lokal/Cloud, OpenRouter, NVIDIA NIM, Claude, Gemini) durch den Prozess; Werkzeuge nur über `sdd mcp` und nur mit Freigabe, schreibende mit Vorschau; Hinweis vor Cloud-Anbietern; Schlüssel in `llm.env` mit Rechten `0600`; keine Telemetrie.
+- **Desktop-Anwendung** (Tauri v2) mit `sdd-desk` und `sdd` als Sidecars: Projektwahl und -wechsel, Navigationsregel, keine Tauri-Rechte für Seiten; `sdd-desk --exit-with-stdin` endet mit der Anwendung.
+- **Gestreamte Antworten** in `sdd-desk` (`POST /api/turn/stream`): Text und Gedankengang erscheinen, während das Modell arbeitet; Abbrechen beendet auch die Anfrage an den Anbieter.
+
+### Geändert
+
+- `SDD-022`/`SDD-025`: Testverweise nennen den Feature-Slug, sobald es mehr als ein Feature gibt (archivierte eingeschlossen).
+- Die GitHub Action und die Workflow-Vorlage von `sdd init` verweisen auf `@v0.2.0`.
+
+### Behoben
+
+- `sdd next` verlangte ein ADR für eine Verfassungsänderung, obwohl ein verlinktes, angenommenes ADR sie abdeckte und `SDD-010` im Gate nichts meldete.
+
+### Archiviert
+
+Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.2.0`): `sdd-rules-003-040`, `sdd-ui`, `sdd-guidance`, `sdd-desk`, `sdd-desk-tauri`, `sdd-desk-streaming`.
+
 ## [0.1.0] — 2026-10-20
 
 Erste Version. Regelkatalog `1.0.0` mit 20 Regeln, Berichtsformat `schema_version: 1`.
@@ -21,4 +48,5 @@ Erste Version. Regelkatalog `1.0.0` mit 20 Regeln, Berichtsformat `schema_versio
 
 Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.1.0`): `sdd-core-v1`, `sdd-init-new`, `sdd-adopt`, `sdd-report`, `sdd-rules-v1-1`.
 
+[0.2.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.2.0
 [0.1.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.1.0

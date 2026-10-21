@@ -135,7 +135,7 @@ func (c *MCPClient) Initialize() error {
 	raw, err := c.Call("initialize", map[string]any{
 		"protocolVersion": "2025-06-18",
 		"capabilities":    map[string]any{},
-		"clientInfo":      map[string]any{"name": "sdd-desk", "version": "0.1.0"},
+		"clientInfo":      map[string]any{"name": "sdd-desk", "version": "0.2.0"},
 	})
 	if err != nil {
 		return err

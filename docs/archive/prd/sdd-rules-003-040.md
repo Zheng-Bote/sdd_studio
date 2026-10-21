@@ -1,6 +1,7 @@
 ---
 feature: sdd-rules-003-040
-status: implemented
+status: archived
+release: v0.2.0
 archive-after:
 touches:
   - catalog/**
