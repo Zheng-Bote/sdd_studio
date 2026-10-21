@@ -64,7 +64,7 @@ func (g CLIGit) ResolveBaseRef(configured string) (string, error) {
 		}
 	}
 	if out, err := g.run("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"); err == nil {
-		if up := strings.TrimSpace(out); up != "" {
+		if up := strings.TrimSpace(out); up != "" && !g.pushTarget(up) {
 			return up, nil
 		}
 	}
@@ -74,6 +74,22 @@ func (g CLIGit) ResolveBaseRef(configured string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("%w: keine Merge-Basis ermittelbar (base_ref setzen)", ErrGit)
+}
+
+// pushTarget reports whether upstream is the remote copy of the current feature branch (origin/feature/x for
+// feature/x). Once the branch is pushed, the diff against it is empty, so it is no merge base. On main and master the
+// upstream stays the base: the diff shows the commits not yet pushed.
+func (g CLIGit) pushTarget(upstream string) bool {
+	out, err := g.run("rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		return false
+	}
+	branch := strings.TrimSpace(out)
+	if branch == "main" || branch == "master" {
+		return false
+	}
+	_, name, ok := strings.Cut(upstream, "/")
+	return ok && name == branch
 }
 
 func (g CLIGit) ChangedFiles(baseRef string) ([]string, error) {

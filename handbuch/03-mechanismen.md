@@ -305,7 +305,7 @@ Welche Features ein Gate-Lauf prüft, wird in dieser Reihenfolge bestimmt; die e
 2. **Frontmatter im Diff** — alle Markdown-Dateien, die `artifacts.prd`, `artifacts.design` oder `artifacts.plans` auswählen ([Ordner oder Glob](#artefaktpfade)), die in `git diff <base>...HEAD` vorkommen und ein gültiges `feature:`-Feld tragen.
 3. **Branch-Name** — `feature/<slug>` oder `feat/<slug>` bzw. `feat/<nummer>-<slug>`. In CI mit losgelöstem `HEAD` gelten `$GITHUB_HEAD_REF`, `$CI_MERGE_REQUEST_SOURCE_BRANCH_NAME` und `$CI_COMMIT_BRANCH`.
 
-Liefert keine Stufe ein Feature, gilt der Lauf als **nicht aufgelöst** (siehe Prüfverträge). Die Merge-Basis ist `base_ref` aus `sdd.config.yaml`; leer bedeutet: `$GITHUB_BASE_REF` bzw. `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME` (bevorzugt als `origin/<name>`), sonst `@{upstream}`, sonst `main`, sonst `master`. Ist Git nicht verfügbar oder keine Basis ermittelbar, endet der Lauf mit Exit-Code `2`.
+Liefert keine Stufe ein Feature, gilt der Lauf als **nicht aufgelöst** (siehe Prüfverträge). Die Merge-Basis ist `base_ref` aus `sdd.config.yaml`; leer bedeutet: `$GITHUB_BASE_REF` bzw. `$CI_MERGE_REQUEST_TARGET_BRANCH_NAME` (bevorzugt als `origin/<name>`), sonst `@{upstream}` — außer es ist die entfernte Kopie des eigenen Feature-Branches (`origin/feature/x` für `feature/x`), denn nach dem Push wäre der Diff leer —, sonst `main`, sonst `master`. Ist Git nicht verfügbar oder keine Basis ermittelbar, endet der Lauf mit Exit-Code `2`.
 
 ### Artefaktpfade: Ordner oder Datei-Glob {#artefaktpfade}
 
@@ -524,6 +524,8 @@ Geprüft werden die aktiven Feature-Artefakte unter `artifacts.plans` (bei Spec 
 ## Archivierung (`SDD-050`)
 
 PRD, Tech Spec und Plan gelten bis zum Release. Danach sind sie Historie: Sie werden nach `artifacts.archive` verschoben, nicht gelöscht, und tragen `status: archived`. Der Archivierungsschritt gehört in den Release-Vorbereitungs-Commit, zusammen mit dem Changelog, unmittelbar vor dem Git-Tag.
+
+**Nachträge vor dem Archivieren:** Ändert die Release-Vorbereitung Pfade über der Größenschwelle (z. B. die Version in `catalog/**`), findet `pre-merge` auf dem Release-Branch kein Feature mehr — alle Artefakte liegen dann im Archiv. Solche Änderungen gehören deshalb vorher als Commit des zuständigen Features (dessen `touches` den Pfad nennt) auf den Haupt-Branch; der Release-Branch enthält danach nur Archivierung, Changelog und Versionsangaben außerhalb der Schwelle.
 
 ---
 

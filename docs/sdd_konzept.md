@@ -415,7 +415,8 @@ language: de
 
 # Basis für `git diff <base>...HEAD` in Gate 2 und SDD-024.
 # Leer = automatisch ermitteln: in CI $GITHUB_BASE_REF (bzw. $CI_MERGE_REQUEST_TARGET_BRANCH_NAME),
-# lokal der Upstream des Branches (`@{upstream}`), sonst `main`, sonst `master`.
+# lokal der Upstream des Branches (`@{upstream}`, außer der eigenen entfernten Kopie
+# eines Feature-Branches), sonst `main`, sonst `master`.
 base_ref: ""
 
 artifacts:

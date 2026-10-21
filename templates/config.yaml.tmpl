@@ -3,7 +3,8 @@ profile: {{.Profile}}
 language: de
 
 # Basis für `git diff <base>...HEAD` in pre-merge. Leer = automatisch ermitteln
-# ($GITHUB_BASE_REF, @{upstream}, main, master).
+# ($GITHUB_BASE_REF, @{upstream} außer der eigenen entfernten Kopie eines
+# Feature-Branches, main, master).
 base_ref: ""
 
 artifacts:

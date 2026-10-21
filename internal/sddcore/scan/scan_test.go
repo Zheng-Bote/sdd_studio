@@ -173,6 +173,24 @@ func TestCLIGit(t *testing.T) {
 	if _, err := g.ResolveBaseRef("does-not-exist"); err == nil {
 		t.Fatalf("expected error for unknown base_ref")
 	}
+
+	// A pushed feature branch tracks its own remote copy: that is no merge base, main is.
+	remote := t.TempDir()
+	git("init", "-q", "--bare", remote)
+	git("remote", "add", "origin", remote)
+	git("push", "-q", "-u", "origin", "main", "feature/billing-export")
+	if base, err := g.ResolveBaseRef(""); err != nil || base != "main" {
+		t.Fatalf("pushed feature branch: ResolveBaseRef = %q, %v", base, err)
+	}
+	// A branch tracking another branch keeps that upstream; main keeps origin/main (unpushed commits).
+	git("checkout", "-q", "-b", "fix", "--track", "origin/main")
+	if base, err := g.ResolveBaseRef(""); err != nil || base != "origin/main" {
+		t.Fatalf("branch tracking origin/main: ResolveBaseRef = %q, %v", base, err)
+	}
+	git("checkout", "-q", "main")
+	if base, err := g.ResolveBaseRef(""); err != nil || base != "origin/main" {
+		t.Fatalf("main: ResolveBaseRef = %q, %v", base, err)
+	}
 }
 
 func mustWrite(t *testing.T, path, content string) {
