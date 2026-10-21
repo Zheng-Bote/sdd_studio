@@ -53,7 +53,7 @@ func run() int {
 		return 2
 	}
 
-	bin := findSdd(*sddPath)
+	bin := findSdd(*sddPath, exeDir(), exec.LookPath)
 	mcp, err := desk.StartMCP(bin, root, os.Stderr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "sdd-desk: %v\n", err)
@@ -120,23 +120,40 @@ func run() int {
 }
 
 // findSdd prefers an explicit path, then sdd next to sdd-desk (Tauri sidecar layout), then PATH.
-func findSdd(explicit string) string {
+// bundledSdd is the name of the sdd sidecar in the desktop application; unique, so a package does not install a
+// second /usr/bin/sdd.
+const bundledSdd = "sdd-studio-sdd"
+
+// findSdd picks the sdd executable: --sdd, the bundled sidecar next to sdd-desk, sdd next to sdd-desk (development
+// builds in bin/), sdd from PATH.
+func findSdd(explicit, dir string, lookPath func(string) (string, error)) string {
 	if explicit != "" {
 		return explicit
 	}
-	if exe, err := os.Executable(); err == nil {
-		name := "sdd"
-		if runtime.GOOS == "windows" {
-			name += ".exe"
-		}
-		if p := filepath.Join(filepath.Dir(exe), name); fileExists(p) {
-			return p
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+	if dir != "" {
+		for _, name := range []string{bundledSdd, "sdd"} {
+			if p := filepath.Join(dir, name+ext); fileExists(p) {
+				return p
+			}
 		}
 	}
-	if p, err := exec.LookPath("sdd"); err == nil {
+	if p, err := lookPath("sdd"); err == nil {
 		return p
 	}
 	return "sdd"
+}
+
+// exeDir is the directory of the running sdd-desk, or "" if unknown.
+func exeDir() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	return filepath.Dir(exe)
 }
 
 func fileExists(p string) bool {

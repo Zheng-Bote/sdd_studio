@@ -65,7 +65,7 @@ Ressourcen: `sdd://constitution`, `sdd://catalog`, `sdd://handbook` und `sdd://a
 
 `sdd-desk` ist ein **getrenntes, optionales Programm** ([ADR 0002](../docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)): Es führt im Gespräch mit einem frei wählbaren Sprachmodell durch den Prozess und nutzt dafür `sdd mcp`. `sdd` selbst bleibt KI-frei und offline.
 
-**Als Desktop-Anwendung** (Tauri v2, `apps/desk/src-tauri`): Sie bringt `sdd-desk` und `sdd` als Sidecars mit und öffnet das Startargument, sonst das zuletzt genutzte Projekt, sonst einen Ordnerdialog. Projektwechsel über **Datei → Projekt öffnen …** (Strg+O).
+**Als Desktop-Anwendung** (Tauri v2, `apps/desk/src-tauri`): Sie bringt `sdd-desk` und `sdd` als Sidecars mit — `sdd` unter dem Namen `sdd-studio-sdd`, damit ein Paket kein zweites `/usr/bin/sdd` installiert; eine eigene Installation von `sdd` bleibt unberührt — und öffnet das Startargument, sonst das zuletzt genutzte Projekt, sonst einen Ordnerdialog. Projektwechsel über **Datei → Projekt öffnen …** (Strg+O).
 
 ```text
 cd apps/desk && npm ci

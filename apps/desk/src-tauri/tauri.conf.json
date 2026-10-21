@@ -21,7 +21,7 @@
     "targets": "all",
     "category": "DeveloperTool",
     "shortDescription": "Spec-Driven Development im Gespräch mit einem Sprachmodell",
-    "externalBin": ["binaries/sdd-desk", "binaries/sdd"],
+    "externalBin": ["binaries/sdd-desk", "binaries/sdd-studio-sdd"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

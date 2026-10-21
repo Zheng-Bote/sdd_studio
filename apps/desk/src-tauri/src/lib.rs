@@ -248,7 +248,10 @@ mod tests {
         assert_eq!(conf["build"]["beforeBuildCommand"], "npm run desk:sidecars");
         assert_eq!(conf["build"]["beforeDevCommand"], "npm run desk:sidecars");
         let bins: Vec<&str> = conf["bundle"]["externalBin"].as_array().unwrap().iter().filter_map(Value::as_str).collect();
-        assert_eq!(bins, ["binaries/sdd-desk", "binaries/sdd"]);
+        // sdd-desk-sidecar-name AC-2: sdd is bundled under a unique name, and the build script produces that name
+        assert_eq!(bins, ["binaries/sdd-desk", "binaries/sdd-studio-sdd"]);
+        let script = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("../scripts/build-sidecars.mjs")).unwrap();
+        assert!(script.contains("['sdd-studio-sdd', 'sdd']"), "build-sidecars.mjs must build ./cmd/sdd as sdd-studio-sdd");
 
         let package = json("../package.json");
         let sidecars = package["scripts"]["desk:sidecars"].as_str().unwrap();
