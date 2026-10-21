@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-config-hint
-status: active
+status: archived
+release: v0.3.0
 archive-after:
 touches:
   - cmd/sdd-desk/**

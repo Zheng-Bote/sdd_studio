@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-sidecar-name
-status: active
+status: archived
+release: v0.3.0
 archive-after:
 touches:
   - cmd/sdd-desk/**
@@ -11,7 +12,7 @@ touches:
 
 # Tech Spec — Eindeutiger Name für das mitgelieferte `sdd` der Desktop-Anwendung
 
-Setzt das PRD `docs/prd/sdd-desk-sidecar-name.md` um. Grundlage ist die Tech Spec `docs/archive/design/sdd-desk-tauri.md`.
+Setzt das PRD `docs/archive/prd/sdd-desk-sidecar-name.md` um. Grundlage ist die Tech Spec `docs/archive/design/sdd-desk-tauri.md`.
 
 ## Architektur
 

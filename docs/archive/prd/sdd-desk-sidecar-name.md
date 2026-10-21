@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-sidecar-name
-status: active
+status: archived
+release: v0.3.0
 archive-after:
 touches:
   - cmd/sdd-desk/**

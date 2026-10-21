@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-model-test
-status: active
+status: archived
+release: v0.3.0
 archive-after:
 touches:
   - internal/desk/**

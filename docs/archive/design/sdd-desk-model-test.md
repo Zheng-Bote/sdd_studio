@@ -1,6 +1,7 @@
 ---
 feature: sdd-desk-model-test
-status: active
+status: archived
+release: v0.3.0
 archive-after:
 touches:
   - internal/desk/**
@@ -10,7 +11,7 @@ touches:
 
 # Tech Spec — Modell testen in `sdd-desk`
 
-Setzt das PRD `docs/prd/sdd-desk-model-test.md` um. Grundlage ist die Tech Spec `docs/archive/design/sdd-desk.md`; Anbieter, Hinweis und Sicherheitsgrenzen bleiben, wie sie dort beschrieben sind.
+Setzt das PRD `docs/archive/prd/sdd-desk-model-test.md` um. Grundlage ist die Tech Spec `docs/archive/design/sdd-desk.md`; Anbieter, Hinweis und Sicherheitsgrenzen bleiben, wie sie dort beschrieben sind.
 
 ## Architektur
 
