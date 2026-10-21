@@ -84,6 +84,8 @@ bin/sdd-desk --project . --open                   # gibt URL mit Sitzungstoken a
 
 **Modelle:** `config/llm.env` neben der ausführbaren Datei (Vorlage: `config/llm.env.example`), Rechte `0600`. Die Desktop-Anwendung nimmt stattdessen `llm.env` im Konfigurationsordner der Anwendung, falls vorhanden (Linux `~/.config/io.github.zhengbote.sdddesk/`, macOS `~/Library/Application Support/io.github.zhengbote.sdddesk/`, Windows `%APPDATA%\io.github.zhengbote.sdddesk\`) — bei installierten Bündeln ist das der richtige Ort. Lokales Ollama, Ollama Cloud, OpenRouter, NVIDIA NIM, Claude und Gemini; Prozessvariablen haben Vorrang. Ohne Datei steht nur lokales Ollama zur Verfügung.
 
+**Modell testen:** „LLM testen“ neben der Modellauswahl schickt eine feste Testnachricht samt den Werkzeugbeschreibungen von `sdd mcp` an das gewählte Modell — keine Gesprächs- oder Projektinhalte, bei Cloud-Anbietern erst nach dem Hinweis. Das Ergebnis sagt, ob das Modell antwortet und ob es Werkzeuge annimmt; ein Modell ohne Werkzeuge ist im Gespräch nicht nutzbar. Ein unbekannter Modellname zeigt sich hier als Meldung des Anbieters, z. B. `HTTP 404`.
+
 **Im Gespräch:** Antworten erscheinen, während das Modell schreibt; liefert das Modell seinen Gedankengang gesondert (z. B. `qwen3` über Ollama), ist er während des Zuges aufklappbar zu sehen, wird aber nicht Teil des Gesprächs. **Abbrechen** beendet den Zug und die Anfrage an den Anbieter; fertige Nachrichten bleiben, ein Werkzeugaufruf ohne Ergebnis wird verworfen.
 
 **Was der Desktop darf:**

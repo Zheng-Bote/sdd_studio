@@ -29,7 +29,7 @@ apps/desk/src/app/
 - System: `Verbindungstest von sdd-desk. Antworte in einem kurzen Satz und rufe kein Werkzeug auf.`
 - Nutzer: `Hallo! Bitte antworte kurz mit „Hello World“.`
 
-Erster Versuch mit `Agent.Tools`, wie in einem Gespräch. Schlägt er fehl, folgt ein zweiter Versuch ohne Werkzeuge; so lässt sich „Modell nicht erreichbar“ von „Modell ohne Werkzeuge“ trennen. Jeder Versuch hat einen eigenen Kontext mit 60 Sekunden Frist. Bricht der Nutzer ab (Anfragekontext), unterbleibt der zweite Versuch.
+Erster Versuch mit `Agent.Tools`, wie in einem Gespräch. Lehnt der Anbieter ihn ab, folgt ein zweiter Versuch ohne Werkzeuge; so lässt sich „Modell nicht erreichbar“ von „Modell ohne Werkzeuge“ trennen. Jeder Versuch hat einen eigenen Kontext mit 120 Sekunden Frist, weil lokale Modelle beim ersten Aufruf erst geladen werden. Läuft die Frist ab oder bricht der Nutzer ab (Anfragekontext), endet der Test ohne zweiten Versuch: Ein langsames Modell hat die Werkzeuge nicht abgelehnt.
 
 ## Schnittstellen
 
@@ -38,6 +38,7 @@ Erster Versuch mit `Agent.Tools`, wie in einem Gespräch. Schlägt er fehl, folg
 | Feld | Bedeutung |
 |---|---|
 | `ok` | das Modell hat geantwortet (mit oder ohne Werkzeuge) |
+| `timeout` | die Frist eines Versuchs lief ab |
 | `tools` | `true` erster Versuch gelang, `false` nur ohne Werkzeuge, fehlt wenn keiner gelang |
 | `reply` | Anfang der Antwort, höchstens 200 Zeichen; ruft das Modell trotzdem ein Werkzeug auf, dessen Name |
 | `error` | Meldung des Anbieters zum ersten fehlgeschlagenen Versuch |
@@ -48,7 +49,7 @@ Die Meldungen sind die von `post` (Status und Anfang des Antworttexts, höchsten
 
 ## Oberfläche
 
-`ChatSession.testModel()` setzt `modelTest` auf `{provider, model, running: true}`, ruft `DeskApi.testModel` und legt das Ergebnis ab. Angezeigt wird es nur, solange `provider` und `model` der Auswahl entsprechen; `selectProvider` und die Modellauswahl setzen es zurück. Der Button steht neben der Modellauswahl und ist gesperrt, wenn kein Modell gewählt ist, ein Zug oder Test läuft oder `needsDisclosure()` gilt. Das Ergebnis erscheint als Zeile unter der Kopfleiste: grün „antwortet, Werkzeuge ok“ mit Dauer und Antwort, gelb „antwortet, aber ohne Werkzeuge“ mit Meldung, rot „antwortet nicht“ mit Meldung.
+`ChatSession.testModel()` setzt `modelTest` auf `{provider, model, running: true}`, ruft `DeskApi.testModel` und legt das Ergebnis ab. Angezeigt wird es nur, solange `provider` und `model` der Auswahl entsprechen; `selectProvider` und die Modellauswahl setzen es zurück. Der Button steht neben der Modellauswahl und ist gesperrt, wenn kein Modell gewählt ist, ein Zug oder Test läuft oder `needsDisclosure()` gilt. Das Ergebnis erscheint als Zeile unter der Kopfleiste: grün „antwortet, Werkzeuge ok“ mit Dauer und Antwort, gelb „antwortet, aber ohne Werkzeuge“ mit Meldung, rot „antwortet nicht“ bzw. „keine Antwort innerhalb von 120 s“ mit Meldung.
 
 ## Umsetzung der Akzeptanzkriterien
 

@@ -62,6 +62,32 @@ export interface TurnResponse {
   pending: Pending[];
 }
 
+export interface ModelTestRequest {
+  provider: string;
+  model: string;
+  disclosure_ack: boolean;
+}
+
+/** Answer of POST /api/model/test; tools is absent if the model did not answer at all. */
+export interface ModelTestResult {
+  ok: boolean;
+  timeout?: boolean;
+  tools?: boolean;
+  reply?: string;
+  error?: string;
+  error_plain?: string;
+  ms?: number;
+}
+
+/** A model test for one provider and model: running, finished with a result, or refused with an error. */
+export interface ModelTest {
+  provider: string;
+  model: string;
+  running: boolean;
+  result?: ModelTestResult;
+  error?: string;
+}
+
 /** One line of POST /api/turn/stream. */
 export type StreamEvent =
   | { type: 'delta'; text: string }

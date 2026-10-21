@@ -1,6 +1,6 @@
 import { computed, inject, Service, signal } from '@angular/core';
 import { ApiError, DeskApi } from './desk-api';
-import { Decision, Message, Meta, Pending, Provider } from './types';
+import { Decision, Message, Meta, ModelTest, Pending, Provider } from './types';
 
 /**
  * State of one conversation. The backend is stateless: every turn sends the conversation and the user's decisions.
@@ -40,6 +40,12 @@ export class ChatSession {
     () => !this.busy() && !!this.model() && !this.needsDisclosure() && this.pending().length === 0,
   );
 
+  /** The test of the selected model; changing provider or model drops it, also while it runs. */
+  readonly modelTest = signal<ModelTest | null>(null);
+  readonly canTest = computed(
+    () => !this.busy() && !!this.model() && !this.needsDisclosure() && !this.modelTest()?.running,
+  );
+
   private approvedCalls: string[] = [];
   private deniedCalls: string[] = [];
   private abort: AbortController | null = null;
@@ -60,6 +66,36 @@ export class ChatSession {
   selectProvider(id: string): void {
     this.providerId.set(id);
     this.model.set(this.provider()?.models[0] ?? '');
+    this.modelTest.set(null);
+  }
+
+  selectModel(model: string): void {
+    this.model.set(model);
+    this.modelTest.set(null);
+  }
+
+  /** Sends the fixed test message to the selected model and keeps the result for this provider and model. */
+  async testModel(): Promise<void> {
+    if (!this.canTest()) {
+      return;
+    }
+    const provider = this.providerId();
+    const model = this.model();
+    const test: ModelTest = { provider, model, running: true };
+    this.modelTest.set(test);
+    let done: ModelTest;
+    try {
+      const result = await this.api.testModel({ provider, model, disclosure_ack: this.acknowledged().includes(provider) });
+      done = { ...test, running: false, result };
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 428) {
+        this.acknowledged.update((ids) => ids.filter((id) => id !== provider));
+      }
+      done = { ...test, running: false, error: errorText(e) };
+    }
+    if (this.modelTest() === test) {
+      this.modelTest.set(done);
+    }
   }
 
   acknowledge(): void {

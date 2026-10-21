@@ -1,5 +1,5 @@
 import { Service } from '@angular/core';
-import { Guide, Meta, PromptInfo, StreamEvent, TurnRequest } from './types';
+import { Guide, Meta, ModelTestRequest, ModelTestResult, PromptInfo, StreamEvent, TurnRequest } from './types';
 
 const TOKEN_KEY = 'sdd-desk-token';
 
@@ -55,6 +55,11 @@ export class DeskApi {
 
   prompt(name: string, args: Record<string, string>): Promise<{ messages: { content: { text: string } }[] }> {
     return this.request('POST', '/api/prompts/get', { name, arguments: args });
+  }
+
+  /** Sends the fixed test message to the selected model; rejects with ApiError if the backend refuses (e.g. 428). */
+  testModel(req: ModelTestRequest): Promise<ModelTestResult> {
+    return this.request<ModelTestResult>('POST', '/api/model/test', req);
   }
 
   /**

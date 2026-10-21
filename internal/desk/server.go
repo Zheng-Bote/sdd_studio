@@ -54,6 +54,7 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("GET /api/next", s.handleNext)
 	m.HandleFunc("POST /api/turn", s.handleTurn)
 	m.HandleFunc("POST /api/turn/stream", s.handleTurnStream)
+	m.HandleFunc("POST /api/model/test", s.handleModelTest)
 	s.mux = m
 	return s
 }
@@ -191,6 +192,26 @@ func (s *Server) handleTurn(w http.ResponseWriter, r *http.Request) {
 	res, err := s.Agent.Turn(ctx, req)
 	if err != nil {
 		writeError(w, turnErrorStatus(err), err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+// handleModelTest sends the fixed test message to the selected model. Request errors are answered as in
+// handleTurnStream; a model that fails is a result, not an error.
+func (s *Server) handleModelTest(w http.ResponseWriter, r *http.Request) {
+	var req ModelTestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("ungültige Anfrage: %w", err))
+		return
+	}
+	res, err := s.Agent.TestModel(r.Context(), req)
+	if err != nil {
+		status := turnErrorStatus(err)
+		if status == http.StatusBadGateway {
+			status = http.StatusBadRequest
+		}
+		writeError(w, status, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, res)

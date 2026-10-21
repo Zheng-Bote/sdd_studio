@@ -3,6 +3,7 @@ import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { ChatPanel } from './chat/chat-panel';
 import { ChatSession } from './core/chat-session';
+import { ModelTest } from './core/types';
 import { ProcessPanel } from './process/process-panel';
 
 /** Shell: provider and model selection, process sidebar, conversation. */
@@ -25,18 +26,32 @@ import { ProcessPanel } from './process/process-panel';
         </label>
         <label class="flex items-center gap-1.5 text-sm">
           Modell
-          <select class="h-8 max-w-56 rounded-md border bg-background px-2 text-sm" [value]="session.model()" (change)="session.model.set($any($event.target).value)">
+          <select class="h-8 max-w-56 rounded-md border bg-background px-2 text-sm" [value]="session.model()" (change)="session.selectModel($any($event.target).value)">
             @for (m of session.provider()?.models ?? []; track m) {
               <option [value]="m">{{ m }}</option>
             }
           </select>
         </label>
+        <button
+          hlmBtn
+          variant="outline"
+          size="sm"
+          type="button"
+          [disabled]="!session.canTest()"
+          [title]="session.needsDisclosure() ? 'Erst den Hinweis unten bestätigen' : 'Kurze Testnachricht an dieses Modell senden'"
+          (click)="session.testModel()"
+        >
+          LLM testen
+        </button>
         @if (session.provider()?.cloud) {
           <span hlmBadge variant="outline" title="Inhalte gehen an diesen Anbieter">Cloud</span>
         }
         <button hlmBtn variant="outline" size="sm" type="button" (click)="session.reset()">Neues Gespräch</button>
       </div>
     </header>
+    @if (session.modelTest(); as test) {
+      <p class="border-b px-4 py-1 text-xs" [class]="testClass(test)" role="status">{{ testText(test) }}</p>
+    }
     @for (w of session.meta()?.warnings ?? []; track w) {
       <p class="border-b bg-muted px-4 py-1 text-xs text-muted-foreground">{{ w }}</p>
     }
@@ -52,6 +67,20 @@ export class App {
   protected readonly session = inject(ChatSession);
   protected readonly chat = viewChild(ChatPanel);
 
+  protected testClass(t: ModelTest): string {
+    if (t.running) {
+      return 'bg-muted text-muted-foreground';
+    }
+    if (!t.result?.ok) {
+      return 'bg-destructive/10 text-destructive';
+    }
+    return t.result.tools ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-700 dark:text-amber-400';
+  }
+
+  protected testText(t: ModelTest): string {
+    return modelTestText(t);
+  }
+
   constructor() {
     const dark = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
     const apply = (): void => {
@@ -61,4 +90,25 @@ export class App {
     dark?.addEventListener('change', apply);
     void this.session.load();
   }
+}
+
+/** One line describing a model test for the header. */
+export function modelTestText(t: ModelTest): string {
+  const r = t.result;
+  if (t.running) {
+    return `Teste ${t.model} …`;
+  }
+  if (!r) {
+    return `Test von ${t.model} abgelehnt: ${t.error ?? ''}`;
+  }
+  if (r.timeout) {
+    return `${t.model}: keine Antwort innerhalb von 120 s — beim ersten Aufruf lädt ein lokales Modell erst, bitte erneut testen`;
+  }
+  if (!r.ok) {
+    return `${t.model} antwortet nicht: ${r.error_plain ?? r.error ?? ''}`;
+  }
+  const answer = `${r.ms ?? 0} ms, Antwort: „${r.reply ?? ''}“`;
+  return r.tools
+    ? `${t.model} antwortet, Werkzeuge ok (${answer})`
+    : `${t.model} antwortet, aber ohne Werkzeuge — im Gespräch nicht nutzbar (${r.error ?? ''}; ${answer})`;
 }

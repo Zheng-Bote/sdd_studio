@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { ApiError, DeskApi, NdjsonLines } from './desk-api';
 import { ChatSession, trimOpenCalls } from './chat-session';
-import { Message, Meta, StreamEvent, TurnRequest, TurnResponse } from './types';
+import { modelTestText } from '../app';
+import { Message, Meta, ModelTestRequest, ModelTestResult, StreamEvent, TurnRequest, TurnResponse } from './types';
 
 const meta: Meta = {
   project: 'demo',
@@ -16,10 +17,17 @@ const meta: Meta = {
 /** A turn's events; a plain response becomes a single done event. */
 type Script = TurnResponse | StreamEvent[];
 
-function setup(responses: Script[]) {
+function setup(responses: Script[], tests: (ModelTestResult | ApiError)[] = []) {
   const requests: TurnRequest[] = [];
+  const testRequests: ModelTestRequest[] = [];
   const api = {
     meta: async () => meta,
+    testModel: async (req: ModelTestRequest) => {
+      testRequests.push(structuredClone(req));
+      const res = tests.shift();
+      if (!res || res instanceof ApiError) throw res ?? new ApiError('no more tests', 500);
+      return res;
+    },
     turnStream: async (req: TurnRequest, onEvent: (e: StreamEvent) => void) => {
       requests.push(structuredClone(req));
       const res = responses.shift();
@@ -29,7 +37,7 @@ function setup(responses: Script[]) {
     },
   };
   TestBed.configureTestingModule({ providers: [{ provide: DeskApi, useValue: api }] });
-  return { session: TestBed.inject(ChatSession), requests };
+  return { session: TestBed.inject(ChatSession), requests, testRequests };
 }
 
 const pendingRead = { call_id: 'c1', tool: 'sdd_next', arguments: {}, writes: false };
@@ -169,6 +177,60 @@ describe('ChatSession', () => {
     await session.send('prüfen');
     expect(session.messages().map((m) => m.role)).toEqual(['user']);
     expect(session.error()).toContain('overloaded');
+  });
+});
+
+describe('model test', () => {
+  // sdd-desk-model-test AC-5: the test needs a model and the disclosure, and its result belongs to exactly that model.
+  it('tests the selected model and drops the result when the selection changes', async () => {
+    const { session, testRequests } = setup([], [
+      { ok: true, tools: true, reply: 'Hello World', ms: 120 },
+      { ok: true, tools: true, reply: 'spät', ms: 5 },
+    ]);
+    await session.load();
+    const running = session.testModel();
+    expect(session.modelTest()?.running).toBe(true);
+    expect(session.canTest()).toBe(false);
+    await running;
+    expect(testRequests).toEqual([{ provider: 'ollama-local', model: 'qwen3:14b', disclosure_ack: false }]);
+    expect(modelTestText(session.modelTest()!)).toContain('Werkzeuge ok');
+
+    session.selectModel('anderes');
+    expect(session.modelTest()).toBeNull();
+    const late = session.testModel();
+    session.selectModel('qwen3:14b');
+    await late;
+    expect(session.modelTest()).toBeNull(); // a result for a model no longer selected is dropped
+    session.selectProvider('claude');
+    expect(session.canTest()).toBe(false);
+    await session.testModel();
+    expect(testRequests.length).toBe(2);
+  });
+
+  // sdd-desk-model-test AC-5: results without tools, without answer, timeouts and refusals are told apart; 428 revokes the disclosure.
+  it('shows every outcome', async () => {
+    const { session, testRequests } = setup(
+      [],
+      [
+        { ok: true, tools: false, reply: 'Hi', error: 'HTTP 404: no tool use', ms: 80 },
+        { ok: false, error: 'HTTP 404: No endpoints', error_plain: 'HTTP 404: No endpoints' },
+        { ok: false, timeout: true, error: 'context deadline exceeded' },
+        new ApiError('Hinweis nicht bestätigt', 428),
+      ],
+    );
+    await session.load();
+    session.selectProvider('claude');
+    session.acknowledge();
+    await session.testModel();
+    expect(testRequests[0].disclosure_ack).toBe(true);
+    expect(modelTestText(session.modelTest()!)).toContain('ohne Werkzeuge');
+    await session.testModel();
+    expect(modelTestText(session.modelTest()!)).toContain('antwortet nicht: HTTP 404');
+    await session.testModel();
+    expect(modelTestText(session.modelTest()!)).toContain('keine Antwort innerhalb');
+    await session.testModel();
+    expect(modelTestText(session.modelTest()!)).toContain('abgelehnt');
+    expect(session.needsDisclosure()).toBe(true);
   });
 });
 
