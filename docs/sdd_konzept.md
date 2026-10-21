@@ -566,7 +566,7 @@ Zwei Punkte am Schema, die nicht verhandelbar sind:
 - **SDD-041** Jede Task referenziert mindestens ein AC — *error* im Profil `standard` — `baseline: allowed`
 - **SDD-050** Abgeschlossene Features (`status: implemented` oder `archive-after` überschritten) sind vor dem Release nach `archive/` verschoben und tragen `status: archived` — *warn* (default), *error* in `pre-release` — `baseline: forbidden`
 - **SDD-051** Aktive **Feature-Artefakte** verweisen nicht auf archivierte Feature-Artefakte — *warn* — `baseline: forbidden`. Nicht betroffen: ADRs, Verfassung und Runbooks, die historische Dokumente zitieren dürfen, weil genau das ihr Zweck ist.
-- **SDD-060** Widersprüche zwischen Verfassung und Tech Spec — *info*, assistiert, nicht automatisch entscheidbar
+- **SDD-060** Widersprüche zwischen Verfassung und Tech Spec — **keine Katalogregel**, sondern assistierter Abgleich in `sdd-desk` (Abschnitt 9.6); die Kennung bleibt dafür reserviert
 - **SDD-070** Jede Regel ist im Handbuch dokumentiert — *error* — `baseline: forbidden`
 - **SDD-071** Jede Regel ist implementiert — *error* — `baseline: forbidden`
 - **SDD-072** Jede aktive Regel ist in mindestens einem Gate aktiv — *error* — `baseline: forbidden`
@@ -725,6 +725,8 @@ Diese Liste steht **nur hier** und im Handbuch; andere Abschnitte verweisen dara
 - **Werkzeuge nur mit Erlaubnis:** Der Desktop führt `sdd`-Werkzeuge über `sdd mcp` aus — jeder Aufruf einzeln bestätigt oder für die Sitzung freigegeben, schreibende nur nach Vorschau.
 - **Die KI entscheidet nichts, was ein Gate bestehen lässt.** Sie formuliert; abnehmen muss der Mensch.
 
+**Assistierter Abgleich statt Regel (`SDD-060`):** Ob eine Tech Spec der Verfassung widerspricht, ist eine Frage der Bedeutung und nicht deterministisch entscheidbar. Eine Katalogregel müsste `sdd` selbst prüfen (`SDD-071`), und `sdd` ist KI-frei; ein Befund muss reproduzierbar sein, eine Modellantwort ist es nicht. Deshalb ist `SDD-060` keine Regel, sondern der geführte Ablauf `sdd-conflicts` in `sdd-desk`: Das Modell liest Verfassung, Tech Spec und verlinkte ADRs über das lesende Werkzeug `sdd_read` und meldet nur Widersprüche, die es auf beiden Seiten wörtlich mit Datei und Zeile zitieren kann. Das Ergebnis ist ein Hinweis, kein Befund — es erscheint in keinem Bericht und keiner Baseline; ob die Tech Spec angepasst oder die Verfassung über ein ADR geändert wird, entscheidet der Mensch.
+
 **Wichtig für das Ratchet:** Eine KI darf niemals Baseline-Einträge erzeugen, entfernen oder begründen. Sonst wäre die einzige Bremse im System maschinell verhandelbar.
 
 ---
@@ -865,7 +867,7 @@ SDD-041   Task referenziert AC
 SDD-051   Aktive Artefakte verweisen nicht auf archivierte
 ```
 
-**Später:** SDD-003 (heuristisch), SDD-040, SDD-060 (assistiert).
+**Später:** SDD-003 (heuristisch), SDD-040; SDD-060 als assistierter Abgleich außerhalb des Katalogs (Abschnitt 9.6).
 
 **Ausdrücklich nicht in v1:** `sdd ui`, MCP-Server, KI-Assistenz, Index-Anbindung, `sdd staleness`. Sie sind in der Roadmap ab Schritt 5/6, aber kein Bestandteil der ersten prüfbaren Version.
 

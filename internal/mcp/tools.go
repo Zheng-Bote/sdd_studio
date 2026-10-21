@@ -59,6 +59,8 @@ func toolList() []tool {
 			InputSchema: obj(map[string]any{"path": str("Pfad relativ zum Repository")}, "path"), Annotations: readOnly},
 		{Name: "sdd_trace", Title: "Rückverfolgung", Description: "Je Akzeptanzkriterium eines Features: Tech Specs, Tests (Datei:Zeile) und Tasks.",
 			InputSchema: obj(map[string]any{"feature": str("Feature-Slug")}, "feature"), Annotations: readOnly},
+		{Name: "sdd_read", Title: "Artefakt lesen", Description: "Text eines Artefakts (Verfassung, ADR, PRD, Tech Spec, Plan, Archiv) mit Zeilennummern; ohne path die Liste der lesbaren Artefakte. Liest nichts anderes.",
+			InputSchema: obj(map[string]any{"path": str("Pfad relativ zum Repository, z. B. docs/design/<feature>.md; leer = Liste")}), Annotations: readOnly},
 		{Name: "sdd_validate_draft", Title: "Entwurf prüfen", Description: "Prüft einen noch nicht gespeicherten Artefakt-Entwurf mit den Regeln, als läge er schon unter path.",
 			InputSchema: obj(map[string]any{"path": str("Zielpfad relativ zum Repository"), "content": str("vollständiger Dateiinhalt")}, "path", "content"), Annotations: readOnly},
 		{Name: "sdd_new", Title: "Artefakt anlegen", Description: "Wie `sdd new`: ohne apply nur Vorschau mit Inhalt; apply legt neue Dateien an (nur wenn der Server mit --allow-write läuft), nie überschreibend.",
@@ -148,6 +150,26 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 			return nil, err
 		}
 		return resultOf(g), nil
+
+	case "sdd_read":
+		a, err := args[struct {
+			Path string `json:"path"`
+		}](raw)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(a.Path) == "" {
+			paths, _, err := s.artifactPaths()
+			if err != nil {
+				return nil, err
+			}
+			return resultOf(map[string]any{"artifacts": paths}), nil
+		}
+		rel, text, err := s.readArtifact(a.Path)
+		if err != nil {
+			return nil, err
+		}
+		return resultOf(numbered(rel, text)), nil
 
 	case "sdd_lint":
 		a, err := args[struct {
@@ -330,4 +352,33 @@ func (s *Server) toolNew(raw json.RawMessage) (*toolResult, error) {
 		return nil, err
 	}
 	return resultOf(map[string]any{"applied": true, "results": results}), nil
+}
+
+// maxReadBytes bounds the text sdd_read returns, so one artifact cannot fill a model's context.
+const maxReadBytes = 256 << 10
+
+type readResult struct {
+	Path      string `json:"path"`
+	Lines     int    `json:"lines"`
+	Truncated bool   `json:"truncated"`
+	Text      string `json:"text"`
+}
+
+// numbered prefixes every line with its number, so a model can cite file:line; long texts are cut at a line
+// boundary.
+func numbered(rel, text string) readResult {
+	lines := strings.Split(strings.TrimSuffix(text, "\n"), "\n")
+	res := readResult{Path: rel, Lines: len(lines)}
+	var b strings.Builder
+	for i, line := range lines {
+		next := fmt.Sprintf("%4d| %s\n", i+1, line)
+		if b.Len()+len(next) > maxReadBytes {
+			res.Truncated = true
+			fmt.Fprintf(&b, "… gekürzt nach Zeile %d von %d (mehr als %d KiB)\n", i, len(lines), maxReadBytes>>10)
+			break
+		}
+		b.WriteString(next)
+	}
+	res.Text = b.String()
+	return res
 }

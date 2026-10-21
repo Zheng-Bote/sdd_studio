@@ -103,22 +103,7 @@ func (s *Server) readResource(uri string) (any, *rpcError) {
 		}
 		text, mime = data, "text/markdown"
 	case strings.HasPrefix(uri, artifactScheme):
-		rel, err := scan.CleanRel(strings.TrimPrefix(uri, artifactScheme))
-		if err != nil {
-			return nil, &rpcError{codeInvalidParams, err.Error()}
-		}
-		paths, _, perr := s.artifactPaths()
-		if perr != nil {
-			return nil, &rpcError{codeInternalError, perr.Error()}
-		}
-		allowed := false
-		for _, p := range paths {
-			allowed = allowed || p == rel
-		}
-		if !allowed || !(strings.EqualFold(path.Ext(rel), ".md") || strings.EqualFold(path.Ext(rel), ".sdd")) {
-			return nil, &rpcError{codeInvalidParams, "kein Artefakt: " + rel}
-		}
-		data, err := readRel(s.Root, rel)
+		_, data, err := s.readArtifact(strings.TrimPrefix(uri, artifactScheme))
 		if err != nil {
 			return nil, &rpcError{codeInvalidParams, err.Error()}
 		}
@@ -127,6 +112,28 @@ func (s *Server) readResource(uri string) (any, *rpcError) {
 		return nil, &rpcError{codeInvalidParams, "unbekannte Ressource " + uri}
 	}
 	return map[string]any{"contents": []map[string]any{{"uri": uri, "mimeType": mime, "text": text}}}, nil
+}
+
+// readArtifact reads one artifact for sdd://artifact/<path> and sdd_read: a clean relative path (no "..", not
+// absolute) that artifactPaths lists, ending in .md or .sdd. Nothing else in the repository is readable this way.
+func (s *Server) readArtifact(rel string) (string, string, error) {
+	clean, err := scan.CleanRel(rel)
+	if err != nil {
+		return "", "", err
+	}
+	paths, _, err := s.artifactPaths()
+	if err != nil {
+		return "", "", err
+	}
+	allowed := false
+	for _, p := range paths {
+		allowed = allowed || p == clean
+	}
+	if !allowed || !(strings.EqualFold(path.Ext(clean), ".md") || strings.EqualFold(path.Ext(clean), ".sdd")) {
+		return "", "", fmt.Errorf("kein Artefakt: %s", clean)
+	}
+	data, err := readRel(s.Root, clean)
+	return clean, data, err
 }
 
 func readRel(root, rel string) (string, error) {

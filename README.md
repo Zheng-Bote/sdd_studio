@@ -70,7 +70,7 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 
 ### Agenten (MCP)
 
-`sdd mcp` stellt zehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_validate_draft`, `sdd_new`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
+`sdd mcp` stellt elf Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_read`, `sdd_validate_draft`, `sdd_new`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
 
 ```json
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }

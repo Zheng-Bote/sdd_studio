@@ -268,7 +268,7 @@ func TestNoForbiddenCapabilities(t *testing.T) {
 			t.Errorf("forbidden tool %s", name)
 		}
 	}
-	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 10 {
+	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 11 {
 		t.Errorf("tool set changed (%d tools); review it against ADR 0002", n)
 	}
 	for _, r := range res[1]["result"].(map[string]any)["resources"].([]any) {
@@ -301,11 +301,11 @@ func TestPrompts(t *testing.T) {
 	for _, p := range res[0]["result"].(map[string]any)["prompts"].([]any) {
 		names = append(names, p.(map[string]any)["name"].(string))
 	}
-	if strings.Join(names, ",") != "sdd-idea,sdd-techspec,sdd-adr,sdd-plan,sdd-review" {
+	if strings.Join(names, ",") != "sdd-idea,sdd-techspec,sdd-adr,sdd-plan,sdd-conflicts,sdd-review" {
 		t.Fatalf("prompts %v", names)
 	}
-	args := map[string]string{"sdd-idea": `{}`, "sdd-techspec": `{"feature":"billing"}`, "sdd-adr": `{"title":"x"}`, "sdd-plan": `{"feature":"billing"}`, "sdd-review": `{"feature":"billing"}`}
-	wantRule := map[string]string{"sdd-idea": "SDD-023", "sdd-techspec": "SDD-031", "sdd-adr": "SDD-011", "sdd-plan": "SDD-041", "sdd-review": "SDD-022"}
+	args := map[string]string{"sdd-idea": `{}`, "sdd-techspec": `{"feature":"billing"}`, "sdd-adr": `{"title":"x"}`, "sdd-plan": `{"feature":"billing"}`, "sdd-conflicts": `{"feature":"billing"}`, "sdd-review": `{"feature":"billing"}`}
+	wantRule := map[string]string{"sdd-idea": "SDD-023", "sdd-techspec": "SDD-031", "sdd-adr": "SDD-011", "sdd-plan": "SDD-041", "sdd-conflicts": "SDD-010", "sdd-review": "SDD-022"}
 	for _, name := range names {
 		r := exchange(t, s, `{"jsonrpc":"2.0","id":2,"method":"prompts/get","params":{"name":"`+name+`","arguments":`+args[name]+`}}`)
 		text := r[0]["result"].(map[string]any)["messages"].([]any)[0].(map[string]any)["content"].(map[string]any)["text"].(string)
@@ -317,6 +317,108 @@ func TestPrompts(t *testing.T) {
 	}
 	if r := exchange(t, s, `{"jsonrpc":"2.0","id":3,"method":"prompts/get","params":{"name":"sdd-plan","arguments":{}}}`); r[0]["error"] == nil {
 		t.Errorf("missing required argument accepted")
+	}
+}
+
+func readTool(t *testing.T, s *Server, path string) map[string]any {
+	t.Helper()
+	return call(t, s, "sdd_read", map[string]any{"path": path})
+}
+
+// sdd-conflicts AC-1: without a path the readable artifacts are listed, with a path the text comes with line numbers.
+func TestReadTool(t *testing.T) {
+	root := project(t)
+	s := newServer(root, false)
+	list := structured(t, call(t, s, "sdd_read", map[string]any{}))["artifacts"].([]any)
+	got := []string{}
+	for _, p := range list {
+		got = append(got, p.(string))
+	}
+	for _, want := range []string{"constitution.md", "docs/adr/0001-api.md", "docs/prd/billing.md", "docs/design/billing.md", "docs/plans/billing.md"} {
+		if !strings.Contains(strings.Join(got, ","), want) {
+			t.Errorf("%s missing in %v", want, got)
+		}
+	}
+	if strings.Contains(strings.Join(got, ","), "api/export_test.go") {
+		t.Errorf("code listed as artifact: %v", got)
+	}
+	r := structured(t, readTool(t, s, "docs/design/billing.md"))
+	text := r["text"].(string)
+	if r["path"] != "docs/design/billing.md" || r["truncated"] != false || r["lines"].(float64) != 6 ||
+		!strings.HasPrefix(text, "   1| ---\n") || !strings.Contains(text, "   6| | AC-1 | Export |\n") {
+		t.Errorf("read %v", r)
+	}
+	if r := structured(t, readTool(t, s, "./docs/prd/../prd/billing.md")); r["path"] != "docs/prd/billing.md" {
+		t.Errorf("clean path: %v", r["path"])
+	}
+}
+
+// sdd-conflicts AC-2: anything that is not a readable artifact is refused; long texts are cut with a note.
+func TestReadToolRefuses(t *testing.T) {
+	root := project(t)
+	write(t, root, "docs/prd/notes.txt", "geheim")
+	write(t, root, ".env", "KEY=geheim")
+	write(t, root, "notes/private.md", "geheim")
+	s := newServer(root, false)
+	for _, p := range []string{"notes/private.md", "README.md", "api/export_test.go", "../etc/passwd", "/etc/passwd", "docs/prd/notes.txt", ".env", ".sdd/baseline.json", "sdd.config.yaml", "docs/prd/missing.md"} {
+		if r := readTool(t, s, p); r["isError"] != true {
+			t.Errorf("%s readable: %v", p, r)
+		}
+	}
+	// A constitution configured with another extension is listed but not readable: only .md and .sdd are.
+	cfgPath := filepath.Join(root, "sdd.config.yaml")
+	cfg, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	write(t, root, "sdd.config.yaml", regexp.MustCompile(`constitution: .*`).ReplaceAllString(string(cfg), `constitution: ".env"`))
+	if r := readTool(t, s, ".env"); r["isError"] != true {
+		t.Errorf("constitution with another extension readable: %v", r)
+	}
+	write(t, root, "sdd.config.yaml", string(cfg))
+
+	long := "---\nfeature: big\nstatus: active\n---\n" + strings.Repeat(strings.Repeat("x", 99)+"\n", 4000)
+	write(t, root, "docs/prd/big.md", long)
+	r := structured(t, readTool(t, s, "docs/prd/big.md"))
+	text := r["text"].(string)
+	if r["truncated"] != true || len(text) > maxReadBytes+200 || !strings.Contains(text, "gekürzt nach Zeile") || r["lines"].(float64) != 4004 {
+		t.Errorf("truncation: truncated=%v len=%d lines=%v", r["truncated"], len(text), r["lines"])
+	}
+}
+
+// sdd-conflicts AC-3: the guided check reads with sdd_read, reports only quoted contradictions with lines on both sides and changes nothing.
+func TestConflictsPrompt(t *testing.T) {
+	s := newServer(project(t), false)
+	r := exchange(t, s, `{"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"sdd-conflicts","arguments":{"feature":"billing"}}}`)
+	text := r[0]["result"].(map[string]any)["messages"].([]any)[0].(map[string]any)["content"].(map[string]any)["text"].(string)
+	for _, want := range []string{"sdd_read", "feature: billing", "nur Pfade aus dieser Liste", "wörtlich zitieren", "Datei:Zeile", "Ohne wörtliches Zitat keine Meldung", "Fehlt etwas in der Tech Spec, gehört es nicht in die Tabelle", "einzeln durch", "nicht die SDD-Regeln des Katalogs", "kein Widerspruch gefunden",
+		"Widerspruch, Spannung oder unklar", "Tech Spec anpassen", "ADR für eine Verfassungsänderung", "kein Befund", "Ändere nichts", "SDD-010"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("prompt misses %q", want)
+		}
+	}
+	if r := exchange(t, s, `{"jsonrpc":"2.0","id":2,"method":"prompts/get","params":{"name":"sdd-conflicts","arguments":{}}}`); r[0]["error"] == nil {
+		t.Error("missing feature accepted")
+	}
+}
+
+// sdd-conflicts AC-4: SDD-060 is no catalog rule; concept and handbook describe it as an assisted check in sdd-desk.
+func TestSDD060NotInCatalog(t *testing.T) {
+	cat, err := os.ReadFile("../../catalog/catalog.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(cat), "SDD-060") {
+		t.Error("SDD-060 must not be a catalog rule: an LLM result is no finding")
+	}
+	for _, f := range []string{"../../docs/sdd_konzept.md", "../../handbuch/04-agenten.md"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), "SDD-060") || !strings.Contains(string(data), "sdd-conflicts") || !strings.Contains(string(data), "kein Befund") {
+			t.Errorf("%s must describe SDD-060 as assisted check (sdd-conflicts, kein Befund)", f)
+		}
 	}
 }
 

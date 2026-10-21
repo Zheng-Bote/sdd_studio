@@ -85,6 +85,19 @@ func promptList() []prompt {
 					"3. Jede Task ist eine Checkbox-Zeile und nennt mindestens ein Kriterium: - [ ] AC-2 …\n" +
 					"4. Vorschau mit sdd_new (types: [plan]), dann ausfüllen; sdd_trace zeigt, welche Kriterien noch keine Task haben.\n"
 			}},
+		{Name: "sdd-conflicts", Title: "Abgleich mit der Verfassung", Description: "Sucht Widersprüche zwischen der Tech Spec eines Features und der Verfassung — mit wörtlichen Zitaten, ohne etwas zu ändern (SDD-060, assistiert).",
+			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
+			rules:     []string{"SDD-010"},
+			body: func(a map[string]string) string {
+				return "Gleiche die Tech Spec des Features " + a["feature"] + " mit der Verfassung ab, ohne Dateien zu ändern.\n\n" +
+					"Vorgehen:\n" +
+					"1. sdd_read ohne path: Finde Verfassung, Tech Spec (feature: " + a["feature"] + ") und ADRs.\n" +
+					"2. Lies mit sdd_read die Verfassung und die Tech Spec vollständig, dann die ADRs, auf die die Tech Spec verweist. Lies nur Pfade aus dieser Liste; verweist die Tech Spec auf kein ADR, überspringe die ADRs.\n" +
+					"3. Gehe die Regeln der Verfassung einzeln durch, jede nummerierte Regel jedes Abschnitts — gemeint sind die Regeln der Verfassung, nicht die SDD-Regeln des Katalogs. Suche zu jeder die Stellen der Tech Spec, die etwas vorsehen, das die Regel verbietet. Ein angenommenes ADR, das die Abweichung erlaubt, löst sie auf.\n" +
+					"4. Melde nur, was du auf beiden Seiten wörtlich zitieren kannst, mit Datei:Zeile aus sdd_read. Ohne wörtliches Zitat keine Meldung. Fehlt etwas in der Tech Spec, gehört es nicht in die Tabelle.\n" +
+					"5. Antworte mit einer Tabelle: Verfassung (Zitat, Datei:Zeile) | Tech Spec (Zitat, Datei:Zeile) | Einschätzung (Widerspruch, Spannung oder unklar) | Vorschlag (Tech Spec anpassen oder ADR für eine Verfassungsänderung). Darunter eine Liste aller Regeln der Verfassung mit Datei:Zeile und je „Treffer in der Tabelle“ oder „kein Widerspruch gefunden“.\n\n" +
+					"Das Ergebnis ist ein Hinweis, kein Befund: Es erscheint in keinem Bericht und in keiner Baseline. Ob ein Widerspruch vorliegt und wie er aufgelöst wird, entscheidet der Mensch. Ändere nichts.\n"
+			}},
 		{Name: "sdd-review", Title: "Stand prüfen", Description: "Prüft den Stand eines Features und nennt Lücken und den nächsten Schritt — ohne etwas zu ändern.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
 			rules:     []string{"SDD-022", "SDD-024", "SDD-025", "SDD-050"},

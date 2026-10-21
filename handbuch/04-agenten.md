@@ -86,11 +86,13 @@ bin/sdd-desk --project . --open                   # gibt URL mit Sitzungstoken a
 
 **Modell testen:** „LLM testen“ neben der Modellauswahl schickt eine feste Testnachricht samt den Werkzeugbeschreibungen von `sdd mcp` an das gewählte Modell — keine Gesprächs- oder Projektinhalte, bei Cloud-Anbietern erst nach dem Hinweis. Das Ergebnis sagt, ob das Modell antwortet und ob es Werkzeuge annimmt; ein Modell ohne Werkzeuge ist im Gespräch nicht nutzbar. Ein unbekannter Modellname zeigt sich hier als Meldung des Anbieters, z. B. `HTTP 404`.
 
+**Abgleich mit der Verfassung (`SDD-060`, assistiert):** Der geführte Ablauf `sdd-conflicts` lässt das Modell die Tech Spec eines Features gegen die Verfassung halten. Es liest beide und verlinkte ADRs mit `sdd_read` und meldet nur Widersprüche, die es auf beiden Seiten wörtlich mit Datei und Zeile zitiert — als Widerspruch, Spannung oder unklar, mit dem Vorschlag „Tech Spec anpassen“ oder „ADR für eine Verfassungsänderung“. Das Ergebnis ist kein Befund: Es steht in keinem Bericht und keiner Baseline, `SDD-060` ist keine Katalogregel. Ob ein Zitat stimmt und wie aufgelöst wird, entscheidet der Mensch.
+
 **Im Gespräch:** Antworten erscheinen, während das Modell schreibt; liefert das Modell seinen Gedankengang gesondert (z. B. `qwen3` über Ollama), ist er während des Zuges aufklappbar zu sehen, wird aber nicht Teil des Gesprächs. **Abbrechen** beendet den Zug und die Anfrage an den Anbieter; fertige Nachrichten bleiben, ein Werkzeugaufruf ohne Ergebnis wird verworfen.
 
 **Was der Desktop darf:**
 
-- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen zehn Werkzeuge, keine eigenen.
+- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen elf Werkzeuge, keine eigenen. `sdd_read` liest nur Artefakte (Verfassung, ADRs, PRDs, Tech Specs, Pläne, Archiv), keinen Code und keine Konfiguration.
 - Jeder Aufruf braucht eine Freigabe: **einmal**, **für die Sitzung** (nur lesende Werkzeuge) oder **Ablehnen**. Ein schreibender Aufruf (`sdd_new` mit `apply`) zeigt vorher die Vorschau mit Dateien und Inhalt und lässt sich nur einzeln freigeben.
 - Vor dem ersten Aufruf eines Cloud-Anbieters muss der Hinweis „Inhalte verlassen dieses Gerät“ bestätigt sein; ohne Bestätigung lehnt das Backend ab. Inhalte werden nicht geschwärzt.
 - Lokaler Server nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken für jeden API-Aufruf, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.
