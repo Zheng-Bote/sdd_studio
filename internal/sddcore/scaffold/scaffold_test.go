@@ -281,8 +281,10 @@ func TestNewPlanADRDoc(t *testing.T) {
 func TestNewArtifactsPassRules(t *testing.T) {
 	root := initProject(t, "standard")
 	cfg, _ := config.Load(root)
+	// RunCheck uses the real clock, so archive-after must lie in the future relative to it.
+	future := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
 	for _, opts := range []scaffold.NewOptions{
-		{Feature: "billing-export", Types: []string{"prd", "design", "plan"}, ArchiveAfter: "2026-10-20"},
+		{Feature: "billing-export", Types: []string{"prd", "design", "plan"}, ArchiveAfter: future},
 		{Types: []string{"adr"}, Title: "Erste Entscheidung"},
 		{Types: []string{"doc"}, Title: "Notiz"},
 	} {
