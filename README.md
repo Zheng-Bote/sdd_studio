@@ -12,6 +12,7 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 Letzte Version: **0.4.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und der optionale KI-Desktop `sdd-desk`, auch als Tauri-v2-Anwendung mit gestreamten Antworten, „LLM testen“ und dem assistierten Abgleich mit der Verfassung. In CI: `uses: Zheng-Bote/sdd_studio@v0.4.0`.
 
+- **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
 - **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.4.0 liegen archiviert unter [`docs/archive`](docs/archive)
