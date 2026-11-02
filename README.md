@@ -83,7 +83,7 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 
 ### Agenten (MCP)
 
-`sdd mcp` stellt elf Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_read`, `sdd_validate_draft`, `sdd_new`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
+`sdd mcp` stellt zwölf Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
 
 ```json
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }
@@ -154,7 +154,7 @@ In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab
 ### Was der Desktop darf
 
 - **Nur die Werkzeuge von `sdd mcp`**, keine eigenen, kein Dateizugriff daran vorbei.
-- **Jeder Aufruf braucht eine Freigabe:** einmal, für die Sitzung (nur lesende Werkzeuge) oder ablehnen. `sdd_new` mit `apply` zeigt vorher Dateien und Inhalt und lässt sich nur einzeln freigeben; bestehende Dateien ändert es nie.
+- **Jeder Aufruf braucht eine Freigabe:** einmal, für die Sitzung (je Werkzeug) oder ablehnen. `sdd_new` und `sdd_write` mit `apply` zeigen vorher Inhalt bzw. Diff; für die Sitzung freigegeben, schreiben sie ohne weitere Rückfrage und melden im Ergebnis, was sie geschrieben haben. Artefakte werden vor dem Schreiben mit den Regeln geprüft; ein ADR auf `accepted` setzt kein Werkzeug (ADR 0003).
 - **Cloud-Anbieter erst nach Bestätigung**, dass Inhalte das Gerät verlassen. Inhalte werden **nicht geschwärzt**; mit lokalem Ollama bleibt alles auf dem Rechner.
 - **Lokaler Server** nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.
 - **Desktop-Anwendung:** Das Fenster zeigt nur die eigene Startseite und den laufenden Sidecar, andere Web-Adressen öffnet der Standardbrowser; keine Seite erhält Tauri-Rechte. Stirbt die Anwendung, enden `sdd-desk` und `sdd mcp` mit ihr.

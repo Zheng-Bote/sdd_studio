@@ -84,8 +84,8 @@ describe('ChatSession', () => {
     expect(session.pending().length).toBe(0);
   });
 
-  // sdd-desk AC-4: a write is never allowed for the whole session.
-  it('downgrades a session approval of a write to a one-time approval', async () => {
+  // desk-write-content AC-7: a write tool can be allowed for the session like any other tool.
+  it('allows a write tool for the session', async () => {
     const { session, requests } = setup([
       { messages: [], pending: [pendingWrite] },
       { messages: [], pending: [] },
@@ -94,7 +94,7 @@ describe('ChatSession', () => {
     await session.send('anlegen');
     await session.decide('w1', 'session');
     expect(requests[1].approved_calls).toEqual(['w1']);
-    expect(requests[1].allowed_tools).toEqual([]);
+    expect(requests[1].allowed_tools).toEqual(['sdd_new']);
   });
 
   it('withdraws the acknowledgement when the backend demands the disclosure again', async () => {

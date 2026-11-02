@@ -28,7 +28,9 @@ const common = `
 Grundsätze für diesen Schritt:
 - Frage, statt zu erfinden. Stelle eine Frage nach der anderen und formuliere nur aus, was der Mensch beantwortet hat. Offene Punkte bleiben als offene Punkte sichtbar.
 - Prüfe jeden Entwurf mit sdd_validate_draft, bevor du ihn speicherst; behebe die Befunde mit dem Menschen.
-- Neue Dateien legst du mit sdd_new an (zuerst ohne apply, dann mit apply nach Bestätigung); bestehende Dateien änderst du mit deinen eigenen Werkzeugen und prüfst danach mit sdd_lint.
+- Neue Artefakte legst du mit sdd_new an und übergibst den geprüften Entwurf als content, nie das leere Template (zuerst ohne apply, dann mit apply nach Bestätigung).
+- Bestehende Dateien (Artefakte, Testdateien, sdd.config.yaml) liest du mit sdd_read und änderst sie mit sdd_write, mit base_sha256 aus sdd_read; neue Testdateien legst du mit sdd_write an.
+- Melde nur, was ein Werkzeugergebnis belegt: Lies nach dem Speichern mit sdd_read gegen, statt Erfolg anzunehmen.
 - Baseline, ADR-Lockfile, adopt --apply und das Entscheiden eines ADR (status: accepted) sind dem Menschen vorbehalten.
 - Zum Schluss: sdd_next, um den nächsten Prozessschritt zu nennen.`
 
@@ -49,7 +51,7 @@ func promptList() []prompt {
 					"3. Kläre den Umfang und frage ausdrücklich nach Nicht-Zielen: Was gehört bewusst nicht dazu?\n" +
 					"4. Formuliere mit mir Akzeptanzkriterien, die ein Test prüfen kann, jedes mit Kennung AC-1, AC-2, … (nie umnummerieren).\n" +
 					"5. Schlage einen Feature-Slug vor (" + slugHint(a["feature"]) + ") und frage, welche Pfade die Umsetzung voraussichtlich berührt (touches). Prüfe sie mit sdd_check_intent: Greift die Größenschwelle, braucht es auch eine Tech Spec.\n" +
-					"6. Hole die Vorschau mit sdd_new (types: [prd]) und fülle die Abschnitte Problem, Ziel, Nutzer, Umfang, Nicht-Ziele, Akzeptanzkriterien.\n"
+					"6. Formuliere das PRD mit den Abschnitten Problem, Ziel, Nutzer, Umfang, Nicht-Ziele, Akzeptanzkriterien aus den Antworten, prüfe es mit sdd_validate_draft und lege es mit sdd_new an (types: [prd], content: der geprüfte Entwurf).\n"
 			}},
 		{Name: "sdd-techspec", Title: "Tech Spec zum PRD", Description: "Führt vom PRD zur Tech Spec, die jedes Akzeptanzkriterium einer Umsetzung zuordnet.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
@@ -61,7 +63,7 @@ func promptList() []prompt {
 					"2. Kläre Architektur, Schnittstellen, Datenmodell und Sicherheitsauswirkungen — je Thema eine Frage.\n" +
 					"3. Ordne jedes Akzeptanzkriterium einer Umsetzung und einem Test zu (Tabelle AC | Umsetzung | Test).\n" +
 					"4. Prüfe mit sdd_context für die wichtigsten Pfade, welche ADRs und Artefakte dort schon gelten. Berührt die Änderung die Verfassung, braucht es ein ADR (Prompt sdd-adr).\n" +
-					"5. Vorschau mit sdd_new (types: [design]), dann ausfüllen.\n"
+					"5. Formuliere die Tech Spec, prüfe sie mit sdd_validate_draft und lege sie mit sdd_new an (types: [design], content: der geprüfte Entwurf).\n"
 			}},
 		{Name: "sdd-adr", Title: "Architekturentscheidung", Description: "Führt zu einem ADR mit Kontext, Optionen, Entscheidung und Konsequenzen.",
 			Arguments: []promptArg{{"title", "Titel der Entscheidung", true}},
@@ -72,7 +74,7 @@ func promptList() []prompt {
 					"1. Kontext: Welche Kräfte und Randbedingungen erzwingen die Entscheidung?\n" +
 					"2. Optionen: mindestens zwei, je mit Vor- und Nachteilen.\n" +
 					"3. Entscheidung und Konsequenzen — auch die negativen. Ändert sie eine Verfassungsregel, gehört die Verfassung in references, und die Verfassung wird im selben Change angepasst.\n" +
-					"4. Vorschau mit sdd_new (types: [adr]). Das ADR bleibt status: proposed; entscheiden (accepted) und locken (sdd baseline) ist Sache des Menschen. Nach der Entscheidung ist der Text unveränderlich; Ablösung nur über ein neues ADR mit supersedes.\n"
+					"4. Formuliere das ADR, prüfe es mit sdd_validate_draft und lege es mit sdd_new an (types: [adr], title, content: der geprüfte Entwurf). Das ADR bleibt status: proposed; entscheiden (accepted) und locken (sdd baseline) ist Sache des Menschen. Nach der Entscheidung ist der Text unveränderlich; Ablösung nur über ein neues ADR mit supersedes.\n"
 			}},
 		{Name: "sdd-plan", Title: "Plan mit Tasks", Description: "Zerlegt ein Feature mit Tech Spec in Tasks, die je ein Akzeptanzkriterium nennen.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
@@ -83,7 +85,7 @@ func promptList() []prompt {
 					"1. Prüfe mit sdd_next, dass PRD und Tech Spec stehen — ohne Tech Spec keine Tasks.\n" +
 					"2. Zerlege die Umsetzung in kleine, einzeln prüfbare Tasks in sinnvoller Reihenfolge.\n" +
 					"3. Jede Task ist eine Checkbox-Zeile und nennt mindestens ein Kriterium: - [ ] AC-2 …\n" +
-					"4. Vorschau mit sdd_new (types: [plan]), dann ausfüllen; sdd_trace zeigt, welche Kriterien noch keine Task haben.\n"
+					"4. Formuliere den Plan, prüfe ihn mit sdd_validate_draft und lege ihn mit sdd_new an (types: [plan], content: der geprüfte Entwurf); sdd_trace zeigt, welche Kriterien noch keine Task haben.\n"
 			}},
 		{Name: "sdd-conflicts", Title: "Abgleich mit der Verfassung", Description: "Sucht Widersprüche zwischen der Tech Spec eines Features und der Verfassung — mit wörtlichen Zitaten, ohne etwas zu ändern (SDD-060, assistiert).",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},

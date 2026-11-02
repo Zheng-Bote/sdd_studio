@@ -250,7 +250,7 @@ func TestTurnStreamKeepsApprovals(t *testing.T) {
 	base := []Message{{Role: "user", Content: "Leg das PRD an."}}
 
 	var events []Event
-	res, err := a.TurnStream(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_new"}}, collect(&events))
+	res, err := a.TurnStream(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_next"}}, collect(&events))
 	if err != nil {
 		t.Fatal(err)
 	}

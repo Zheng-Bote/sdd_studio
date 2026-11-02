@@ -16,7 +16,12 @@ Dieser Teil richtet sich an LLM-Agenten (Claude Code, Claude Desktop, der KI-Des
 }
 ```
 
-Mit `--allow-write` darf das Werkzeug `sdd_new` neue Artefakte anlegen; ohne liefert es nur die Vorschau. Bestehende Dateien ändert `sdd` nie — das tut der Agent mit seinen eigenen Werkzeugen und prüft danach.
+Mit `--allow-write` dürfen `sdd_new` und `sdd_write` schreiben; ohne liefern sie nur die Vorschau.
+
+- **`sdd_new`** legt neue Artefakte an, aus dem Template oder mit `content` (genau ein Typ) aus dem geprüften Entwurf. Bestehende Dateien überspringt es.
+- **`sdd_write`** legt an oder ersetzt, aber nur die Verfassung, Markdown-Artefakte (`adr`, `prd`, `design`, `plans`, `archive`, `docs`), `sdd.config.yaml` und Testdateien (`tests.include`, leer = Fallback-Liste). `.git/`, `.sdd/`, `exclude`-Treffer und symbolische Links nach außen sind ausgeschlossen. Eine bestehende Datei ersetzt es nur mit `base_sha256` aus `sdd_read`, atomar und mit gleichen Dateirechten.
+- **Prüfung vor dem Schreiben:** Artefakte prüfen beide Werkzeuge vorher wie `sdd_validate_draft`; ein `error`-Befund, ein `archive-after` vor heute oder ein ADR mit `status: accepted` verhindern das Schreiben. Ein ADR entscheidet der Mensch ([ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)). `sdd.config.yaml` muss sich laden lassen.
+- **Ergebnis:** Die Vorschau zeigt Inhalt oder Unified Diff, das Ergebnis Status, SHA-256, Zeilenzahl und Diff dessen, was wirklich geschrieben wurde.
 
 ---
 
@@ -42,7 +47,9 @@ Bei einem Konflikt zwischen gleich bindenden Regeln: **nicht entscheiden, sonder
 | vor der Änderung | `sdd_context` | Was gilt für die Dateien, in welcher Rangfolge? |
 | jederzeit | `sdd_next` | Wo steht das Feature im Prozess, was ist der nächste Schritt? |
 | beim Schreiben eines Artefakts | `sdd_validate_draft` | Regeln auf den Entwurf anwenden, bevor er gespeichert wird |
-| zum Anlegen | `sdd_new` | Vorschau, dann Anlegen nach Bestätigung (nur mit `--allow-write`) |
+| zum Anlegen | `sdd_new` | Vorschau, dann Anlegen nach Bestätigung, mit `content` aus dem geprüften Entwurf (nur mit `--allow-write`) |
+| zum Lesen | `sdd_read` | Artefakt, `sdd.config.yaml` oder Testdatei mit Zeilennummern und SHA-256 |
+| zum Ändern | `sdd_write` | Artefakt, Testdatei oder `sdd.config.yaml` ändern bzw. anlegen; Diff vorab (nur mit `--allow-write`) |
 | nach der Änderung | `sdd_lint`, `sdd_gate` | Befunde, Gate bestanden? |
 | bei einem Befund | `sdd_explain` | Regel, Begründung, Prüfvertrag |
 | zum Abschluss | `sdd_trace` | Hat jedes Kriterium Tech-Spec-Stelle, Test und Task? |
@@ -92,8 +99,8 @@ bin/sdd-desk --project . --open                   # gibt URL mit Sitzungstoken a
 
 **Was der Desktop darf:**
 
-- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen elf Werkzeuge, keine eigenen. `sdd_read` liest nur Artefakte (Verfassung, ADRs, PRDs, Tech Specs, Pläne, Archiv), keinen Code und keine Konfiguration.
-- Jeder Aufruf braucht eine Freigabe: **einmal**, **für die Sitzung** (nur lesende Werkzeuge) oder **Ablehnen**. Ein schreibender Aufruf (`sdd_new` mit `apply`) zeigt vorher die Vorschau mit Dateien und Inhalt und lässt sich nur einzeln freigeben.
+- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen zwölf Werkzeuge, keine eigenen. `sdd_read` und `sdd_write` erreichen nur Artefakte, `sdd.config.yaml` und Testdateien, keinen übrigen Code.
+- Jeder Aufruf braucht eine Freigabe: **einmal**, **für die Sitzung** (je Werkzeug) oder **Ablehnen**. Ein schreibender Aufruf (`sdd_new` oder `sdd_write` mit `apply`) zeigt vorher die Vorschau mit Inhalt bzw. Diff. Ist das Werkzeug für die Sitzung freigegeben, schreibt es ohne weitere Rückfrage; was es geschrieben hat (mit Diff), steht im Ergebnis im Gespräch ([ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), Stufe „schreibend“).
 - Vor dem ersten Aufruf eines Cloud-Anbieters muss der Hinweis „Inhalte verlassen dieses Gerät“ bestätigt sein; ohne Bestätigung lehnt das Backend ab. Inhalte werden nicht geschwärzt.
 - Lokaler Server nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken für jeden API-Aufruf, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.
 - In der Desktop-Anwendung zeigt das Fenster nur die eigene Startseite und den laufenden Sidecar; andere Web-Adressen öffnet der Standardbrowser. Keine Seite erhält Tauri-Rechte, das Token erscheint weder im Protokoll noch auf der Fehlerseite, und stirbt die Anwendung, enden `sdd-desk` und `sdd mcp` mit ihr.

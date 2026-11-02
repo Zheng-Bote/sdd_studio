@@ -26,6 +26,8 @@ type Op struct {
 	// Prepend inserts Content before the existing file content instead of creating a file. It only applies if the file
 	// still equals Expect byte for byte; otherwise the operation is skipped (the file changed since it was planned).
 	Prepend bool
+	// Replace swaps the whole file for Content. Like Prepend it only applies while the file still equals Expect.
+	Replace bool
 	Expect  []byte
 }
 
@@ -38,6 +40,7 @@ type Plan struct {
 const (
 	StatusCreated   = "created"
 	StatusPrepended = "prepended"
+	StatusReplaced  = "replaced"
 	StatusSkipped   = "skipped"
 )
 
@@ -83,10 +86,13 @@ func previewOp(root string, op Op) Result {
 		return Result{Path: op.Path, Status: StatusSkipped, Reason: op.Skip}
 	}
 	target := filepath.Join(root, filepath.FromSlash(op.Path))
-	if op.Prepend {
+	if op.Prepend || op.Replace {
 		current, err := os.ReadFile(target)
 		if err != nil || !bytes.Equal(current, op.Expect) {
 			return Result{Path: op.Path, Status: StatusSkipped, Reason: "Datei seit der Planung verändert"}
+		}
+		if op.Replace {
+			return Result{Path: op.Path, Status: StatusReplaced}
 		}
 		return Result{Path: op.Path, Status: StatusPrepended}
 	}
@@ -134,6 +140,13 @@ func (p Plan) Apply(root string) ([]Result, error) {
 		if realDir != realRoot && !strings.HasPrefix(realDir, realRoot+string(filepath.Separator)) {
 			return out, fmt.Errorf("%w: %s (über symbolischen Link)", ErrUnsafePath, rel)
 		}
+		if op.Replace {
+			if err := rewriteFile(target, op.Content); err != nil {
+				return out, fmt.Errorf("%s nicht ersetzbar: %w", rel, err)
+			}
+			out = append(out, Result{Path: rel, Status: StatusReplaced})
+			continue
+		}
 		if op.Prepend {
 			if err := prependFile(target, op.Content, op.Expect); err != nil {
 				return out, fmt.Errorf("%s nicht ergänzbar: %w", rel, err)
@@ -162,6 +175,12 @@ func (p Plan) Apply(root string) ([]Result, error) {
 // prependFile writes head+expect to target via a temporary file in the same directory and an atomic rename,
 // keeping the original permissions. No existing content is removed.
 func prependFile(target string, head, expect []byte) error {
+	return rewriteFile(target, append(append([]byte{}, head...), expect...))
+}
+
+// rewriteFile replaces the content of the regular file target via a temporary file in the same directory and an
+// atomic rename, keeping its permissions.
+func rewriteFile(target string, content []byte) error {
 	info, err := os.Lstat(target)
 	if err != nil {
 		return err
@@ -174,7 +193,7 @@ func prependFile(target string, head, expect []byte) error {
 		return err
 	}
 	defer os.Remove(tmp.Name())
-	_, werr := tmp.Write(append(append([]byte{}, head...), expect...))
+	_, werr := tmp.Write(content)
 	cerr := tmp.Close()
 	if err := errors.Join(werr, cerr, os.Chmod(tmp.Name(), info.Mode().Perm())); err != nil {
 		return err

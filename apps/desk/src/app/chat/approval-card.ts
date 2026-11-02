@@ -2,9 +2,9 @@ import { Component, computed, input, output } from '@angular/core';
 import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
-import { Decision, Pending } from '../core/types';
+import { Decision, Pending, PlannedOp } from '../core/types';
 
-/** Asks for permission to run one tool call; writes show their full preview and cannot be allowed per session. */
+/** Asks for permission to run one tool call; a write shows its full preview (content or diff) first. */
 @Component({
   selector: 'desk-approval-card',
   imports: [HlmCardImports, HlmButtonImports, HlmBadgeImports],
@@ -17,7 +17,8 @@ import { Decision, Pending } from '../core/types';
         <p hlmCardDescription>
           @if (pending().writes) {
             <span hlmBadge variant="destructive">schreibt Dateien</span>
-            Erst nach Ihrer Freigabe; geprüft wird nur diese eine Ausführung.
+            Erst nach Ihrer Freigabe. Für die Sitzung freigegeben, schreibt dieses Werkzeug ohne weitere Rückfrage; was es
+            geschrieben hat, steht danach im Gespräch.
           } @else {
             <span hlmBadge variant="secondary">nur lesend</span>
           }
@@ -34,15 +35,17 @@ import { Decision, Pending } from '../core/types';
         @for (op of pending().preview?.ops ?? []; track op.path) {
           <div class="rounded-md border">
             <div class="flex flex-wrap items-center gap-2 border-b px-3 py-1.5 text-sm wrap-anywhere">
-              <span hlmBadge [variant]="op.action === 'skip' ? 'outline' : 'default'">
-                {{ op.action === 'skip' ? 'übersprungen' : 'anlegen' }}
+              <span hlmBadge [variant]="op.action === 'skip' || op.action === 'unchanged' ? 'outline' : 'default'">
+                {{ actionLabel(op.action) }}
               </span>
               <code>{{ op.path }}</code>
               @if (op.reason) {
                 <span class="text-muted-foreground">— {{ op.reason }}</span>
               }
             </div>
-            @if (op.content) {
+            @if (op.diff) {
+              <pre class="max-h-64 overflow-auto p-3 text-xs" aria-label="Änderungen">{{ op.diff }}</pre>
+            } @else if (op.content) {
               <pre class="max-h-64 overflow-auto p-3 text-xs">{{ op.content }}</pre>
             }
           </div>
@@ -50,11 +53,7 @@ import { Decision, Pending } from '../core/types';
       </div>
       <div hlmCardFooter class="flex flex-wrap gap-2">
         <button hlmBtn type="button" (click)="decided.emit('once')">Einmal erlauben</button>
-        @if (!pending().writes) {
-          <button hlmBtn variant="secondary" type="button" (click)="decided.emit('session')">
-            Für diese Sitzung erlauben
-          </button>
-        }
+        <button hlmBtn variant="secondary" type="button" (click)="decided.emit('session')">Für diese Sitzung erlauben</button>
         <button hlmBtn variant="destructive" type="button" (click)="decided.emit('deny')">Ablehnen</button>
       </div>
     </section>
@@ -64,4 +63,8 @@ export class ApprovalCard {
   readonly pending = input.required<Pending>();
   readonly decided = output<Decision>();
   protected readonly args = computed(() => JSON.stringify(this.pending().arguments, null, 2));
+
+  protected actionLabel(action: PlannedOp['action']): string {
+    return { create: 'anlegen', update: 'ändern', unchanged: 'unverändert', skip: 'übersprungen' }[action];
+  }
 }

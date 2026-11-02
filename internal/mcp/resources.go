@@ -136,6 +136,33 @@ func (s *Server) readArtifact(rel string) (string, string, error) {
 	return clean, data, err
 }
 
+// readReadable is sdd_read: an artifact as readArtifact allows, or sdd.config.yaml or a test file (classify).
+func (s *Server) readReadable(rel string) (string, string, error) {
+	clean, text, err := s.readArtifact(rel)
+	if err == nil {
+		return clean, text, nil
+	}
+	clean, cerr := scan.CleanRel(rel)
+	if cerr != nil {
+		return "", "", cerr
+	}
+	cfg, cerr := config.Load(s.Root)
+	if cerr != nil {
+		return "", "", err
+	}
+	if class, cerr := classify(cfg, clean); cerr != nil || (class != classConfig && class != classTest) {
+		return "", "", fmt.Errorf("weder Artefakt, Konfiguration noch Testdatei: %s", clean)
+	}
+	data, ok, rerr := readExisting(s.Root, clean)
+	if rerr != nil {
+		return "", "", rerr
+	}
+	if !ok {
+		return "", "", fmt.Errorf("%s existiert nicht", clean)
+	}
+	return clean, string(data), nil
+}
+
 func readRel(root, rel string) (string, error) {
 	clean, err := scan.CleanRel(rel)
 	if err != nil {

@@ -269,8 +269,8 @@ func TestNoForbiddenCapabilities(t *testing.T) {
 			t.Errorf("forbidden tool %s", name)
 		}
 	}
-	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 11 {
-		t.Errorf("tool set changed (%d tools); review it against ADR 0002", n)
+	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 12 {
+		t.Errorf("tool set changed (%d tools); review it against ADR 0003", n)
 	}
 	for _, r := range res[1]["result"].(map[string]any)["resources"].([]any) {
 		uri := r.(map[string]any)["uri"].(string)
@@ -361,7 +361,8 @@ func TestReadToolRefuses(t *testing.T) {
 	write(t, root, ".env", "KEY=geheim")
 	write(t, root, "notes/private.md", "geheim")
 	s := newServer(root, false)
-	for _, p := range []string{"notes/private.md", "README.md", "api/export_test.go", "../etc/passwd", "/etc/passwd", "docs/prd/notes.txt", ".env", ".sdd/baseline.json", "sdd.config.yaml", "docs/prd/missing.md"} {
+	// sdd.config.yaml and test files are readable since desk-write-content (AC-6); everything else stays refused.
+	for _, p := range []string{"notes/private.md", "README.md", "../etc/passwd", "/etc/passwd", "docs/prd/notes.txt", ".env", ".sdd/baseline.json", "docs/prd/missing.md", "api/missing_test.go"} {
 		if r := readTool(t, s, p); r["isError"] != true {
 			t.Errorf("%s readable: %v", p, r)
 		}

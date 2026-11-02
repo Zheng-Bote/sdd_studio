@@ -341,7 +341,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	for _, tl := range a.Tools {
 		names = append(names, tl.Name)
 	}
-	if len(names) != 11 || names[0] != "sdd_next" {
+	if len(names) != 12 || names[0] != "sdd_next" {
 		t.Fatalf("tools must be exactly those of sdd mcp: %v", names)
 	}
 	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "x"}}, AllowedTools: []string{"shell_exec"}})
@@ -353,7 +353,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	}
 }
 
-// sdd-desk AC-4: every call needs permission (once, session, deny); writes always need a one-time approval with preview.
+// sdd-desk AC-4: every call needs permission (once, session, deny); a write waits with its preview.
 func TestApprovalFlow(t *testing.T) {
 	root := sddProject(t)
 	ctx := context.Background()
@@ -394,12 +394,12 @@ func TestApprovalFlow(t *testing.T) {
 
 	chat4 := &scripted{replies: []Message{call("w1", "sdd_new", `{"feature":"billing","apply":true}`)}}
 	a4 := newAgent(t, root, chat4)
-	res, err = a4.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_new"}})
+	res, err = a4.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_next"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(res.Pending) != 1 || !res.Pending[0].Writes || !strings.Contains(string(res.Pending[0].Preview), "feature: billing") {
-		t.Fatalf("write must wait with preview even when the tool is allowed for the session: %+v", res)
+		t.Fatalf("write must wait with preview unless its own tool is allowed for the session: %+v", res)
 	}
 	if _, err := os.Stat(filepath.Join(root, "docs/prd/billing.md")); err == nil {
 		t.Fatalf("preview wrote a file")
@@ -521,5 +521,38 @@ func TestSddDoesNotImportDesk(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// desk-write-content AC-7: sdd_write with apply is a write with preview; a write tool allowed for the session runs
+// without a card and its result shows what was written.
+func TestSessionAllowsWrites(t *testing.T) {
+	root := sddProject(t)
+	ctx := context.Background()
+	base := []Message{{Role: "user", Content: "Leg eine Testdatei an."}}
+	args := `{"path":"api/search_test.go","content":"// search AC-1: Titel\n","apply":true}`
+
+	a := newAgent(t, root, &scripted{replies: []Message{call("w1", "sdd_write", args)}})
+	res, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || !res.Pending[0].Writes || !strings.Contains(string(res.Pending[0].Preview), `"action":"create"`) {
+		t.Fatalf("sdd_write must wait with its preview: %+v", res)
+	}
+	if _, err := os.Stat(filepath.Join(root, "api/search_test.go")); err == nil {
+		t.Fatalf("preview wrote the file")
+	}
+
+	a = newAgent(t, root, &scripted{replies: []Message{call("w2", "sdd_write", args)}})
+	res, err = a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_write"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 0 || !strings.Contains(lastTool(res.Messages).Content, `"status": "created"`) || !strings.Contains(lastTool(res.Messages).Content, "+// search AC-1: Titel") {
+		t.Fatalf("session-allowed write must run and report its diff: %+v", res.Messages)
+	}
+	if data, err := os.ReadFile(filepath.Join(root, "api/search_test.go")); err != nil || string(data) != "// search AC-1: Titel\n" {
+		t.Fatalf("file: %q %v", data, err)
 	}
 }

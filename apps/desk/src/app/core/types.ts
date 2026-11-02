@@ -34,9 +34,12 @@ export interface Meta {
 
 export interface PlannedOp {
   path: string;
-  action: 'create' | 'skip';
+  /** create/skip from sdd_new; create/update/unchanged from sdd_write. */
+  action: 'create' | 'skip' | 'update' | 'unchanged';
   reason?: string;
   content?: string;
+  /** Unified diff of an update. */
+  diff?: string;
 }
 
 export interface Pending {

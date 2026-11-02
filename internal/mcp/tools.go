@@ -59,16 +59,23 @@ func toolList() []tool {
 			InputSchema: obj(map[string]any{"path": str("Pfad relativ zum Repository")}, "path"), Annotations: readOnly},
 		{Name: "sdd_trace", Title: "Rückverfolgung", Description: "Je Akzeptanzkriterium eines Features: Tech Specs, Tests (Datei:Zeile) und Tasks.",
 			InputSchema: obj(map[string]any{"feature": str("Feature-Slug")}, "feature"), Annotations: readOnly},
-		{Name: "sdd_read", Title: "Artefakt lesen", Description: "Text eines Artefakts (Verfassung, ADR, PRD, Tech Spec, Plan, Archiv) mit Zeilennummern; ohne path die Liste der lesbaren Artefakte. Liest nichts anderes.",
+		{Name: "sdd_read", Title: "Artefakt lesen", Description: "Text eines Artefakts (Verfassung, ADR, PRD, Tech Spec, Plan, Archiv, Doku), von sdd.config.yaml oder einer Testdatei (tests.include) mit Zeilennummern und sha256 des Inhalts; ohne path die Liste der lesbaren Artefakte. Liest nichts anderes.",
 			InputSchema: obj(map[string]any{"path": str("Pfad relativ zum Repository, z. B. docs/design/<feature>.md; leer = Liste")}), Annotations: readOnly},
 		{Name: "sdd_validate_draft", Title: "Entwurf prüfen", Description: "Prüft einen noch nicht gespeicherten Artefakt-Entwurf mit den Regeln, als läge er schon unter path.",
 			InputSchema: obj(map[string]any{"path": str("Zielpfad relativ zum Repository"), "content": str("vollständiger Dateiinhalt")}, "path", "content"), Annotations: readOnly},
-		{Name: "sdd_new", Title: "Artefakt anlegen", Description: "Wie `sdd new`: ohne apply nur Vorschau mit Inhalt; apply legt neue Dateien an (nur wenn der Server mit --allow-write läuft), nie überschreibend.",
+		{Name: "sdd_new", Title: "Artefakt anlegen", Description: "Wie `sdd new`: ohne apply nur Vorschau mit Inhalt; apply legt neue Dateien an (nur wenn der Server mit --allow-write läuft), nie überschreibend. Mit content (genau ein Typ) wird dieser geprüfte Entwurf statt des Templates angelegt; bei einem Regel-Fehler wird nichts geschrieben.",
 			InputSchema: obj(map[string]any{
 				"types": strs("prd, design, plan, adr, doc; leer = prd + design"), "feature": str("Feature-Slug"), "title": str("Titel"),
-				"slug": str("Slug für adr/doc"), "touches": strs("erklärte Änderungsabsicht"), "archive_after": str("YYYY-MM-DD"),
+				"content": str("vollständiger Inhalt statt des Templates (nur mit genau einem Typ)"),
+				"slug":    str("Slug für adr/doc"), "touches": strs("erklärte Änderungsabsicht"), "archive_after": str("YYYY-MM-DD"),
 				"apply": map[string]any{"type": "boolean", "description": "Dateien wirklich anlegen"},
 			}), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
+		{Name: "sdd_write", Title: "Datei schreiben", Description: "Legt ein Artefakt, sdd.config.yaml oder eine Testdatei (tests.include) an oder ersetzt ihren Inhalt. Ohne apply nur Vorschau (Diff bzw. Inhalt); apply nur mit --allow-write. Eine bestehende Datei nur mit base_sha256 aus sdd_read. Artefakte werden vorher mit den Regeln geprüft, ein Fehler verhindert das Schreiben; ein ADR auf accepted setzt dieses Werkzeug nie.",
+			InputSchema: obj(map[string]any{
+				"path": str("Pfad relativ zum Repository"), "content": str("vollständiger neuer Inhalt"),
+				"base_sha256": str("sha256 des aktuellen Inhalts aus sdd_read; Pflicht, wenn die Datei existiert"),
+				"apply":       map[string]any{"type": "boolean", "description": "Datei wirklich schreiben"},
+			}, "path", "content"), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": true, "idempotentHint": true, "openWorldHint": false}},
 	}
 }
 
@@ -163,13 +170,15 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 			if err != nil {
 				return nil, err
 			}
-			return resultOf(map[string]any{"artifacts": paths}), nil
+			return resultOf(map[string]any{"artifacts": paths, "config": config.DefaultConfigFileName}), nil
 		}
-		rel, text, err := s.readArtifact(a.Path)
+		rel, text, err := s.readReadable(a.Path)
 		if err != nil {
 			return nil, err
 		}
-		return resultOf(numbered(rel, text)), nil
+		res := numbered(rel, text)
+		res.SHA256 = sha256Hex([]byte(text))
+		return resultOf(res), nil
 
 	case "sdd_lint":
 		a, err := args[struct {
@@ -290,6 +299,9 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 	case "sdd_new":
 		return s.toolNew(raw)
 
+	case "sdd_write":
+		return s.toolWrite(raw)
+
 	default:
 		return nil, fmt.Errorf("%w %q", errUnknownTool, name)
 	}
@@ -310,10 +322,14 @@ func (s *Server) toolNew(raw json.RawMessage) (*toolResult, error) {
 		Slug         string   `json:"slug"`
 		Touches      []string `json:"touches"`
 		ArchiveAfter string   `json:"archive_after"`
+		Content      string   `json:"content"`
 		Apply        bool     `json:"apply"`
 	}](raw)
 	if err != nil {
 		return nil, err
+	}
+	if a.Content != "" && len(a.Types) != 1 {
+		return nil, fmt.Errorf("%w: content nur mit genau einem Typ (types)", scaffold.ErrInvalidInput)
 	}
 	if a.Apply && !s.AllowWrite {
 		return nil, errors.New("Schreiben ist nicht freigegeben: der Server läuft ohne --allow-write; ohne apply gibt es die Vorschau")
@@ -331,6 +347,12 @@ func (s *Server) toolNew(raw json.RawMessage) (*toolResult, error) {
 	})
 	if err != nil {
 		return nil, err
+	}
+	if a.Content != "" && plan.Ops[0].Skip == "" {
+		if err := s.checkNewContent(cfg, a.Types[0], strings.TrimSpace(a.Feature), plan.Ops[0].Path, a.Content); err != nil {
+			return nil, err
+		}
+		plan.Ops[0].Content = []byte(a.Content)
 	}
 	if !a.Apply {
 		preview, err := plan.Preview(s.Root)
@@ -351,7 +373,37 @@ func (s *Server) toolNew(raw json.RawMessage) (*toolResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	return resultOf(map[string]any{"applied": true, "results": results}), nil
+	out := make([]newResult, 0, len(results))
+	for _, r := range results {
+		nr := newResult{Path: r.Path, Status: r.Status, Reason: r.Reason}
+		if r.Status == scaffold.StatusCreated {
+			if data, ok, err := readExisting(s.Root, r.Path); err == nil && ok {
+				nr.SHA256, nr.Lines = sha256Hex(data), lineCount(data)
+			}
+		}
+		out = append(out, nr)
+	}
+	return resultOf(map[string]any{"applied": true, "results": out}), nil
+}
+
+// newResult is one created or skipped file of sdd_new with what was really written.
+type newResult struct {
+	Path   string `json:"path"`
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+	SHA256 string `json:"sha256,omitempty"`
+	Lines  int    `json:"lines,omitempty"`
+}
+
+// checkNewContent checks a draft given to sdd_new: a feature artifact names its slug, and checkArtifact passes.
+func (s *Server) checkNewContent(cfg *config.Config, typ, feature, rel, content string) error {
+	if typ == scaffold.TypePRD || typ == scaffold.TypeDesign || typ == scaffold.TypePlan {
+		if fm, _ := scan.ParseFrontmatter([]byte(content)); fm.Feature != feature {
+			return fmt.Errorf("%w: content trägt feature: %q, erwartet %q", scaffold.ErrInvalidInput, fm.Feature, feature)
+		}
+	}
+	_, err := s.checkArtifact(cfg, rel, nil, false, content)
+	return err
 }
 
 // maxReadBytes bounds the text sdd_read returns, so one artifact cannot fill a model's context.
@@ -361,6 +413,7 @@ type readResult struct {
 	Path      string `json:"path"`
 	Lines     int    `json:"lines"`
 	Truncated bool   `json:"truncated"`
+	SHA256    string `json:"sha256"`
 	Text      string `json:"text"`
 }
 

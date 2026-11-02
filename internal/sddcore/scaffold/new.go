@@ -77,22 +77,31 @@ func NewPlan(root string, cfg *config.Config, opts NewOptions) (Plan, error) {
 	return featurePlan(root, cfg, featureTypes, opts)
 }
 
+// CheckArchiveAfter accepts an empty value or a date YYYY-MM-DD that is not before today's date (zero today: no date
+// check). Same comparison as SDD-050: a date before today would be overdue the moment the artifact exists.
+func CheckArchiveAfter(value string, today time.Time) error {
+	if value == "" {
+		return nil
+	}
+	date, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return fmt.Errorf("%w: archive-after %q ist kein Datum YYYY-MM-DD", ErrInvalidInput, value)
+	}
+	if !today.IsZero() {
+		y, m, d := today.Date()
+		if t := time.Date(y, m, d, 0, 0, 0, 0, time.UTC); date.Before(t) {
+			return fmt.Errorf("%w: archive-after %s liegt vor dem heutigen Datum %s", ErrInvalidInput, value, t.Format("2006-01-02"))
+		}
+	}
+	return nil
+}
+
 func featurePlan(root string, cfg *config.Config, types []string, opts NewOptions) (Plan, error) {
 	if !scan.IsSlug(opts.Feature) {
 		return Plan{}, fmt.Errorf("%w: Feature-Slug %q (erlaubt: [a-z0-9-]+)", ErrInvalidInput, opts.Feature)
 	}
-	if opts.ArchiveAfter != "" {
-		date, err := time.Parse("2006-01-02", opts.ArchiveAfter)
-		if err != nil {
-			return Plan{}, fmt.Errorf("%w: archive-after %q ist kein Datum YYYY-MM-DD", ErrInvalidInput, opts.ArchiveAfter)
-		}
-		// Same comparison as SDD-050: a date before today would be overdue the moment the artifact exists.
-		if !opts.Today.IsZero() {
-			y, m, d := opts.Today.Date()
-			if today := time.Date(y, m, d, 0, 0, 0, 0, time.UTC); date.Before(today) {
-				return Plan{}, fmt.Errorf("%w: archive-after %s liegt vor dem heutigen Datum %s", ErrInvalidInput, opts.ArchiveAfter, today.Format("2006-01-02"))
-			}
-		}
+	if err := CheckArchiveAfter(opts.ArchiveAfter, opts.Today); err != nil {
+		return Plan{}, err
 	}
 	var touches []string
 	for _, t := range opts.Touches {

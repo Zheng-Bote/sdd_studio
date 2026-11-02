@@ -4,7 +4,8 @@ import { Decision, Message, Meta, ModelTest, Pending, Provider } from './types';
 
 /**
  * State of one conversation. The backend is stateless: every turn sends the conversation and the user's decisions.
- * Session permissions apply to read-only tools only; writes always need a one-time approval with preview.
+ * A tool allowed for the session runs without asking again — reading and writing alike (ADR 0003); an unapproved
+ * write waits with its preview.
  */
 @Service()
 export class ChatSession {
@@ -119,9 +120,6 @@ export class ChatSession {
     const call = this.pending().find((p) => p.call_id === callId);
     if (!call) {
       return;
-    }
-    if (decision === 'session' && call.writes) {
-      decision = 'once'; // writes are never allowed for the whole session
     }
     this.decisions.update((d) => ({ ...d, [callId]: decision }));
     if (decision === 'deny') {

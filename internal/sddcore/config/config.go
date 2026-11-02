@@ -73,7 +73,11 @@ func Load(repoRoot string) (*Config, error) {
 		}
 		return nil, fmt.Errorf("Konfiguration %s nicht lesbar: %w", DefaultConfigFileName, err)
 	}
+	return Parse(data)
+}
 
+// Parse decodes and validates the content of sdd.config.yaml, e.g. a draft before it is written.
+func Parse(data []byte) (*Config, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("Konfiguration %s ungültig: %w", DefaultConfigFileName, err)

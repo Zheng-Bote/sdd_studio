@@ -438,3 +438,55 @@ func TestNewRejectsPastArchiveAfter(t *testing.T) {
 		}
 	}
 }
+
+// desk-write-content AC-3: Replace swaps the content atomically with the file's permissions, and only while the file
+// still equals Expect.
+func TestApplyReplace(t *testing.T) {
+	root := t.TempDir()
+	target := filepath.Join(root, "docs", "prd", "x.md")
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(target, []byte("alt\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	plan := scaffold.Plan{Ops: []scaffold.Op{{Path: "docs/prd/x.md", Content: []byte("neu\n"), Replace: true, Expect: []byte("alt\n")}}}
+	if prev, err := plan.Preview(root); err != nil || prev[0].Status != scaffold.StatusReplaced {
+		t.Fatalf("preview: %+v, %v", prev, err)
+	}
+	if res, err := plan.Apply(root); err != nil || res[0].Status != scaffold.StatusReplaced {
+		t.Fatalf("apply: %+v, %v", res, err)
+	}
+	info, _ := os.Stat(target)
+	if got := readFile(t, root, "docs/prd/x.md"); got != "neu\n" || info.Mode().Perm() != 0o600 {
+		t.Fatalf("content %q, mode %v", got, info.Mode().Perm())
+	}
+	// The file changed since planning (it now holds "neu"): the stale plan is skipped and writes nothing.
+	stale := scaffold.Plan{Ops: []scaffold.Op{{Path: "docs/prd/x.md", Content: []byte("anders\n"), Replace: true, Expect: []byte("alt\n")}}}
+	if res, err := stale.Apply(root); err != nil || res[0].Status != scaffold.StatusSkipped {
+		t.Fatalf("stale: %+v, %v", res, err)
+	}
+	if got := readFile(t, root, "docs/prd/x.md"); got != "neu\n" {
+		t.Fatalf("stale plan wrote: %q", got)
+	}
+	entries, _ := os.ReadDir(filepath.Dir(target))
+	if len(entries) != 1 {
+		t.Errorf("temporary files left: %v", entries)
+	}
+}
+
+// desk-write-content AC-5: one hunk with three lines of context; equal contents give no diff.
+func TestUnifiedDiff(t *testing.T) {
+	old := "a\nb\nc\nd\ne\nf\ng\nh\n"
+	got := scaffold.UnifiedDiff("docs/x.md", []byte(old), []byte("a\nb\nc\nX\ne\nf\ng\nh\n"))
+	want := "--- a/docs/x.md\n+++ b/docs/x.md\n@@ -1,7 +1,7 @@\n a\n b\n c\n-d\n+X\n e\n f\n g\n"
+	if got != want {
+		t.Errorf("diff:\n%s\nwant:\n%s", got, want)
+	}
+	if got := scaffold.UnifiedDiff("n.md", nil, []byte("eins\n")); got != "--- a/n.md\n+++ b/n.md\n@@ -0,0 +1,1 @@\n+eins\n" {
+		t.Errorf("new file:\n%s", got)
+	}
+	if d := scaffold.UnifiedDiff("docs/x.md", []byte(old), []byte(old)); d != "" {
+		t.Errorf("equal contents: %q", d)
+	}
+}

@@ -14,8 +14,9 @@ function render(pending: Pending) {
 }
 
 describe('ApprovalCard', () => {
-  // sdd-desk AC-4: a write shows its preview and offers no session-wide approval.
-  it('shows the preview of a write and no session approval', () => {
+  // sdd-desk AC-4: a write shows its preview before it runs.
+  // desk-write-content AC-7: writes may be allowed for the session, too.
+  it('shows the preview of a write and offers the session approval', () => {
     const { el, buttons } = render({
       call_id: 'w1',
       tool: 'sdd_new',
@@ -26,7 +27,21 @@ describe('ApprovalCard', () => {
     expect(el.textContent).toContain('schreibt Dateien');
     expect(el.textContent).toContain('docs/prd/billing.md');
     expect(el.textContent).toContain('feature: billing');
-    expect(buttons).toEqual(['Einmal erlauben', 'Ablehnen']);
+    expect(el.textContent).toContain('ohne weitere Rückfrage');
+    expect(buttons).toEqual(['Einmal erlauben', 'Für diese Sitzung erlauben', 'Ablehnen']);
+  });
+
+  // desk-write-content AC-7: an update of sdd_write shows its diff, labelled as a change.
+  it('shows the diff of an update', () => {
+    const { el } = render({
+      call_id: 'w2',
+      tool: 'sdd_write',
+      arguments: { path: 'docs/prd/billing.md', apply: true },
+      writes: true,
+      preview: { ops: [{ path: 'docs/prd/billing.md', action: 'update', diff: '-- AC-2 Import\n+- AC-2 Import aus CSV\n' }] },
+    });
+    expect(el.textContent).toContain('ändern');
+    expect(el.querySelector('pre[aria-label="Änderungen"]')?.textContent).toContain('+- AC-2 Import aus CSV');
   });
 
   it('offers once, session and deny for a read-only call and emits the choice', () => {

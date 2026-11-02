@@ -81,9 +81,9 @@ var (
 	ErrUnknownProvider = errors.New("unbekannter oder nicht konfigurierter Anbieter")
 )
 
-// writes reports whether a call changes files: sdd_new with apply.
+// writes reports whether a call changes files: sdd_new or sdd_write with apply.
 func writes(tc ToolCall) bool {
-	if tc.Name != "sdd_new" {
+	if tc.Name != "sdd_new" && tc.Name != "sdd_write" {
 		return false
 	}
 	var a struct {
@@ -215,8 +215,9 @@ func (a *Agent) run(ctx context.Context, req TurnRequest, emit func(Event)) (*Tu
 	}
 }
 
-// decide runs, refuses or parks one tool call. Unknown tools are never run; writes need a one-time approval even if
-// the tool is allowed for the session, and are parked with a preview.
+// decide runs, refuses or parks one tool call. Unknown tools are never run. A call runs if it was approved once or its
+// tool is allowed for the session — reading and writing alike (ADR 0003, tier "write"); otherwise it is parked, a write
+// with its preview. A session-allowed write reports what it wrote in its result.
 func (a *Agent) decide(tc ToolCall, req TurnRequest) (string, *Pending, error) {
 	if !a.toolKnown(tc.Name) {
 		return "Abgelehnt: " + tc.Name + " ist kein Werkzeug von sdd mcp.", nil, nil
@@ -225,7 +226,7 @@ func (a *Agent) decide(tc ToolCall, req TurnRequest) (string, *Pending, error) {
 		return "Der Nutzer hat diesen Aufruf abgelehnt.", nil, nil
 	}
 	w := writes(tc)
-	approved := slices.Contains(req.ApprovedCalls, tc.ID) || (!w && slices.Contains(req.AllowedTools, tc.Name))
+	approved := slices.Contains(req.ApprovedCalls, tc.ID) || slices.Contains(req.AllowedTools, tc.Name)
 	if !approved {
 		p := &Pending{CallID: tc.ID, Tool: tc.Name, Arguments: argsObject(tc.Arguments), Writes: w}
 		if w {
