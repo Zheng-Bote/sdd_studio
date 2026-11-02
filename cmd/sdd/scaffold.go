@@ -46,6 +46,12 @@ func runInit(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "sdd init: %v\n", err)
 		return 2
 	}
+	agents, _, err := scaffold.AgentFilesPlan(repoRoot, scaffold.DefaultConfig(*profile))
+	if err != nil {
+		fmt.Fprintf(stderr, "sdd init: %v\n", err)
+		return 2
+	}
+	plan.Ops = append(plan.Ops, agents.Ops...)
 	results, code := applyPlanResults("sdd init", plan, repoRoot, *dryRun, stdout, stderr)
 	if code != 0 {
 		return code
@@ -127,6 +133,10 @@ func applyPlanResults(cmd string, plan scaffold.Plan, repoRoot string, dryRun bo
 		switch {
 		case r.Status == scaffold.StatusSkipped:
 			fmt.Fprintf(stdout, "übersprungen  %s (%s)\n", r.Path, r.Reason)
+		case r.Status == scaffold.StatusPrepended && dryRun:
+			fmt.Fprintf(stdout, "würde ergänzen %s\n", r.Path)
+		case r.Status == scaffold.StatusPrepended:
+			fmt.Fprintf(stdout, "ergänzt       %s\n", r.Path)
 		case dryRun:
 			fmt.Fprintf(stdout, "würde anlegen %s\n", r.Path)
 		default:

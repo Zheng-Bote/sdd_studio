@@ -245,7 +245,8 @@ func TestApplyCommitsEachStep(t *testing.T) {
 		t.Fatalf("main moved")
 	}
 	subjects := strings.Split(git(t, root, "log", "--reverse", "--format=%s", "main..sdd/adopt"), "\n")
-	wantSubjects := []string{"sdd adopt: Konfiguration", "sdd adopt: Verfassung", "sdd adopt: Frontmatter", "sdd adopt: Baseline", "sdd adopt: Bericht"}
+	// agent-files AC-4: the agent files are a step of their own, right after the constitution.
+	wantSubjects := []string{"sdd adopt: Konfiguration", "sdd adopt: Verfassung", "sdd adopt: Agenten-Dateien", "sdd adopt: Frontmatter", "sdd adopt: Baseline", "sdd adopt: Bericht"}
 	if !reflect.DeepEqual(subjects, wantSubjects) || len(res.Commits) != len(wantSubjects) {
 		t.Fatalf("commits %v, want %v", subjects, wantSubjects)
 	}

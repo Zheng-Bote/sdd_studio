@@ -52,6 +52,18 @@ func TestInitTool(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, ".github/workflows/sdd.yml")); err == nil {
 		t.Errorf("no_ci ignored")
 	}
+	// agent-files AC-4: the agent files are created with init and are part of the first commit.
+	cmd := exec.Command("git", "ls-tree", "--name-only", "HEAD")
+	cmd.Dir = root
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"AGENTS.md", "CLAUDE.md", "GEMINI.md"} {
+		if !strings.Contains("\n"+string(out), "\n"+f+"\n") {
+			t.Errorf("%s not in the first commit: %s", f, out)
+		}
+	}
 	// The project is usable right away: the tools that failed before init now work.
 	if r := call(t, newServer(root, true), "sdd_check_intent", map[string]any{"paths": []string{"src/main.go"}}); r["isError"] == true {
 		t.Errorf("sdd_check_intent after init: %v", r)

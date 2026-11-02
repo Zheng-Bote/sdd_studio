@@ -38,6 +38,11 @@ func (s *Server) toolInit(raw json.RawMessage) (*toolResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	agents, _, err := scaffold.AgentFilesPlan(s.Root, scaffold.DefaultConfig(a.Profile))
+	if err != nil {
+		return nil, err
+	}
+	plan.Ops = append(plan.Ops, agents.Ops...)
 	mode, gitNote := scaffold.GitSkip, "ohne Git"
 	if a.Git {
 		if mode, err = scaffold.CheckGitInit(s.Root); err != nil {
@@ -54,11 +59,14 @@ func (s *Server) toolInit(raw json.RawMessage) (*toolResult, error) {
 		if err != nil {
 			return nil, err
 		}
-		ops := make([]opPreview, 0, len(plan.Ops))
+		ops := make([]writeOp, 0, len(plan.Ops))
 		for i, op := range plan.Ops {
-			p := opPreview{Path: op.Path, Action: "create", Content: string(op.Content)}
-			if preview[i].Status == scaffold.StatusSkipped {
-				p.Action, p.Reason, p.Content = "skip", preview[i].Reason, ""
+			p := writeOp{Path: op.Path, Action: "create", Content: string(op.Content)}
+			switch {
+			case preview[i].Status == scaffold.StatusSkipped:
+				p = writeOp{Path: op.Path, Action: "skip", Reason: preview[i].Reason}
+			case op.Prepend:
+				p = writeOp{Path: op.Path, Action: "update", Diff: scaffold.UnifiedDiff(op.Path, op.Expect, append(append([]byte{}, op.Content...), op.Expect...))}
 			}
 			ops = append(ops, p)
 		}

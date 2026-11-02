@@ -318,7 +318,7 @@ func TestAdoptPreviewThenApply(t *testing.T) {
 	for _, st := range a.Steps {
 		titles = append(titles, st.Title)
 	}
-	if strings.Join(titles, ",") != "Konfiguration,Verfassung,Frontmatter" || a.Steps[2].Ops[0].Action != "prepend" || a.Steps[2].Ops[0].Content == "" {
+	if strings.Join(titles, ",") != "Konfiguration,Verfassung,Agenten-Dateien,Frontmatter" || a.Steps[3].Ops[0].Action != "prepend" || a.Steps[3].Ops[0].Content == "" {
 		t.Fatalf("preview steps %+v", a.Steps)
 	}
 	if git(t, root, "status", "--porcelain") != "" {

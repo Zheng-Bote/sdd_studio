@@ -84,6 +84,14 @@ func Propose(root string, opts Options) (*Proposal, error) {
 		})
 	}
 
+	agents, details, err := scaffold.AgentFilesPlan(root, inv.Config)
+	if err != nil {
+		return nil, err
+	}
+	if len(agents.Ops) > 0 {
+		p.Steps = append(p.Steps, Step{Title: "Agenten-Dateien", Plan: agents, Detail: details})
+	}
+
 	fm, err := p.frontmatterStep(root)
 	if err != nil {
 		return nil, err

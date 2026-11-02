@@ -159,7 +159,8 @@ func (s *Server) checkArtifact(cfg *config.Config, rel string, old []byte, exist
 
 type writeOp struct {
 	Path    string `json:"path"`
-	Action  string `json:"action"` // create, update, unchanged
+	Action  string `json:"action"` // create, update, unchanged, skip
+	Reason  string `json:"reason,omitempty"`
 	Diff    string `json:"diff,omitempty"`
 	Content string `json:"content,omitempty"`
 }
