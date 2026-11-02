@@ -7,6 +7,7 @@ touches:
   - internal/sddcore/adopt/**
   - cmd/sdd/**
   - internal/mcp/**
+  - internal/ui/**
   - templates/**
   - handbuch/**
   - README.md
