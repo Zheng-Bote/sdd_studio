@@ -39,6 +39,18 @@ Voraussetzung: Go 1.27 (für `sdd-desk` zusätzlich Node.js und npm).
 go build -o bin/sdd ./cmd/sdd
 ```
 
+### Alles bauen und lokal installieren (Linux)
+
+Voraussetzung zusätzlich: Node.js, npm, Rust und die [Tauri-Systemabhängigkeiten](https://v2.tauri.app/start/prerequisites/).
+
+```text
+make                 # Oberfläche, bin/sdd, bin/sdd-desk und die Desktop-Anwendung sdd-desk-app bauen
+make install         # nach ~/.local installieren, mit Desktop-Verknüpfung und Icons für den KI-Desktop
+make uninstall       # alles wieder entfernen
+```
+
+`make install` legt `sdd`, `sdd-desk` und `sdd-desk-app` gemeinsam nach `~/.local/bin` (die Anwendung findet `sdd-desk` und dieses `sdd` daneben), die Verknüpfung „SDD Studio Desktop“ nach `~/.local/share/applications/io.github.zhengbote.sdddesk.desktop` und die Icons aus `apps/desk/src-tauri/icons` ins `hicolor`-Thema. Systemweit: `sudo make install PREFIX=/usr/local`; für Pakete `make install DESTDIR=<root> PREFIX=/usr`. Schlüssel installiert `make` nicht — `llm.env` legst du selbst an (siehe [Modelle einrichten](#modelle-einrichten)).
+
 ## `sdd` — Kommandos
 
 | Kommando | Zweck |
