@@ -1,11 +1,12 @@
 ---
 feature: archive-after-today
-status: active
+status: archived
 archive-after:
 touches:
   - internal/desk/**
   - internal/sddcore/scaffold/**
   - handbuch/**
+release: v0.5.0
 ---
 
 # PRD — Heutiges Datum für das Modell, kein Stichtag in der Vergangenheit

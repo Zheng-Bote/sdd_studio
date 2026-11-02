@@ -1,6 +1,6 @@
 ---
 feature: agent-files
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/scaffold/**
@@ -11,6 +11,7 @@ touches:
   - templates/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # PRD — Agenten-Dateien bei `sdd init` und `sdd adopt`

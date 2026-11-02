@@ -1,6 +1,6 @@
 ---
 feature: desk-critical-tools
-status: active
+status: archived
 archive-after:
 touches:
   - cmd/sdd/**
@@ -11,11 +11,12 @@ touches:
   - apps/desk/src/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # Tech Spec — Kritische Aktionen im KI-Desktop mit einzelner Bestätigung
 
-Setzt das PRD `docs/prd/desk-critical-tools.md` um, auf Grundlage von ADR 0003 (Entscheidungen 5 und 6, Stufe „kritisch“), ADR 0001 (`adopt --apply`) und Konzept §9.6.
+Setzt das PRD `docs/archive/prd/desk-critical-tools.md` um, auf Grundlage von ADR 0003 (Entscheidungen 5 und 6, Stufe „kritisch“), ADR 0001 (`adopt --apply`) und Konzept §9.6.
 
 ## Architektur
 

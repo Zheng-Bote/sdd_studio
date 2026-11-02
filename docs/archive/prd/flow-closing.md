@@ -1,6 +1,6 @@
 ---
 feature: flow-closing
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
@@ -9,6 +9,7 @@ touches:
   - cmd/sdd/**
   - apps/desk/src/**
   - handbuch/**
+release: v0.5.0
 ---
 
 # PRD — Klarer Abschluss geführter Abläufe

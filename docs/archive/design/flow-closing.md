@@ -1,6 +1,6 @@
 ---
 feature: flow-closing
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
@@ -9,11 +9,12 @@ touches:
   - cmd/sdd/**
   - apps/desk/src/**
   - handbuch/**
+release: v0.5.0
 ---
 
 # Tech Spec — Klarer Abschluss geführter Abläufe
 
-Setzt das PRD `docs/prd/flow-closing.md` um. Grundlagen sind `docs/design/constitution-guide.md` (`sdd-constitution`, Schritt „Verfassung ausfüllen“) und `docs/archive/design/sdd-adopt.md` (Bericht, Branch).
+Setzt das PRD `docs/archive/prd/flow-closing.md` um. Grundlagen sind `docs/archive/design/constitution-guide.md` (`sdd-constitution`, Schritt „Verfassung ausfüllen“) und `docs/archive/design/sdd-adopt.md` (Bericht, Branch).
 
 ## Architektur
 

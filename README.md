@@ -6,16 +6,16 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 > Es gibt **einen Regelkatalog** ([`catalog/catalog.yaml`](catalog/catalog.yaml)). Das [Handbuch](handbuch/03-mechanismen.md) erklärt ihn, das Programm setzt ihn durch. Beide sind Ausgaben derselben Quelle — und diese Quelle wird über `SDD-070` bis `SDD-073` maschinell geprüft.
 
-`sdd` selbst ist **KI-frei und offline** ([ADR 0002](docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)): Kern, CLI, `sdd ui` und `sdd mcp` enthalten keinen LLM-Code und bauen keine Netzwerkverbindung nach außen auf.
+`sdd` selbst ist **KI-frei und offline** ([ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), löst ADR 0002 ab): Kern, CLI, `sdd ui` und `sdd mcp` enthalten keinen LLM-Code und bauen keine Netzwerkverbindung nach außen auf.
 
 ## Stand
 
-Letzte Version: **0.4.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`, `sdd ui`, `sdd next`, `sdd explain`, `sdd mcp` und der optionale KI-Desktop `sdd-desk`, auch als Tauri-v2-Anwendung mit gestreamten Antworten, „LLM testen“ und dem assistierten Abgleich mit der Verfassung. In CI: `uses: Zheng-Bote/sdd_studio@v0.4.0`.
+Letzte Version: **0.5.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`. Der KI-Desktop `sdd-desk` führt jetzt durch den ganzen Prozess: Projekt übernehmen oder neu anlegen (`sdd init --git`), Agenten-Dateien, Verfassung aus den Quellen des Projekts, PRD mit Inhalt, Tests in der Projektsprache, Archiv (`sdd archive`). Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.5.0`.
 
 - **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.4.0 liegen archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.5.0 liegen archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -75,7 +75,7 @@ Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/featu
 Die [GitHub Action](action.yml) baut `sdd`, führt `sdd gate <gate>` aus und schreibt den Bericht in die Job-Zusammenfassung:
 
 ```yaml
-- uses: Zheng-Bote/sdd_studio@v0.4.0
+- uses: Zheng-Bote/sdd_studio@v0.5.0
   with:
     gate: pre-merge
 ```
@@ -90,11 +90,11 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }
 ```
 
-Kein Agent kann die Baseline ändern, Befunde quittieren, das ADR-Lockfile schreiben, `sdd adopt --apply` ausführen oder ein ADR auf `accepted` setzen — dafür gibt es kein Werkzeug.
+Baseline, Befunde quittieren, ADR-Lockfile, `sdd adopt --apply` und das Entscheiden eines ADR sind **kritisch**: Die Werkzeuge dafür (`sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`) gibt es nur mit `sdd mcp --allow-critical`, also nur für Clients, die jede Ausführung einzeln vom Menschen bestätigen lassen (wie `sdd-desk`). Ohne den Schalter hat ein Agent dafür kein Werkzeug ([ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)).
 
 ## KI-Desktop `sdd-desk` (optional)
 
-`sdd-desk` führt im Gespräch mit einem frei wählbaren Sprachmodell von der Produkt-Idee über PRD, Tech Spec, ADR und Plan bis zum Gate. Es ist ein **getrenntes Programm**: Werkzeuge erreicht es nur über einen selbst gestarteten `sdd mcp --allow-write --allow-critical`, jeder Aufruf braucht deine Erlaubnis, jede kritische Aktion jedes Mal aufs Neue.
+`sdd-desk` führt im Gespräch mit einem frei wählbaren Sprachmodell durch den Prozess: vom Projektstart (Übernahme eines bestehenden oder Anlage eines neuen Projekts) über Verfassung, PRD, Tech Spec, ADR, Plan und Tests bis zu Gate und Archiv. Es ist ein **getrenntes Programm**: Werkzeuge erreicht es nur über einen selbst gestarteten `sdd mcp --allow-write --allow-critical`, jeder Aufruf braucht deine Erlaubnis, jede kritische Aktion jedes Mal aufs Neue.
 
 ### Als Desktop-Anwendung (Tauri v2)
 
@@ -140,7 +140,7 @@ bin/sdd-desk --project . --open
 
 | Option | Bedeutung |
 |---|---|
-| `--project <pfad>` | Projektverzeichnis mit `sdd.config.yaml` (Standard: `.`) |
+| `--project <pfad>` | Projektverzeichnis (Standard: `.`); ohne `sdd.config.yaml` bietet der Desktop Übernahme oder Neuanlage an |
 | `--open` | Oberfläche im Standardbrowser öffnen |
 | `--config <pfad>` | `llm.env` (Standard: `config/llm.env` neben `sdd-desk`) |
 | `--config-hint <pfad>` | Ort für `llm.env`, den die Warnung nennt, wenn keine Datei gefunden wird (setzt die Desktop-Anwendung) |
@@ -150,7 +150,7 @@ bin/sdd-desk --project . --open
 
 `sdd-desk` gibt Adresse und URL mit Sitzungstoken aus; ohne `--open` diese URL im Browser öffnen. Beenden mit Strg+C.
 
-In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
+In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**, **Verfassung erarbeiten**, **Tests je Kriterium** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Ist das Projekt noch nicht mit sdd erfasst, schlägt ein Hinweis über dem Gespräch **Bestehendes Projekt übernehmen** bzw. **Neues Projekt anlegen** vor. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
 
 ### Was der Desktop darf
 
@@ -173,5 +173,7 @@ go run ./cmd/sdd lint
 
 ## Nächste Schritte
 
+- **Praxistest mit echten Modellen:** Die geführten Abläufe von 0.5.0 (Übernahme, Verfassung, PRD mit Inhalt, Tests, Archiv) sind mit Tests und Gegenproben abgesichert, im Gespräch mit Modellen aber erst an einem Projekt erprobt. Ob ein Modell Reihenfolge und Abschluss einhält, zeigt erst der Alltag; die Schutzmechanismen im Code gelten unabhängig davon.
+- **Konfiguration als kritisch einstufen?** Eine Änderung an `sdd.config.yaml` über `sdd_write` (z. B. `exclude: ["**"]`) kann Prüfungen aushebeln; heute ist sie „schreibend“ und für die Sitzung freigebbar. Ob Änderungen an `exclude`, `profile` und `gates` kritisch werden, entscheidet ein späteres ADR.
 - **Zitate prüfen:** Beim Abgleich mit der Verfassung (`sdd-conflicts`) prüft `sdd-desk` maschinell, ob die zitierten Stellen wörtlich in Verfassung und Tech Spec stehen. Kleine lokale Modelle halten die Zitierpflicht nicht zuverlässig ein.
 - **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.

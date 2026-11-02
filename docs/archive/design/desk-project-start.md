@@ -1,6 +1,6 @@
 ---
 feature: desk-project-start
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
@@ -9,11 +9,12 @@ touches:
   - apps/desk/src/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # Tech Spec — Nicht erfasste Projekte im KI-Desktop erkennen und starten
 
-Setzt das PRD `docs/prd/desk-project-start.md` um. Grundlagen sind `docs/design/desk-guided-flow.md` (`sdd_stack`), `docs/design/constitution-guide.md` (`sdd-constitution`), `docs/design/agent-files.md` und `docs/design/desk-critical-tools.md` (`sdd_adopt_apply`).
+Setzt das PRD `docs/archive/prd/desk-project-start.md` um. Grundlagen sind `docs/archive/design/desk-guided-flow.md` (`sdd_stack`), `docs/archive/design/constitution-guide.md` (`sdd-constitution`), `docs/archive/design/agent-files.md` und `docs/archive/design/desk-critical-tools.md` (`sdd_adopt_apply`).
 
 ## Architektur
 

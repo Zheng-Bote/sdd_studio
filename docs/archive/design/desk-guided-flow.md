@@ -1,6 +1,6 @@
 ---
 feature: desk-guided-flow
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
@@ -8,11 +8,12 @@ touches:
   - internal/desk/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # Tech Spec — Geführter Ablauf: Technik vor touches, Reihenfolge, Tests je Sprache
 
-Setzt das PRD `docs/prd/desk-guided-flow.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-guidance.md` (Prompts) und `docs/design/desk-write-content.md` (`sdd_read`, `sdd_write`).
+Setzt das PRD `docs/archive/prd/desk-guided-flow.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-guidance.md` (Prompts) und `docs/archive/design/desk-write-content.md` (`sdd_read`, `sdd_write`).
 
 ## Architektur
 

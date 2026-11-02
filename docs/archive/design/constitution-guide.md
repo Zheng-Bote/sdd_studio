@@ -1,6 +1,6 @@
 ---
 feature: constitution-guide
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
@@ -8,11 +8,12 @@ touches:
   - cmd/sdd/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # Tech Spec — Die Verfassung KI-gestützt erarbeiten
 
-Setzt das PRD `docs/prd/constitution-guide.md` um. Grundlagen sind die Tech Specs `docs/design/desk-write-content.md` (`sdd_read`/`sdd_write`, Pfadklassen) und `docs/design/desk-guided-flow.md` (Prompts, `sdd_stack`).
+Setzt das PRD `docs/archive/prd/constitution-guide.md` um. Grundlagen sind die Tech Specs `docs/archive/design/desk-write-content.md` (`sdd_read`/`sdd_write`, Pfadklassen) und `docs/archive/design/desk-guided-flow.md` (Prompts, `sdd_stack`).
 
 ## Architektur
 

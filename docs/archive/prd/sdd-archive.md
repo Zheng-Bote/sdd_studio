@@ -1,6 +1,6 @@
 ---
 feature: sdd-archive
-status: active
+status: archived
 archive-after:
 touches:
   - cmd/sdd/**
@@ -11,6 +11,7 @@ touches:
   - apps/desk/src/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # PRD — Features archivieren mit `sdd archive`

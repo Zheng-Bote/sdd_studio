@@ -1,6 +1,6 @@
 ---
 feature: desk-write-content
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
@@ -10,11 +10,12 @@ touches:
   - apps/desk/src/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # Tech Spec — Arbeitsergebnisse aus dem KI-Desktop mit Inhalt speichern
 
-Setzt das PRD `docs/prd/desk-write-content.md` um, auf Grundlage von ADR 0003 (Stufe „schreibend“). Grundlagen sind die Tech Specs `docs/archive/design/sdd-init-new.md` (Plan/Apply) und `docs/archive/design/sdd-desk.md` (Freigaben).
+Setzt das PRD `docs/archive/prd/desk-write-content.md` um, auf Grundlage von ADR 0003 (Stufe „schreibend“). Grundlagen sind die Tech Specs `docs/archive/design/sdd-init-new.md` (Plan/Apply) und `docs/archive/design/sdd-desk.md` (Freigaben).
 
 ## Architektur
 

@@ -57,13 +57,14 @@ In CI baut die GitHub Action `sdd` selbst; dort ist keine Installation nötig.
 
 ### 1. Projekt anlegen
 
-Im (leeren oder frischen) Git-Repository:
+Im leeren Ordner oder frischen Git-Repository:
 
 ```text
-git init -b main            # falls noch kein Repository
 sdd init --dry-run          # zeigt, was angelegt würde
-sdd init                    # legt an
+sdd init --git              # legt an; ohne Repository auch git init (Branch main) und ein erster Commit
 ```
+
+Ohne `--git` legt `sdd init` nur die Dateien an; das Repository richten Sie dann selbst ein (`git init -b main`, erster Commit). `--git` bricht vorher ab, wenn Git oder Ihre Git-Identität (`user.name`, `user.email`) fehlt.
 
 `sdd init` schreibt nur Dateien, die es noch nicht gibt:
 
@@ -73,13 +74,18 @@ constitution.md             Verfassung mit den Pflichtabschnitten
 docs/adr/  docs/prd/  docs/design/  docs/plans/  docs/archive/  docs/notes/
 .github/workflows/sdd.yml   CI: pre-merge im Pull Request, pre-release auf release/**
 .sdd/baseline.json          leere Baseline — ein neues Projekt hat keine Altlasten
+AGENTS.md                   Hinweise für Agenten: Verfassung zuerst, Präzedenz, Ablauf
+CLAUDE.md  GEMINI.md        verweisen auf AGENTS.md (Claude Code, Gemini CLI)
+.github/copilot-instructions.md   verweist auf AGENTS.md (GitHub Copilot)
 ```
+
+Gibt es schon Agenten-Dateien, erhalten sie nur einen Verweis vorangestellt; ihr Inhalt bleibt erhalten.
 
 Optionen: `--profile minimal|standard|regulated` (Standard: `standard`), `--no-ci` ohne Workflow.
 
 ### 2. Verfassung ausfüllen
 
-`constitution.md` enthält drei Pflichtabschnitte mit Platzhaltern. Ersetzen Sie sie durch die dauerhaften Regeln Ihres Projekts — keine User Stories, keine Tasks, keine Planung (das prüft `SDD-003`):
+`constitution.md` enthält drei Pflichtabschnitte mit Platzhaltern; solange sie drin sind, meldet `sdd next` zuerst „Verfassung ausfüllen“. Im KI-Desktop führt der Ablauf **Verfassung erarbeiten** (`sdd-constitution`) hindurch. Ersetzen Sie die Platzhalter durch die dauerhaften Regeln Ihres Projekts — keine User Stories, keine Tasks, keine Planung (das prüft `SDD-003`):
 
 ```markdown
 ## Architektur/Layering
@@ -174,6 +180,7 @@ sdd adopt --apply --branch chore/sdd   # anderer Branchname
 |---|---|
 | Konfiguration | `sdd.config.yaml` mit den erkannten Pfaden (falls noch keine da ist) |
 | Verfassung | `constitution.md` aus der Vorlage (falls keine da ist) — Inhalt ist auszufüllen |
+| Agenten-Dateien | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` anlegen bzw. vorhandenen einen Verweis voranstellen |
 | Frontmatter | `feature: <slug>` und `status: active` vor vorhandene Feature-Artefakte ohne Frontmatter; sonst wird nichts an ihnen geändert |
 | Baseline | `.sdd/baseline.json` mit den Altbefunden aller Gates, `.sdd/adr-lock.json` |
 | Bericht | `.sdd/adopt-report.md` |
@@ -187,7 +194,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
 
 ### 3. Nacharbeiten auf dem Übernahme-Branch
 
-1. **Verfassung ausfüllen** — wie in [A) Schritt 2](#2-verfassung-ausfüllen). Gibt es schon eine Architektur- oder Security-Beschreibung, übernehmen Sie deren dauerhafte Regeln.
+1. **Verfassung ausfüllen** — wie in [A) Schritt 2](#2-verfassung-ausfüllen), und zwar hier auf dem Übernahme-Branch, vor dem Merge: Dann gilt das Ausfüllen als erstmaliges Anlegen und braucht kein ADR (`SDD-010`). Gibt es schon eine Architektur- oder Security-Beschreibung oder Agenten-Dateien mit Regeln (z. B. `.gemini/GEMINI.md`), übernehmen Sie deren dauerhafte Regeln; der Ablauf `sdd-constitution` im KI-Desktop schlägt sie mit Fundstelle vor. Bis der Branch gemergt ist, meldet `sdd next` „Übernahme abschließen“.
 2. **Pfade prüfen** in `sdd.config.yaml`:
    ```yaml
    artifacts:
@@ -218,7 +225,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: Zheng-Bote/sdd_studio@v0.4.0
+         - uses: Zheng-Bote/sdd_studio@v0.5.0
            with:
              gate: pre-merge
      pre-release:
@@ -228,7 +235,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: Zheng-Bote/sdd_studio@v0.4.0
+         - uses: Zheng-Bote/sdd_studio@v0.5.0
            with:
              gate: pre-release
    ```
@@ -317,7 +324,7 @@ git push -u origin feature/csv-export
 ### 6. Nach dem Merge und vor dem Release
 
 1. Nach dem Merge im PRD `status: implemented` setzen.
-2. Vor dem Release die Artefakte abgeschlossener Features nach `docs/archive/` verschieben und `status: archived` setzen (`SDD-050`). Archiviert wird verschoben, nicht gelöscht; Links auf die neue Lage anpassen.
+2. Vor dem Release die Artefakte abgeschlossener Features archivieren (`SDD-050`): `sdd archive --feature <slug> --release <version>` verschiebt PRD, Tech Spec und Plan nach `docs/archive/` und setzt `status: archived` — nur wenn jedes Akzeptanzkriterium einen Testverweis hat. Archiviert wird verschoben, nicht gelöscht; Links auf die neue Lage anpassen.
 3. Auf dem Release-Branch prüfen:
    ```text
    sdd gate pre-release
@@ -330,10 +337,11 @@ git push -u origin feature/csv-export
 
 | Befehl | Zweck |
 |---|---|
-| `sdd init [--profile …] [--dry-run] [--no-ci]` | neues Projekt anlegen |
+| `sdd init [--profile …] [--dry-run] [--no-ci] [--git]` | neues Projekt anlegen (mit `--git` auch Repository und erster Commit) |
 | `sdd adopt [--apply] [--branch …]` | bestehendes Projekt übernehmen |
 | `sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …]` | Feature-Artefakte anlegen |
 | `sdd new --type adr\|doc --title …` | ADR oder Doku anlegen |
+| `sdd archive --feature <slug> [--release …]` | Feature vor dem Release ins Archiv verschieben |
 | `sdd next [--feature <slug>]` | nächster Prozessschritt |
 | `sdd lint [--feature …] [--json]` | alle Regeln ohne Gate-Kontext |
 | `sdd gate pre-implementation [--feature …] [--paths …]` | vor dem Coden |
@@ -365,4 +373,4 @@ git push -u origin feature/csv-export
 
 - **`sdd ui --open`** — lokale Oberfläche auf `127.0.0.1`: Übersicht, Artefakte, Befunde (live), neues Artefakt, Übernahme, Handbuch. Schreibt nur über Vorschau und Bestätigung.
 - **`sdd mcp`** — Schnittstelle für KI-Agenten wie Claude Code; Einbindung im [Handbuch, Teil 4](../handbuch/04-agenten.md).
-- **`sdd-desk`** — optionaler, getrennter KI-Desktop: führt im Gespräch mit einem wählbaren Sprachmodell (lokal oder Cloud) von der Idee über PRD und Tech Spec bis zum Gate, gleicht die Tech Spec mit der Verfassung ab und führt `sdd`-Werkzeuge nur mit Ihrer Freigabe aus. Einrichtung in der [README](../README.md#ki-desktop-sdd-desk-optional). `sdd` selbst bleibt ohne KI und offline.
+- **`sdd-desk`** — optionaler, getrennter KI-Desktop: führt im Gespräch mit einem wählbaren Sprachmodell (lokal oder Cloud) durch den Prozess — vom Projektstart (Übernahme oder Neuanlage) über Verfassung, PRD und Tech Spec bis zu Tests, Gate und Archiv —, gleicht die Tech Spec mit der Verfassung ab und führt `sdd`-Werkzeuge nur mit Ihrer Freigabe aus; kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) bestätigen Sie jedes Mal einzeln. Einrichtung in der [README](../README.md#ki-desktop-sdd-desk-optional). `sdd` selbst bleibt ohne KI und offline.

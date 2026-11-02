@@ -1,16 +1,17 @@
 ---
 feature: archive-after-today
-status: active
+status: archived
 archive-after:
 touches:
   - internal/desk/**
   - internal/sddcore/scaffold/**
   - handbuch/**
+release: v0.5.0
 ---
 
 # Tech Spec — Heutiges Datum für das Modell, kein Stichtag in der Vergangenheit
 
-Setzt das PRD `docs/prd/archive-after-today.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-desk.md` (Agent, Gesprächszug) und `docs/archive/design/sdd-init-new.md` (`sdd new`).
+Setzt das PRD `docs/archive/prd/archive-after-today.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-desk.md` (Agent, Gesprächszug) und `docs/archive/design/sdd-init-new.md` (`sdd new`).
 
 ## Architektur
 

@@ -1,6 +1,6 @@
 ---
 feature: agent-files
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/scaffold/**
@@ -11,11 +11,12 @@ touches:
   - templates/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # Tech Spec — Agenten-Dateien bei `sdd init` und `sdd adopt`
 
-Setzt das PRD `docs/prd/agent-files.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-init-new.md` (Plan/Apply, additiv) und `docs/archive/design/sdd-adopt.md` (Schritte, ein Commit je Schritt).
+Setzt das PRD `docs/archive/prd/agent-files.md` um. Grundlage sind die Tech Specs `docs/archive/design/sdd-init-new.md` (Plan/Apply, additiv) und `docs/archive/design/sdd-adopt.md` (Schritte, ein Commit je Schritt).
 
 ## Architektur
 

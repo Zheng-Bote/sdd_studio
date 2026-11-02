@@ -111,7 +111,7 @@ sdd explain <regel-id> [--json]
 sdd mcp [--allow-write]
 ```
 
-`sdd explain` zeigt den Handbuchabschnitt und den Prüfvertrag einer Regel. `sdd mcp` stellt die Bibliothek Agenten als MCP-Server über stdio bereit — Werkzeuge, Ressourcen und geführte Prompts, KI-frei und ohne Netzwerk ([ADR 0002](../docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)). Einrichtung, Werkzeuge und Grenzen beschreibt [Teil 4 — Für Agenten](04-agenten.md).
+`sdd explain` zeigt den Handbuchabschnitt und den Prüfvertrag einer Regel. `sdd mcp` stellt die Bibliothek Agenten als MCP-Server über stdio bereit — Werkzeuge, Ressourcen und geführte Prompts, KI-frei und ohne Netzwerk ([ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), löst ADR 0002 ab). Einrichtung, Werkzeuge und Grenzen beschreibt [Teil 4 — Für Agenten](04-agenten.md).
 
 ### `sdd ui` {#sdd-ui}
 
@@ -147,7 +147,7 @@ Die Action im Wurzelverzeichnis von `sdd_studio` baut `sdd` aus ihrem eigenen Qu
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0          # git diff <base>...HEAD braucht die Historie
-- uses: Zheng-Bote/sdd_studio@v0.4.0   # Release-Tag; @main nur zum Ausprobieren
+- uses: Zheng-Bote/sdd_studio@v0.5.0   # Release-Tag; @main nur zum Ausprobieren
   with:
     gate: pre-merge         # pre-implementation | pre-merge | pre-release
     feature: ""             # optional, kommagetrennte Slugs

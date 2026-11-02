@@ -1,6 +1,6 @@
 ---
 feature: sdd-init-git
-status: active
+status: archived
 archive-after:
 touches:
   - cmd/sdd/**
@@ -10,11 +10,12 @@ touches:
   - internal/desk/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # Tech Spec — Projekt-Init mit Git, auch aus dem KI-Desktop
 
-Setzt das PRD `docs/prd/sdd-init-git.md` um, auf Grundlage von ADR 0003, Entscheidung 8, und Verfassung Security 4 (zweite Ausnahme vom lesenden Git-Zugriff). Grundlage ist die Tech Spec `docs/archive/design/sdd-init-new.md`.
+Setzt das PRD `docs/archive/prd/sdd-init-git.md` um, auf Grundlage von ADR 0003, Entscheidung 8, und Verfassung Security 4 (zweite Ausnahme vom lesenden Git-Zugriff). Grundlage ist die Tech Spec `docs/archive/design/sdd-init-new.md`.
 
 ## Architektur
 

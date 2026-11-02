@@ -1,6 +1,6 @@
 ---
 feature: constitution-guide
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
@@ -8,6 +8,7 @@ touches:
   - cmd/sdd/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # PRD — Die Verfassung KI-gestützt erarbeiten
