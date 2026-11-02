@@ -31,7 +31,7 @@ Grundsätze für diesen Schritt:
 - Neue Artefakte legst du mit sdd_new an und übergibst den geprüften Entwurf als content, nie das leere Template (zuerst ohne apply, dann mit apply nach Bestätigung).
 - Bestehende Dateien (Artefakte, Testdateien, sdd.config.yaml) liest du mit sdd_read und änderst sie mit sdd_write, mit base_sha256 aus sdd_read; neue Testdateien legst du mit sdd_write an.
 - Melde nur, was ein Werkzeugergebnis belegt: Lies nach dem Speichern mit sdd_read gegen, statt Erfolg anzunehmen.
-- Baseline, ADR-Lockfile, adopt --apply und das Entscheiden eines ADR (status: accepted) sind dem Menschen vorbehalten.
+- Baseline, ADR-Lockfile, adopt --apply und das Entscheiden eines ADR (status: accepted) sind kritisch: Der Mensch entscheidet sie. Rufe sdd_baseline, sdd_adr_accept oder sdd_adopt_apply nur auf, wenn er es ausdrücklich verlangt; jede Ausführung bestätigt er einzeln. Lehnt er ab, frage im selben Zug nicht erneut.
 - Zum Schluss: sdd_next, um den nächsten Prozessschritt zu nennen.`
 
 func promptList() []prompt {
@@ -74,7 +74,7 @@ func promptList() []prompt {
 					"1. Kontext: Welche Kräfte und Randbedingungen erzwingen die Entscheidung?\n" +
 					"2. Optionen: mindestens zwei, je mit Vor- und Nachteilen.\n" +
 					"3. Entscheidung und Konsequenzen — auch die negativen. Ändert sie eine Verfassungsregel, gehört die Verfassung in references, und die Verfassung wird im selben Change angepasst.\n" +
-					"4. Formuliere das ADR, prüfe es mit sdd_validate_draft und lege es mit sdd_new an (types: [adr], title, content: der geprüfte Entwurf). Das ADR bleibt status: proposed; entscheiden (accepted) und locken (sdd baseline) ist Sache des Menschen. Nach der Entscheidung ist der Text unveränderlich; Ablösung nur über ein neues ADR mit supersedes.\n"
+					"4. Formuliere das ADR, prüfe es mit sdd_validate_draft und lege es mit sdd_new an (types: [adr], title, content: der geprüfte Entwurf). Das ADR bleibt status: proposed; entscheiden (accepted) und locken entscheidet der Mensch — auf seinen ausdrücklichen Wunsch mit sdd_adr_accept und danach sdd_baseline, jedes einzeln von ihm bestätigt. Nach der Entscheidung ist der Text unveränderlich; Ablösung nur über ein neues ADR mit supersedes.\n"
 			}},
 		{Name: "sdd-plan", Title: "Plan mit Tasks", Description: "Zerlegt ein Feature mit Tech Spec in Tasks, die je ein Akzeptanzkriterium nennen.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},

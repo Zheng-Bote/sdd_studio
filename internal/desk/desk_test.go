@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -298,6 +299,7 @@ func inProcessMCP(t *testing.T, root string) *MCPClient {
 	clientR, serverW := io.Pipe()
 	serverR, clientW := io.Pipe()
 	srv := mcp.New(root, true, "test", nil)
+	srv.AllowCritical = true // as StartMCP: sdd mcp --allow-write --allow-critical
 	go func() { _ = srv.Serve(serverR, serverW); _ = serverW.Close() }()
 	c := NewMCPClient(clientR, clientW)
 	t.Cleanup(func() { _ = clientW.Close() })
@@ -341,7 +343,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	for _, tl := range a.Tools {
 		names = append(names, tl.Name)
 	}
-	if len(names) != 14 || names[0] != "sdd_next" {
+	if len(names) != 17 || names[0] != "sdd_next" {
 		t.Fatalf("tools must be exactly those of sdd mcp: %v", names)
 	}
 	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "x"}}, AllowedTools: []string{"shell_exec"}})
@@ -598,5 +600,91 @@ func TestArchiveIsWrite(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "docs/prd/billing.md")); err != nil {
 		t.Fatalf("preview moved the file")
+	}
+}
+
+// desk-critical-tools AC-5: every tool of sdd mcp --allow-critical has exactly one approval tier, so a new tool cannot
+// slip in as "read" by accident.
+func TestToolTiersCoverAllTools(t *testing.T) {
+	a := newAgent(t, sddProject(t), &scripted{})
+	for _, tl := range a.Tools {
+		n := 0
+		for _, list := range [][]string{readTools, writeTools, criticalTools} {
+			if slices.Contains(list, tl.Name) {
+				n++
+			}
+		}
+		if n != 1 {
+			t.Errorf("%s is in %d tier lists, want exactly 1", tl.Name, n)
+		}
+	}
+	if got := len(readTools) + len(writeTools) + len(criticalTools); got != len(a.Tools) {
+		t.Errorf("tier lists name %d tools, sdd mcp offers %d", got, len(a.Tools))
+	}
+}
+
+const proposedADR = "---\nstatus: proposed\ndate: 2026-10-20\nsupersedes: []\nreferences: []\n---\n\n# ADR 0001 — X\n"
+
+func adrProject(t *testing.T) string {
+	t.Helper()
+	root := sddProject(t)
+	if err := os.WriteFile(filepath.Join(root, "docs/adr/0001-x.md"), []byte(proposedADR), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+// desk-critical-tools AC-5: a critical call waits for a single confirmation with summary and preview, even if its
+// tool is allowed for the session; only the approval of exactly this call runs it.
+func TestCriticalNeedsSingleApproval(t *testing.T) {
+	root := adrProject(t)
+	ctx := context.Background()
+	base := []Message{{Role: "user", Content: "Entscheide ADR 0001."}}
+	a := newAgent(t, root, &scripted{replies: []Message{call("k1", "sdd_adr_accept", `{"path":"docs/adr/0001-x.md","apply":true}`)}})
+	res, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_adr_accept"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || !res.Pending[0].Critical || !res.Pending[0].Writes || !strings.Contains(res.Pending[0].Summary, "entscheiden") ||
+		!strings.Contains(string(res.Pending[0].Preview), "+status: accepted") {
+		t.Fatalf("critical call must wait despite the session permission: %+v", res.Pending)
+	}
+	if data, _ := os.ReadFile(filepath.Join(root, "docs/adr/0001-x.md")); string(data) != proposedADR {
+		t.Fatalf("ADR changed before the confirmation")
+	}
+	if _, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: res.Messages, ApprovedCalls: []string{"k1"}}); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(filepath.Join(root, "docs/adr/0001-x.md")); !strings.Contains(string(data), "status: accepted") {
+		t.Fatalf("confirmed call did not run: %s", data)
+	}
+}
+
+// desk-critical-tools AC-6: after the user refused a critical call, the same tool is refused without asking until the
+// user writes again.
+func TestCriticalNotRetriedAfterDenial(t *testing.T) {
+	root := adrProject(t)
+	ctx := context.Background()
+	accept := `{"path":"docs/adr/0001-x.md","apply":true}`
+	chat := &scripted{replies: []Message{call("k1", "sdd_adr_accept", accept), call("k2", "sdd_adr_accept", accept), {Role: "assistant", Content: "ok"}, call("k3", "sdd_adr_accept", accept)}}
+	a := newAgent(t, root, chat)
+	res, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "Entscheide ADR 0001."}}})
+	if err != nil || len(res.Pending) != 1 {
+		t.Fatalf("first call: %+v %v", res, err)
+	}
+	res, err = a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: res.Messages, DeniedCalls: []string{"k1"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 0 || !strings.Contains(lastTool(res.Messages).Content, "bereits abgelehnt") {
+		t.Fatalf("retry in the same turn must be refused without a card: %+v", res)
+	}
+	msgs := append(res.Messages, Message{Role: "user", Content: "Doch, bitte entscheiden."})
+	res, err = a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: msgs})
+	if err != nil || len(res.Pending) != 1 || res.Pending[0].CallID != "k3" {
+		t.Fatalf("after a new user message the call must be asked again: %+v %v", res, err)
+	}
+	if data, _ := os.ReadFile(filepath.Join(root, "docs/adr/0001-x.md")); string(data) != proposedADR {
+		t.Fatalf("ADR changed without a confirmation")
 	}
 }

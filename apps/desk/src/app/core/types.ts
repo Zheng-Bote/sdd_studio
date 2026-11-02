@@ -49,7 +49,29 @@ export interface Pending {
   tool: string;
   arguments: unknown;
   writes: boolean;
-  preview?: { applied?: boolean; ops?: PlannedOp[]; error?: string };
+  /** A critical action (ADR 0003): runs only after this single confirmation, never per session. */
+  critical?: boolean;
+  /** The effect in one line; names the action on the confirmation button. */
+  summary?: string;
+  preview?: {
+    applied?: boolean;
+    ops?: PlannedOp[];
+    error?: string;
+    /** sdd_baseline: entries to add and remove, ADRs to lock or re-accept. */
+    added?: BaselineEntry[];
+    removed?: BaselineEntry[];
+    locked?: string[];
+    reaccepted?: string[];
+    /** sdd_adopt_apply: the adopt report (Markdown). */
+    report?: string;
+  };
+}
+
+export interface BaselineEntry {
+  gate: string;
+  rule_id: string;
+  path: string;
+  line?: number;
 }
 
 export interface TurnRequest {

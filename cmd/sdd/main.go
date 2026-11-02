@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/adrlock"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/baseline"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
-	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
 )
 
 func main() {
@@ -156,140 +154,19 @@ func runBaseline(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return 2
 	}
 
-	if *gate != "" && !isValidGate(*gate) {
-		fmt.Fprintf(stderr, "sdd baseline: %v\n", catalog.InvalidGateError(*gate))
-		return 2
-	}
-
-	cfg, err := config.Load(repoRoot)
+	plan, err := sddcore.PlanBaseline(repoRoot, sddcore.BaselineOptions{Gate: *gate, Prune: *prune, Accept: *acceptRule})
 	if err != nil {
 		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
 		return 2
 	}
-	cat, _, err := catalog.Load(repoRoot)
-	if err != nil {
+	if err := plan.Apply(repoRoot); err != nil {
 		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
 		return 2
 	}
-
-	if *acceptRule != "" {
-		var found *catalog.Rule
-		for i := range cat.Rules {
-			if cat.Rules[i].ID == *acceptRule {
-				found = &cat.Rules[i]
-				break
-			}
-		}
-		if found == nil {
-			fmt.Fprintf(stderr, "sdd baseline: unbekannte Regel %q\n", *acceptRule)
-			return 2
-		}
-		if found.Baseline == "forbidden" && found.ID != adrlockRule {
-			fmt.Fprintf(stderr, "sdd baseline: Regel %s trägt baseline: forbidden und darf nicht unterdrückt werden\n", *acceptRule)
-			return 2
-		}
-	}
-
-	gatesToRun := catalog.AllGates
-	if *gate != "" {
-		gatesToRun = []string{*gate}
-	}
-
-	currentEntries, err := sddcore.BaselineEntries(repoRoot, cfg, gatesToRun)
-	if err != nil {
-		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
-		return 2
-	}
-	if *acceptRule != "" {
-		var filtered []baseline.Entry
-		for _, e := range currentEntries {
-			if e.RuleID == *acceptRule {
-				filtered = append(filtered, e)
-			}
-		}
-		currentEntries = filtered
-	}
-
-	existing, hasExisting, err := baseline.Load(repoRoot)
-	if err != nil {
-		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
-		return 2
-	}
-
-	var resultEntries []baseline.Entry
-	switch {
-	case *prune:
-		if !hasExisting {
-			resultEntries = []baseline.Entry{}
-		} else {
-			activeMap := make(map[string]bool)
-			for _, e := range currentEntries {
-				key := fmt.Sprintf("%s|%s|%s|%s|%d", e.Gate, e.RuleID, e.Path, e.ContentHash, e.Ordinal)
-				activeMap[key] = true
-			}
-			for _, e := range existing.Entries {
-				if *gate != "" && e.Gate != *gate {
-					resultEntries = append(resultEntries, e)
-					continue
-				}
-				key := fmt.Sprintf("%s|%s|%s|%s|%d", e.Gate, e.RuleID, e.Path, e.ContentHash, e.Ordinal)
-				if activeMap[key] {
-					resultEntries = append(resultEntries, e)
-				}
-			}
-		}
-	case *acceptRule != "" && hasExisting:
-		resultEntries = baseline.MergeEntries(existing.Entries, currentEntries)
-	case *gate != "" && hasExisting:
-		var kept []baseline.Entry
-		for _, e := range existing.Entries {
-			if e.Gate != *gate {
-				kept = append(kept, e)
-			}
-		}
-		resultEntries = baseline.MergeEntries(kept, currentEntries)
-	default:
-		resultEntries = baseline.MergeEntries(nil, currentEntries)
-	}
-
-	bf := &baseline.File{
-		Version: 1,
-		Entries: resultEntries,
-	}
-	if err := baseline.Save(repoRoot, bf); err != nil {
-		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
-		return 2
-	}
-	fmt.Fprintf(stdout, "Baseline geschrieben (%s): %d Einträge\n", baseline.DefaultBaselineRelPath, len(bf.Entries))
-
-	// SDD-011: lock decided ADRs; changed ones only with --accept SDD-011.
-	lock, hasLock, err := adrlock.Load(repoRoot)
-	if err != nil {
-		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
-		return 2
-	}
-	adrs, err := adrlock.Collect(repoRoot, cfg)
-	if err != nil {
-		fmt.Fprintf(stderr, "sdd baseline: %v\n", err)
-		return 2
-	}
-	added, updated := adrlock.Update(lock, adrs, *acceptRule == adrlockRule)
-	if !hasLock || added > 0 || updated > 0 {
-		data, err := lock.Marshal()
-		if err == nil {
-			err = os.WriteFile(filepath.Join(repoRoot, filepath.FromSlash(adrlock.RelPath)), data, 0o644)
-		}
-		if err != nil {
-			fmt.Fprintf(stderr, "sdd baseline: %s nicht schreibbar: %v\n", adrlock.RelPath, err)
-			return 2
-		}
-	}
-	fmt.Fprintf(stdout, "ADR-Lockfile (%s): %d neu gelockt, %d quittiert, %d gesamt\n", adrlock.RelPath, added, updated, len(lock.Entries))
+	fmt.Fprintf(stdout, "Baseline geschrieben (%s): %d Einträge\n", baseline.DefaultBaselineRelPath, len(plan.File.Entries))
+	fmt.Fprintf(stdout, "ADR-Lockfile (%s): %d neu gelockt, %d quittiert, %d gesamt\n", adrlock.RelPath, len(plan.Locked), len(plan.Reaccepted), len(plan.Lock.Entries))
 	return 0
 }
-
-// adrlockRule is quitted through the ADR lockfile instead of baseline entries.
-const adrlockRule = "SDD-011"
 
 func isValidGate(g string) bool {
 	for _, valid := range catalog.AllGates {

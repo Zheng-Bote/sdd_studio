@@ -40,8 +40,17 @@ var readOnly = map[string]any{"readOnlyHint": true, "openWorldHint": false}
 
 var gateEnum = map[string]any{"type": "string", "enum": catalog.AllGates, "description": "Gate"}
 
-// toolList is the complete, fixed set of tools. Nothing here touches the baseline, the ADR lockfile or Git.
-func toolList() []tool {
+// toolList is the fixed set of tools; the critical ones (baseline, ADR lockfile, adopt --apply, deciding an ADR) only
+// with --allow-critical.
+func (s *Server) toolList() []tool {
+	if s.AllowCritical {
+		return append(baseTools(), criticalTools...)
+	}
+	return baseTools()
+}
+
+// baseTools are the tools without the critical ones.
+func baseTools() []tool {
 	return []tool{
 		{Name: "sdd_next", Title: "Nächster Prozessschritt", Description: "Prozessschritte je Feature mit Zustand und dem nächsten Schritt (wie `sdd next --json`).",
 			InputSchema: obj(map[string]any{"feature": str("Feature-Slug; leer = alle aktiven Features")}), Annotations: readOnly},
@@ -319,6 +328,9 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 
 	case "sdd_archive":
 		return s.toolArchive(raw)
+
+	case "sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply":
+		return s.runCritical(name, raw)
 
 	default:
 		return nil, fmt.Errorf("%w %q", errUnknownTool, name)

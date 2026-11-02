@@ -59,6 +59,26 @@ describe('ApprovalCard', () => {
     expect(el.querySelector('pre[aria-label="Änderungen"]')?.textContent).toContain('+status: archived');
   });
 
+  // desk-critical-tools AC-5: a critical action is marked, names its effect on the button and has no session approval.
+  it('asks for a single confirmation of a critical action', () => {
+    const { el, buttons, decisions } = render({
+      call_id: 'k1',
+      tool: 'sdd_baseline',
+      arguments: { apply: true },
+      writes: true,
+      critical: true,
+      summary: 'Baseline: 1 Einträge aufnehmen (SDD-022 ×1), 0 entfernen',
+      preview: { added: [{ gate: 'pre-merge', rule_id: 'SDD-022', path: 'docs/prd/a.md', line: 12 }], locked: ['docs/adr/0001-x.md'] },
+    });
+    expect(el.textContent).toContain('kritisch');
+    expect(el.textContent).toContain('nur dieses eine Mal');
+    expect(el.textContent).toContain('SDD-022 docs/prd/a.md:12');
+    expect(el.textContent).toContain('docs/adr/0001-x.md');
+    expect(buttons).toEqual(['Baseline: 1 Einträge aufnehmen (SDD-022 ×1), 0 entfernen', 'Ablehnen']);
+    (el.querySelectorAll('button')[0] as HTMLButtonElement).click();
+    expect(decisions).toEqual(['once']);
+  });
+
   it('offers once, session and deny for a read-only call and emits the choice', () => {
     const { el, buttons, decisions } = render({ call_id: 'c1', tool: 'sdd_next', arguments: {}, writes: false });
     expect(buttons).toEqual(['Einmal erlauben', 'Für diese Sitzung erlauben', 'Ablehnen']);

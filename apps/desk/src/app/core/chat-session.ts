@@ -121,6 +121,9 @@ export class ChatSession {
     if (!call) {
       return;
     }
+    if (decision === 'session' && call.critical) {
+      decision = 'once'; // a critical action is never allowed for the whole session (ADR 0003)
+    }
     this.decisions.update((d) => ({ ...d, [callId]: decision }));
     if (decision === 'deny') {
       this.deniedCalls.push(callId);

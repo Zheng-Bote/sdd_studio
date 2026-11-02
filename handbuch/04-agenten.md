@@ -16,7 +16,7 @@ Dieser Teil richtet sich an LLM-Agenten (Claude Code, Claude Desktop, der KI-Des
 }
 ```
 
-Mit `--allow-write` dürfen `sdd_new`, `sdd_write`, `sdd_init` und `sdd_archive` schreiben; ohne liefern sie nur die Vorschau.
+Mit `--allow-write` dürfen `sdd_new`, `sdd_write`, `sdd_init` und `sdd_archive` schreiben; ohne liefern sie nur die Vorschau. `--allow-critical` bietet zusätzlich die kritischen Werkzeuge an (siehe [Grenzen](#agenten-grenzen)) und schließt `--allow-write` ein.
 
 - **`sdd_new`** legt neue Artefakte an, aus dem Template oder mit `content` (genau ein Typ) aus dem geprüften Entwurf. Bestehende Dateien überspringt es.
 - **`sdd_write`** legt an oder ersetzt, aber nur die Verfassung, Markdown-Artefakte (`adr`, `prd`, `design`, `plans`, `archive`, `docs`), `sdd.config.yaml` und Testdateien (`tests.include`, leer = Fallback-Liste). `.git/`, `.sdd/`, `exclude`-Treffer und symbolische Links nach außen sind ausgeschlossen. Eine bestehende Datei ersetzt es nur mit `base_sha256` aus `sdd_read`, atomar und mit gleichen Dateirechten.
@@ -64,7 +64,10 @@ Ressourcen: `sdd://constitution`, `sdd://catalog`, `sdd://handbook` und `sdd://a
 
 ## Grenzen {#agenten-grenzen}
 
-- **Kein Agent verändert die Baseline**, quittiert Befunde (`sdd baseline --accept`), schreibt das ADR-Lockfile, führt `sdd adopt --apply` aus oder setzt ein ADR auf `accepted`. Dafür gibt es kein Werkzeug; der Mensch entscheidet (Konzept §9.6).
+- **Kein Agent entscheidet über die Baseline**, quittiert Befunde (`sdd baseline --accept`), schreibt das ADR-Lockfile, führt `sdd adopt --apply` aus oder setzt ein ADR auf `accepted`. Der Mensch entscheidet (Konzept §9.6, [ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)).
+  - Die kritischen Werkzeuge `sdd_baseline`, `sdd_adr_accept` und `sdd_adopt_apply` gibt es nur mit `sdd mcp --allow-critical`, also nur für Clients, die jede Ausführung einzeln bestätigen lassen (wie `sdd-desk`).
+  - Ein Agent ruft sie nur auf ausdrücklichen Wunsch des Menschen auf und fragt nach einer Ablehnung nicht erneut.
+  - `sdd_baseline` arbeitet wie `sdd baseline`; Regeln mit `baseline: forbidden` bleiben gesperrt. `sdd_adr_accept` entscheidet nur ein ADR mit `status: proposed`.
 - **Ein Agent formuliert, der Mensch nimmt ab.** Akzeptanzkriterien, Nicht-Ziele und Entscheidungen entstehen im Gespräch, nicht aus Platzhaltertext.
 - **Testverweise nennen den Feature-Slug:** `// <slug> AC-<n>: …` direkt über dem Test (`SDD-022`, `SDD-025`).
 
@@ -101,7 +104,8 @@ bin/sdd-desk --project . --open                   # gibt URL mit Sitzungstoken a
 
 **Was der Desktop darf:**
 
-- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen vierzehn Werkzeuge, keine eigenen. `sdd_read` und `sdd_write` erreichen nur Artefakte, `sdd.config.yaml` und Testdateien, keinen übrigen Code.
+- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen siebzehn Werkzeuge (mit `--allow-critical`), keine eigenen. `sdd_read` und `sdd_write` erreichen nur Artefakte, `sdd.config.yaml` und Testdateien, keinen übrigen Code.
+- **Kritische Aktionen** (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) brauchen jedes Mal eine einzelne Bestätigung; eine Freigabe für die Sitzung gibt es dafür nicht. Die Karte ist rot abgesetzt, zeigt die ganze Wirkung (Einträge, gelockte ADRs, Diff oder Bericht) und nennt die Aktion auf der Schaltfläche. Nach einer Ablehnung lehnt der Desktop weitere Aufrufe desselben Werkzeugs ab, bis Sie wieder schreiben. `sdd-desk` startet dafür `sdd mcp --allow-write --allow-critical`.
 - Jeder Aufruf braucht eine Freigabe: **einmal**, **für die Sitzung** (je Werkzeug) oder **Ablehnen**. Ein schreibender Aufruf (`sdd_new` oder `sdd_write` mit `apply`) zeigt vorher die Vorschau mit Inhalt bzw. Diff. Ist das Werkzeug für die Sitzung freigegeben, schreibt es ohne weitere Rückfrage; was es geschrieben hat (mit Diff), steht im Ergebnis im Gespräch ([ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), Stufe „schreibend“).
 - Vor dem ersten Aufruf eines Cloud-Anbieters muss der Hinweis „Inhalte verlassen dieses Gerät“ bestätigt sein; ohne Bestätigung lehnt das Backend ab. Inhalte werden nicht geschwärzt.
 - Lokaler Server nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken für jeden API-Aufruf, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.

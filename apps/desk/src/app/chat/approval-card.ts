@@ -4,18 +4,30 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { Decision, Pending, PlannedOp } from '../core/types';
 
-/** Asks for permission to run one tool call; a write shows its full preview (content or diff) first. */
+/**
+ * Asks for permission to run one tool call; a write shows its full preview (content or diff) first. A critical action
+ * (ADR 0003) is marked, names its effect on the button and offers no session-wide approval.
+ */
 @Component({
   selector: 'desk-approval-card',
   imports: [HlmCardImports, HlmButtonImports, HlmBadgeImports],
   template: `
-    <section hlmCard class="min-w-0 border-amber-500/60" [attr.aria-labelledby]="'approval-' + pending().call_id">
+    <section
+      hlmCard
+      class="min-w-0"
+      [class]="pending().critical ? 'border-2 border-destructive' : 'border-amber-500/60'"
+      [attr.aria-labelledby]="'approval-' + pending().call_id"
+    >
       <div hlmCardHeader>
         <h3 hlmCardTitle [id]="'approval-' + pending().call_id">
           Werkzeug <code>{{ pending().tool }}</code> ausführen?
         </h3>
         <p hlmCardDescription>
-          @if (pending().writes) {
+          @if (pending().critical) {
+            <span hlmBadge variant="destructive">kritisch</span>
+            {{ pending().summary }} — wird nur dieses eine Mal ausgeführt; jede weitere Ausführung braucht wieder Ihre
+            Bestätigung. Diese Aktion entscheiden Sie, nicht das Modell.
+          } @else if (pending().writes) {
             <span hlmBadge variant="destructive">schreibt Dateien</span>
             Erst nach Ihrer Freigabe. Für die Sitzung freigegeben, schreibt dieses Werkzeug ohne weitere Rückfrage; was es
             geschrieben hat, steht danach im Gespräch.
@@ -29,6 +41,27 @@ import { Decision, Pending, PlannedOp } from '../core/types';
           <summary class="cursor-pointer text-sm text-muted-foreground">Argumente</summary>
           <pre class="mt-2 max-h-48 overflow-auto rounded-md bg-muted p-2 text-xs">{{ args() }}</pre>
         </details>
+        @if (pending().preview; as pv) {
+          @if (pv.added?.length || pv.removed?.length || pv.locked?.length || pv.reaccepted?.length) {
+            <ul class="space-y-0.5 text-xs" aria-label="Änderungen an Baseline und Lockfile">
+              @for (e of pv.added ?? []; track $index) {
+                <li><span class="text-destructive">+ Baseline</span> {{ e.rule_id }} {{ e.path }}{{ e.line ? ':' + e.line : '' }} ({{ e.gate }})</li>
+              }
+              @for (e of pv.removed ?? []; track $index) {
+                <li><span class="text-muted-foreground">− Baseline</span> {{ e.rule_id }} {{ e.path }} ({{ e.gate }})</li>
+              }
+              @for (p of pv.locked ?? []; track p) {
+                <li><span class="text-destructive">+ Lockfile</span> {{ p }}</li>
+              }
+              @for (p of pv.reaccepted ?? []; track p) {
+                <li><span class="text-destructive">Änderung quittieren</span> {{ p }}</li>
+              }
+            </ul>
+          }
+          @if (pv.report) {
+            <pre class="max-h-64 overflow-auto rounded-md border p-3 text-xs" aria-label="Bericht">{{ pv.report }}</pre>
+          }
+        }
         @if (pending().preview?.error; as err) {
           <p class="text-sm text-destructive">Vorschau fehlgeschlagen: {{ err }}</p>
         }
@@ -55,9 +88,13 @@ import { Decision, Pending, PlannedOp } from '../core/types';
         }
       </div>
       <div hlmCardFooter class="flex flex-wrap gap-2">
-        <button hlmBtn type="button" (click)="decided.emit('once')">Einmal erlauben</button>
-        <button hlmBtn variant="secondary" type="button" (click)="decided.emit('session')">Für diese Sitzung erlauben</button>
-        <button hlmBtn variant="destructive" type="button" (click)="decided.emit('deny')">Ablehnen</button>
+        @if (pending().critical) {
+          <button hlmBtn variant="destructive" type="button" (click)="decided.emit('once')">{{ pending().summary || 'Ausführen' }}</button>
+        } @else {
+          <button hlmBtn type="button" (click)="decided.emit('once')">Einmal erlauben</button>
+          <button hlmBtn variant="secondary" type="button" (click)="decided.emit('session')">Für diese Sitzung erlauben</button>
+        }
+        <button hlmBtn [variant]="pending().critical ? 'outline' : 'destructive'" type="button" (click)="decided.emit('deny')">Ablehnen</button>
       </div>
     </section>
   `,

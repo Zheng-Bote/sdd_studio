@@ -55,7 +55,10 @@ type Pending struct {
 	Tool      string          `json:"tool"`
 	Arguments json.RawMessage `json:"arguments"`
 	Writes    bool            `json:"writes"`
-	Preview   json.RawMessage `json:"preview,omitempty"` // for writes: the plan that would be applied
+	// Critical marks a critical action (ADR 0003): it runs only after a single confirmation, never per session.
+	Critical bool            `json:"critical,omitempty"`
+	Summary  string          `json:"summary,omitempty"` // the effect in one line, from the preview
+	Preview  json.RawMessage `json:"preview,omitempty"` // for writes: the plan that would be applied
 }
 
 // TurnResponse returns the extended conversation and the calls that need a decision.
@@ -81,19 +84,50 @@ var (
 	ErrUnknownProvider = errors.New("unbekannter oder nicht konfigurierter Anbieter")
 )
 
-// writeTools are the sdd tools that change files when called with apply.
-var writeTools = []string{"sdd_new", "sdd_write", "sdd_init", "sdd_archive"}
+// writeTools change files when called with apply; criticalTools (baseline, ADR lockfile, adopt --apply, deciding an
+// ADR) need a single confirmation for every execution (ADR 0003). readTools never change anything. Every tool of
+// sdd mcp --allow-critical is in exactly one list; a test keeps it that way.
+var (
+	readTools     = []string{"sdd_next", "sdd_lint", "sdd_gate", "sdd_report", "sdd_explain", "sdd_check_intent", "sdd_context", "sdd_trace", "sdd_read", "sdd_validate_draft"}
+	writeTools    = []string{"sdd_new", "sdd_write", "sdd_init", "sdd_archive"}
+	criticalTools = []string{"sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply"}
+)
 
-// writes reports whether a call changes files: a write tool with apply.
-func writes(tc ToolCall) bool {
-	if !slices.Contains(writeTools, tc.Name) {
-		return false
-	}
+// Approval tiers of a call (ADR 0003).
+const (
+	tierRead     = "read"
+	tierWrite    = "write"
+	tierCritical = "critical"
+)
+
+// deniedText is the tool result of a call the user refused.
+const deniedText = "Der Nutzer hat diesen Aufruf abgelehnt."
+
+// tier classifies a call: a write or critical tool counts only with apply; without apply it is a preview (read).
+func tier(tc ToolCall) string {
 	var a struct {
 		Apply bool `json:"apply"`
 	}
 	_ = json.Unmarshal(tc.Arguments, &a)
-	return a.Apply
+	switch {
+	case !a.Apply:
+		return tierRead
+	case slices.Contains(criticalTools, tc.Name):
+		return tierCritical
+	case slices.Contains(writeTools, tc.Name):
+		return tierWrite
+	}
+	return tierRead
+}
+
+// deniedSinceUser reports whether the user refused a call of tool after their last message.
+func deniedSinceUser(msgs []Message, tool string) bool {
+	for i := len(msgs) - 1; i >= 0 && msgs[i].Role != "user"; i-- {
+		if msgs[i].Role == "tool" && msgs[i].ToolName == tool && msgs[i].Content == deniedText {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *Agent) toolKnown(name string) bool {
@@ -177,7 +211,7 @@ func (a *Agent) run(ctx context.Context, req TurnRequest, emit func(Event)) (*Tu
 	for step := 0; ; step++ {
 		var pending []Pending
 		for _, tc := range openCalls(msgs) {
-			result, wait, err := a.decide(tc, req)
+			result, wait, err := a.decide(tc, req, msgs)
 			if err != nil {
 				return nil, err
 			}
@@ -218,26 +252,35 @@ func (a *Agent) run(ctx context.Context, req TurnRequest, emit func(Event)) (*Tu
 	}
 }
 
-// decide runs, refuses or parks one tool call. Unknown tools are never run. A call runs if it was approved once or its
-// tool is allowed for the session — reading and writing alike (ADR 0003, tier "write"); otherwise it is parked, a write
-// with its preview. A session-allowed write reports what it wrote in its result.
-func (a *Agent) decide(tc ToolCall, req TurnRequest) (string, *Pending, error) {
+// decide runs, refuses or parks one tool call. Unknown tools are never run. A read or write call runs if it was
+// approved once or its tool is allowed for the session (ADR 0003); a session-allowed write reports what it wrote in its
+// result. A critical call runs only when exactly this call was approved; after the user refused one, further calls of
+// that tool are refused until the user writes again. A parked write or critical call carries its preview.
+func (a *Agent) decide(tc ToolCall, req TurnRequest, msgs []Message) (string, *Pending, error) {
 	if !a.toolKnown(tc.Name) {
 		return "Abgelehnt: " + tc.Name + " ist kein Werkzeug von sdd mcp.", nil, nil
 	}
 	if slices.Contains(req.DeniedCalls, tc.ID) {
-		return "Der Nutzer hat diesen Aufruf abgelehnt.", nil, nil
+		return deniedText, nil, nil
 	}
-	w := writes(tc)
-	approved := slices.Contains(req.ApprovedCalls, tc.ID) || slices.Contains(req.AllowedTools, tc.Name)
+	t := tier(tc)
+	if t == tierCritical && !slices.Contains(req.ApprovedCalls, tc.ID) && deniedSinceUser(msgs, tc.Name) {
+		return "Abgelehnt: Der Nutzer hat diese kritische Aktion in diesem Zug bereits abgelehnt. Frage erst nach einer neuen Nachricht des Nutzers erneut.", nil, nil
+	}
+	approved := slices.Contains(req.ApprovedCalls, tc.ID) || (t != tierCritical && slices.Contains(req.AllowedTools, tc.Name))
 	if !approved {
-		p := &Pending{CallID: tc.ID, Tool: tc.Name, Arguments: argsObject(tc.Arguments), Writes: w}
-		if w {
+		p := &Pending{CallID: tc.ID, Tool: tc.Name, Arguments: argsObject(tc.Arguments), Writes: t != tierRead, Critical: t == tierCritical}
+		if t != tierRead {
 			preview, err := a.preview(tc)
 			if err != nil {
 				return "", nil, err
 			}
 			p.Preview = preview
+			var head struct {
+				Summary string `json:"summary"`
+			}
+			_ = json.Unmarshal(preview, &head)
+			p.Summary = head.Summary
 		}
 		return "", p, nil
 	}

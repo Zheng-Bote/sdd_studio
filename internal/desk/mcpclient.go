@@ -32,10 +32,11 @@ type rpcReply struct {
 	} `json:"error"`
 }
 
-// StartMCP launches `<sdd> mcp --allow-write` in the project directory. Writing still needs the user's approval in
-// sdd-desk; --allow-write only lets sdd_new apply an approved plan.
+// StartMCP launches `<sdd> mcp --allow-write --allow-critical` in the project directory. Every write and every
+// critical action still needs the user's approval in sdd-desk (critical ones each time, ADR 0003); the flags only let
+// sdd mcp carry out what was approved.
 func StartMCP(sddPath, projectRoot string, stderr io.Writer) (*MCPClient, error) {
-	cmd := exec.Command(sddPath, "mcp", "--allow-write")
+	cmd := exec.Command(sddPath, "mcp", "--allow-write", "--allow-critical")
 	cmd.Dir = projectRoot
 	cmd.Stderr = stderr
 	in, err := cmd.StdinPipe()

@@ -97,6 +97,20 @@ describe('ChatSession', () => {
     expect(requests[1].allowed_tools).toEqual(['sdd_new']);
   });
 
+  // desk-critical-tools AC-5: a critical action never enters the session permissions, even if asked to.
+  it('never allows a critical tool for the session', async () => {
+    const pendingCritical = { call_id: 'k1', tool: 'sdd_baseline', arguments: { apply: true }, writes: true, critical: true };
+    const { session, requests } = setup([
+      { messages: [], pending: [pendingCritical] },
+      { messages: [], pending: [] },
+    ]);
+    await session.load();
+    await session.send('Baseline');
+    await session.decide('k1', 'session');
+    expect(requests[1].approved_calls).toEqual(['k1']);
+    expect(requests[1].allowed_tools).toEqual([]);
+  });
+
   it('withdraws the acknowledgement when the backend demands the disclosure again', async () => {
     const { session } = setup([]);
     const api = TestBed.inject(DeskApi) as unknown as { turnStream: () => Promise<never> };

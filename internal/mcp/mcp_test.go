@@ -310,7 +310,7 @@ func TestPrompts(t *testing.T) {
 	for _, name := range names {
 		r := exchange(t, s, `{"jsonrpc":"2.0","id":2,"method":"prompts/get","params":{"name":"`+name+`","arguments":`+args[name]+`}}`)
 		text := r[0]["result"].(map[string]any)["messages"].([]any)[0].(map[string]any)["content"].(map[string]any)["text"].(string)
-		for _, want := range []string{"sdd_validate_draft", "Frage, statt zu erfinden", wantRule[name], "dem Menschen vorbehalten"} {
+		for _, want := range []string{"sdd_validate_draft", "Frage, statt zu erfinden", wantRule[name], "Der Mensch entscheidet sie"} {
 			if !strings.Contains(text, want) {
 				t.Errorf("%s misses %q", name, want)
 			}

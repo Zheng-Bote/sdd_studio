@@ -66,7 +66,7 @@ make uninstall       # alles wieder entfernen
 | `sdd next [--feature <slug>]` | nächster Prozessschritt je Feature |
 | `sdd explain <regel-id>` | Regel, Begründung und Prüfvertrag |
 | `sdd ui [--port N] [--open]` | lokale Oberfläche auf `127.0.0.1`: Übersicht, Artefakte, Befunde (live), Neues Artefakt, Übernahme, Handbuch |
-| `sdd mcp [--allow-write]` | MCP-Server über stdio für Agenten ([Handbuch: Für Agenten](handbuch/04-agenten.md)) |
+| `sdd mcp [--allow-write] [--allow-critical]` | MCP-Server über stdio für Agenten ([Handbuch: Für Agenten](handbuch/04-agenten.md)) |
 
 Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/features/*/spec.md` ohne Umzug.
 
@@ -84,7 +84,7 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 
 ### Agenten (MCP)
 
-`sdd mcp` stellt vierzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
+`sdd mcp` stellt vierzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
 
 ```json
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }
@@ -94,7 +94,7 @@ Kein Agent kann die Baseline ändern, Befunde quittieren, das ADR-Lockfile schre
 
 ## KI-Desktop `sdd-desk` (optional)
 
-`sdd-desk` führt im Gespräch mit einem frei wählbaren Sprachmodell von der Produkt-Idee über PRD, Tech Spec, ADR und Plan bis zum Gate. Es ist ein **getrenntes Programm**: Werkzeuge erreicht es nur über einen selbst gestarteten `sdd mcp --allow-write`, jeder Aufruf braucht deine Erlaubnis.
+`sdd-desk` führt im Gespräch mit einem frei wählbaren Sprachmodell von der Produkt-Idee über PRD, Tech Spec, ADR und Plan bis zum Gate. Es ist ein **getrenntes Programm**: Werkzeuge erreicht es nur über einen selbst gestarteten `sdd mcp --allow-write --allow-critical`, jeder Aufruf braucht deine Erlaubnis, jede kritische Aktion jedes Mal aufs Neue.
 
 ### Als Desktop-Anwendung (Tauri v2)
 
@@ -155,7 +155,7 @@ In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab
 ### Was der Desktop darf
 
 - **Nur die Werkzeuge von `sdd mcp`**, keine eigenen, kein Dateizugriff daran vorbei.
-- **Jeder Aufruf braucht eine Freigabe:** einmal, für die Sitzung (je Werkzeug) oder ablehnen. `sdd_new` und `sdd_write` mit `apply` zeigen vorher Inhalt bzw. Diff; für die Sitzung freigegeben, schreiben sie ohne weitere Rückfrage und melden im Ergebnis, was sie geschrieben haben. Artefakte werden vor dem Schreiben mit den Regeln geprüft; ein ADR auf `accepted` setzt kein Werkzeug (ADR 0003).
+- **Jeder Aufruf braucht eine Freigabe:** einmal, für die Sitzung (je Werkzeug) oder ablehnen. `sdd_new` und `sdd_write` mit `apply` zeigen vorher Inhalt bzw. Diff; für die Sitzung freigegeben, schreiben sie ohne weitere Rückfrage und melden im Ergebnis, was sie geschrieben haben. Artefakte werden vor dem Schreiben mit den Regeln geprüft. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) brauchen jedes Mal eine einzelne Bestätigung, nie eine Freigabe für die Sitzung (ADR 0003).
 - **Cloud-Anbieter erst nach Bestätigung**, dass Inhalte das Gerät verlassen. Inhalte werden **nicht geschwärzt**; mit lokalem Ollama bleibt alles auf dem Rechner.
 - **Lokaler Server** nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.
 - **Desktop-Anwendung:** Das Fenster zeigt nur die eigene Startseite und den laufenden Sidecar, andere Web-Adressen öffnet der Standardbrowser; keine Seite erhält Tauri-Rechte. Stirbt die Anwendung, enden `sdd-desk` und `sdd mcp` mit ihr.
