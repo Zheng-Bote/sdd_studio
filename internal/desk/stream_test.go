@@ -353,3 +353,34 @@ func TestTurnStreamCancel(t *testing.T) {
 		t.Fatal("provider request was not aborted")
 	}
 }
+
+// archive-after-today AC-1: every model call of a turn, streamed or not, gets today's date in the system text.
+func TestTurnSystemNamesToday(t *testing.T) {
+	root := sddProject(t)
+	toolCall := Message{Role: "assistant", ToolCalls: []ToolCall{{ID: "c1", Name: "sdd_next", Arguments: json.RawMessage(`{}`)}}}
+	req := TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "Was nun?"}}, AllowedTools: []string{"sdd_next"}}
+	want := "S\n\nHeutiges Datum: 2026-11-02."
+	now := func() time.Time { return time.Date(2026, 11, 2, 23, 30, 0, 0, time.Local) }
+
+	plain := &scripted{replies: []Message{toolCall}}
+	a := newAgent(t, root, plain)
+	a.Now = now
+	if _, err := a.Turn(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	streamed := &scripted{replies: []Message{toolCall}}
+	a.NewChat = func(Provider) Chat { return streaming{streamed} }
+	if _, err := a.TurnStream(context.Background(), req, func(Event) {}); err != nil {
+		t.Fatal(err)
+	}
+	for name, s := range map[string]*scripted{"Turn": plain, "TurnStream": streamed} {
+		if len(s.systems) != 2 {
+			t.Fatalf("%s: %d model calls, want 2 (tool call, answer)", name, len(s.systems))
+		}
+		for i, got := range s.systems {
+			if got != want {
+				t.Errorf("%s call %d: system %q, want %q", name, i, got, want)
+			}
+		}
+	}
+}

@@ -36,6 +36,7 @@ sdd new --type adr|doc --title <text> [--slug <slug>]
 - Ohne `--type` legt `--feature` PRD und Tech Spec an — genau das Paar, das `SDD-020`/`SDD-030` verlangen.
 - Trägt im Zielverzeichnis bereits eine Datei `feature: <slug>`, wird für diesen Typ nichts angelegt, auch wenn der Dateiname abweicht.
 - `archive-after` bleibt ohne Angabe leer (kein Stichtag); `touches` ohne `--touches` eine leere Liste — `pre-implementation` meldet dann „Absicht nicht erklärt".
+- Ein `archive-after` vor dem heutigen lokalen Datum lehnt `sdd new` ab: Das Artefakt wäre sofort überfällig (`SDD-050`). Der heutige Tag selbst ist erlaubt. Das gilt auch für `sdd ui` und das MCP-Werkzeug `sdd_new`. `sdd-desk` nennt dem Modell bei jedem Gesprächszug das heutige Datum.
 - Die ADR-Nummer ist die größte vierstellige Präfixnummer im ADR-Verzeichnis plus eins; der Slug wird aus dem Titel abgeleitet (Umlaute transliteriert).
 - Das PRD-Template enthält `AC-1` als Platzhalter: Es erfüllt `SDD-021`, verlangt nach `SDD-022` aber einen Test — bei mehreren PRDs mit Slug im Testkommentar (`// <slug> AC-1: …`).
 - Ohne `sdd.config.yaml` verwendet `sdd new` die Standardpfade von `sdd init` und weist darauf hin.

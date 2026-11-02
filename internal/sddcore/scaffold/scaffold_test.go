@@ -419,3 +419,22 @@ func TestRenderConfigQuotesGlobs(t *testing.T) {
 		t.Errorf("globs not preserved: %+v", loaded.Artifacts)
 	}
 }
+
+// archive-after-today AC-2: archive-after before today is rejected with value and today's date; today itself is allowed.
+func TestNewRejectsPastArchiveAfter(t *testing.T) {
+	root := initProject(t, "standard")
+	cfg, _ := config.Load(root)
+	lateEvening := time.Date(2026, 11, 2, 23, 30, 0, 0, time.Local)
+	_, err := scaffold.NewPlan(root, cfg, scaffold.NewOptions{Feature: "cert-expiry-watcher", Types: []string{"prd"}, ArchiveAfter: "2025-12-31", Today: lateEvening})
+	if !errors.Is(err, scaffold.ErrInvalidInput) || !strings.Contains(err.Error(), "2025-12-31") || !strings.Contains(err.Error(), "2026-11-02") {
+		t.Fatalf("past date: %v", err)
+	}
+	if _, err := scaffold.NewPlan(root, cfg, scaffold.NewOptions{Feature: "cert-expiry-watcher", Types: []string{"prd"}, ArchiveAfter: "2026-11-01", Today: lateEvening}); !errors.Is(err, scaffold.ErrInvalidInput) {
+		t.Fatalf("yesterday: %v", err)
+	}
+	for _, date := range []string{"2026-11-02", "2026-11-03", ""} {
+		if _, err := scaffold.NewPlan(root, cfg, scaffold.NewOptions{Feature: "cert-expiry-watcher", Types: []string{"prd"}, ArchiveAfter: date, Today: lateEvening}); err != nil {
+			t.Errorf("%q: %v", date, err)
+		}
+	}
+}

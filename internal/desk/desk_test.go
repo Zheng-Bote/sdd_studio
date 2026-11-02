@@ -265,10 +265,12 @@ type scripted struct {
 	replies []Message
 	calls   int
 	seen    [][]Message
+	systems []string
 }
 
-func (s *scripted) Complete(_ context.Context, _, _ string, msgs []Message, _ []ToolDef) (Message, error) {
+func (s *scripted) Complete(_ context.Context, _, system string, msgs []Message, _ []ToolDef) (Message, error) {
 	s.seen = append(s.seen, append([]Message{}, msgs...))
+	s.systems = append(s.systems, system)
 	if s.calls >= len(s.replies) {
 		return Message{Role: "assistant", Content: "fertig"}, nil
 	}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 )
 
 // maxModelSteps bounds the model calls of one turn.
@@ -23,6 +24,18 @@ type Agent struct {
 	Providers []Provider
 	NewChat   func(Provider) Chat
 	System    string
+	// Now is the clock for the date in the system text; nil means time.Now.
+	Now func() time.Time
+}
+
+// systemFor is the system text of one turn: the fixed text plus today's local date, so the model does not guess it
+// (for example a past archive-after).
+func (a *Agent) systemFor() string {
+	now := time.Now
+	if a.Now != nil {
+		now = a.Now
+	}
+	return a.System + "\n\nHeutiges Datum: " + now().Format("2006-01-02") + "."
 }
 
 // TurnRequest is one turn from the UI. The UI keeps the conversation and the session's permissions.
@@ -149,6 +162,7 @@ func (a *Agent) run(ctx context.Context, req TurnRequest, emit func(Event)) (*Tu
 		return nil, err
 	}
 	chat := a.NewChat(*provider)
+	system := a.systemFor()
 	msgs := append([]Message{}, req.Messages...)
 	add := func(m Message) {
 		msgs = append(msgs, m)
@@ -179,12 +193,12 @@ func (a *Agent) run(ctx context.Context, req TurnRequest, emit func(Event)) (*Tu
 		}
 		var reply Message
 		if s, ok := chat.(Streamer); ok && emit != nil {
-			reply, err = s.Stream(ctx, req.Model, a.System, msgs, a.Tools, Deltas{
+			reply, err = s.Stream(ctx, req.Model, system, msgs, a.Tools, Deltas{
 				Text:     func(text string) { emit(Event{Type: "delta", Text: text}) },
 				Thinking: func(text string) { emit(Event{Type: "thinking", Text: text}) },
 			})
 		} else {
-			reply, err = chat.Complete(ctx, req.Model, a.System, msgs, a.Tools)
+			reply, err = chat.Complete(ctx, req.Model, system, msgs, a.Tools)
 		}
 		if err != nil {
 			return nil, err

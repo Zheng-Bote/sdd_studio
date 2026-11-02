@@ -82,8 +82,16 @@ func featurePlan(root string, cfg *config.Config, types []string, opts NewOption
 		return Plan{}, fmt.Errorf("%w: Feature-Slug %q (erlaubt: [a-z0-9-]+)", ErrInvalidInput, opts.Feature)
 	}
 	if opts.ArchiveAfter != "" {
-		if _, err := time.Parse("2006-01-02", opts.ArchiveAfter); err != nil {
+		date, err := time.Parse("2006-01-02", opts.ArchiveAfter)
+		if err != nil {
 			return Plan{}, fmt.Errorf("%w: archive-after %q ist kein Datum YYYY-MM-DD", ErrInvalidInput, opts.ArchiveAfter)
+		}
+		// Same comparison as SDD-050: a date before today would be overdue the moment the artifact exists.
+		if !opts.Today.IsZero() {
+			y, m, d := opts.Today.Date()
+			if today := time.Date(y, m, d, 0, 0, 0, 0, time.UTC); date.Before(today) {
+				return Plan{}, fmt.Errorf("%w: archive-after %s liegt vor dem heutigen Datum %s", ErrInvalidInput, opts.ArchiveAfter, today.Format("2006-01-02"))
+			}
 		}
 	}
 	var touches []string
