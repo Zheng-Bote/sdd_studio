@@ -4,7 +4,7 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 
 ---
 
-## Projektanlage, Templates, Übernahme, Bericht, Prozessführung, Agenten und Oberfläche (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`, `sdd next`, `sdd explain`, `sdd mcp`, `sdd ui`)
+## Projektanlage, Templates, Übernahme, Bericht, Prozessführung, Agenten und Oberfläche (`sdd init`, `sdd new`, `sdd adopt`, `sdd report`, `sdd next`, `sdd explain`, `sdd mcp`, `sdd ui`; `sdd archive` unter [Archivierung](#sdd-archive))
 
 `init`, `new` und `adopt` schreiben ausschließlich **additiv**; `report` schreibt nichts: Eine bestehende Datei wird nie überschrieben, sondern als `übersprungen` gemeldet. Alle Zielpfade werden vor dem ersten Schreibzugriff geprüft; Pfade außerhalb des Repositorys (absolut, `..`, symbolischer Link nach außen) brechen mit Exit-Code `2` ab. `--dry-run` zeigt den Plan, ohne zu schreiben.
 
@@ -527,6 +527,21 @@ Geprüft werden die aktiven Feature-Artefakte unter `artifacts.plans` (bei Spec 
 ## Archivierung (`SDD-050`)
 
 PRD, Tech Spec und Plan gelten bis zum Release. Danach sind sie Historie: Sie werden nach `artifacts.archive` verschoben, nicht gelöscht, und tragen `status: archived`. Der Archivierungsschritt gehört in den Release-Vorbereitungs-Commit, zusammen mit dem Changelog, unmittelbar vor dem Git-Tag.
+
+### `sdd archive` {#sdd-archive}
+
+```text
+sdd archive --feature <slug> [--release <version>] [--dry-run]
+```
+
+- **Was verschoben wird:** jede Datei des Features unter `artifacts.prd`, `artifacts.design` und `artifacts.plans`, die noch nicht im Archiv liegt. Zum Feature gehört sie über `feature:`, ohne Feld über den Dateinamen. Ziel ist `<artifacts.archive>/<Typordner>/<Rest des Pfades>`, z. B. `docs/prd/x.md` → `docs/archive/prd/x.md`; bei einem Datei-Glob ist der Typordner der letzte Ordner des statischen Präfixes.
+- **Frontmatter:** Danach steht `status: archived`, mit `--release` auch `release: <version>`. Der übrige Inhalt bleibt byteweise gleich. Die Quelle wird erst entfernt, wenn das Ziel geschrieben ist. Git bleibt unberührt.
+- **Abbruch** mit Exit-Code `2`, ohne etwas zu verschieben, wenn
+  - ein Akzeptanzkriterium des Features keinen Testverweis hat (gezählt wie bei `SDD-022`; ein Feature ohne Tests ist nicht fertig),
+  - eine Zieldatei schon existiert,
+  - das Feature keine Datei außerhalb des Archivs hat,
+  - `artifacts.archive` fehlt oder ein Datei-Glob ist.
+- **Danach:** Verweise aktiver Artefakte auf die verschobenen Dateien meldet `SDD-051`; die Testverweise des Features zählen für `SDD-022` weiter mit.
 
 **Nachträge vor dem Archivieren:** Ändert die Release-Vorbereitung Pfade über der Größenschwelle (z. B. die Version in `catalog/**`), findet `pre-merge` auf dem Release-Branch kein Feature mehr — alle Artefakte liegen dann im Archiv. Solche Änderungen gehören deshalb vorher als Commit des zuständigen Features (dessen `touches` den Pfad nennt) auf den Haupt-Branch; der Release-Branch enthält danach nur Archivierung, Changelog und Versionsangaben außerhalb der Schwelle.
 

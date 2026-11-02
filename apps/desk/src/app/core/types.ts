@@ -34,8 +34,10 @@ export interface Meta {
 
 export interface PlannedOp {
   path: string;
-  /** create/skip from sdd_new; create/update/unchanged from sdd_write. */
-  action: 'create' | 'skip' | 'update' | 'unchanged';
+  /** create/skip from sdd_new and sdd_init; create/update/unchanged from sdd_write; move from sdd_archive. */
+  action: 'create' | 'skip' | 'update' | 'unchanged' | 'move';
+  /** Source of a move. */
+  from?: string;
   reason?: string;
   content?: string;
   /** Unified diff of an update. */

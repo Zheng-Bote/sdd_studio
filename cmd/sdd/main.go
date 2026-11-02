@@ -36,6 +36,8 @@ func run(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return runInit(args[1:], repoRoot, stdout, stderr)
 	case "new":
 		return runNew(args[1:], repoRoot, stdout, stderr)
+	case "archive":
+		return runArchive(args[1:], repoRoot, stdout, stderr)
 	case "adopt":
 		return runAdopt(args[1:], repoRoot, stdout, stderr)
 	case "report":
@@ -305,7 +307,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  lint       Prüft Verfassung, Katalog und Artefakte (--json, --gate, --feature)")
 	fmt.Fprintln(w, "  gate       Führt ein Gate aus: pre-implementation | pre-merge | pre-release")
 	fmt.Fprintln(w, "  baseline   Verwaltet .sdd/baseline.json und .sdd/adr-lock.json (--gate, --prune, --accept)")
-	fmt.Fprintln(w, "  init       Legt ein neues Projekt an (--profile, --dry-run, --no-ci)")
+	fmt.Fprintln(w, "  init       Legt ein neues Projekt an (--profile, --dry-run, --no-ci, --git)")
 	fmt.Fprintln(w, "  next       Nächster Prozessschritt je Feature (--feature, --json)")
 	fmt.Fprintln(w, "  explain    Regel mit Handbuchabschnitt und Prüfvertrag (z. B. sdd explain SDD-022)")
 	fmt.Fprintln(w, "  mcp        MCP-Server über stdio für Agenten (--allow-write)")
@@ -313,4 +315,5 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  report     Reifegrad, Befunde, Gates und Schuldenstand mit Trend (--format markdown|json, --since <ref>)")
 	fmt.Fprintln(w, "  adopt      Übernimmt ein bestehendes Projekt: Bericht, mit --apply auf neuem Branch (--profile, --branch)")
 	fmt.Fprintln(w, "  new        Legt Artefakte aus Templates an (--feature, --type, --title, --touches, --archive-after, --dry-run)")
+	fmt.Fprintln(w, "  archive    Verschiebt PRD, Tech Spec und Plan eines Features ins Archiv (--feature, --release, --dry-run)")
 }

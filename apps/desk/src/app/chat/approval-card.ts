@@ -38,6 +38,9 @@ import { Decision, Pending, PlannedOp } from '../core/types';
               <span hlmBadge [variant]="op.action === 'skip' || op.action === 'unchanged' ? 'outline' : 'default'">
                 {{ actionLabel(op.action) }}
               </span>
+              @if (op.from) {
+                <code>{{ op.from }}</code> →
+              }
               <code>{{ op.path }}</code>
               @if (op.reason) {
                 <span class="text-muted-foreground">— {{ op.reason }}</span>
@@ -65,6 +68,6 @@ export class ApprovalCard {
   protected readonly args = computed(() => JSON.stringify(this.pending().arguments, null, 2));
 
   protected actionLabel(action: PlannedOp['action']): string {
-    return { create: 'anlegen', update: 'ändern', unchanged: 'unverändert', skip: 'übersprungen' }[action];
+    return { create: 'anlegen', update: 'ändern', unchanged: 'unverändert', skip: 'übersprungen', move: 'verschieben' }[action];
   }
 }

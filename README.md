@@ -60,6 +60,7 @@ make uninstall       # alles wieder entfernen
 | `sdd baseline [--gate <gate>] [--prune] [--accept <regel-id>]` | Bestand einfrieren, quittieren (`--accept SDD-011` schreibt das ADR-Lockfile) |
 | `sdd init [--profile minimal\|standard\|regulated] [--dry-run] [--no-ci] [--git]` | Neues Projekt: Konfiguration, Verfassung, Artefaktordner, CI-Workflow; mit `--git` ohne vorhandenes Repository auch `git init` und ein erster Commit |
 | `sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` | Feature-Artefakte aus Templates; `new --type adr\|doc --title …` |
+| `sdd archive --feature <slug> [--release <version>] [--dry-run]` | Feature nach dem Release ins Archiv verschieben (`status: archived`); nur wenn jedes Akzeptanzkriterium einen Testverweis hat |
 | `sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` | Bestandsprojekt übernehmen: Probelauf-Bericht; mit `--apply` auf neuem Branch, ein Commit je Schritt ([ADR 0001](docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md)) |
 | `sdd report [--format markdown\|json] [--since <ref>]` | Reifegrad, Befunde, Gates, Schuldenstand mit Trend |
 | `sdd next [--feature <slug>]` | nächster Prozessschritt je Feature |
@@ -83,7 +84,7 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 
 ### Agenten (MCP)
 
-`sdd mcp` stellt dreizehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
+`sdd mcp` stellt vierzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
 
 ```json
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }

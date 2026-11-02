@@ -28,7 +28,10 @@ type Op struct {
 	Prepend bool
 	// Replace swaps the whole file for Content. Like Prepend it only applies while the file still equals Expect.
 	Replace bool
-	Expect  []byte
+	// MoveFrom moves a file: Path is created with Content, then the source MoveFrom is removed. Both happen only
+	// while the source still equals Expect.
+	MoveFrom string
+	Expect   []byte
 }
 
 // Plan is an ordered list of operations.
@@ -41,6 +44,7 @@ const (
 	StatusCreated   = "created"
 	StatusPrepended = "prepended"
 	StatusReplaced  = "replaced"
+	StatusMoved     = "moved"
 	StatusSkipped   = "skipped"
 )
 
@@ -65,6 +69,11 @@ func (p Plan) Validate() error {
 		if _, err := CleanRel(op.Path); err != nil {
 			return err
 		}
+		if op.MoveFrom != "" {
+			if _, err := CleanRel(op.MoveFrom); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -86,6 +95,16 @@ func previewOp(root string, op Op) Result {
 		return Result{Path: op.Path, Status: StatusSkipped, Reason: op.Skip}
 	}
 	target := filepath.Join(root, filepath.FromSlash(op.Path))
+	if op.MoveFrom != "" {
+		current, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(op.MoveFrom)))
+		if err != nil || !bytes.Equal(current, op.Expect) {
+			return Result{Path: op.Path, Status: StatusSkipped, Reason: "Quelle " + op.MoveFrom + " seit der Planung verändert"}
+		}
+		if _, err := os.Lstat(target); err == nil {
+			return Result{Path: op.Path, Status: StatusSkipped, Reason: "Ziel existiert"}
+		}
+		return Result{Path: op.Path, Status: StatusMoved}
+	}
 	if op.Prepend || op.Replace {
 		current, err := os.ReadFile(target)
 		if err != nil || !bytes.Equal(current, op.Expect) {
@@ -156,7 +175,11 @@ func (p Plan) Apply(root string) ([]Result, error) {
 		}
 		f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 		if errors.Is(err, fs.ErrExist) {
-			out = append(out, Result{Path: rel, Status: StatusSkipped, Reason: "Datei existiert"})
+			reason := "Datei existiert"
+			if op.MoveFrom != "" {
+				reason = "Ziel existiert"
+			}
+			out = append(out, Result{Path: rel, Status: StatusSkipped, Reason: reason})
 			continue
 		}
 		if err != nil {
@@ -167,9 +190,36 @@ func (p Plan) Apply(root string) ([]Result, error) {
 		if werr != nil || cerr != nil {
 			return out, fmt.Errorf("%s nicht schreibbar: %v", rel, errors.Join(werr, cerr))
 		}
+		if op.MoveFrom != "" {
+			if err := removeIfUnchanged(root, op.MoveFrom, op.Expect); err != nil {
+				return out, fmt.Errorf("%s angelegt, Quelle %s nicht entfernt: %w", rel, op.MoveFrom, err)
+			}
+			out = append(out, Result{Path: rel, Status: StatusMoved})
+			continue
+		}
 		out = append(out, Result{Path: rel, Status: StatusCreated})
 	}
 	return out, nil
+}
+
+// removeIfUnchanged removes the regular file rel if it still equals expect; the source of a move.
+func removeIfUnchanged(root, rel string, expect []byte) error {
+	source := filepath.Join(root, filepath.FromSlash(rel))
+	info, err := os.Lstat(source)
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return errors.New("keine reguläre Datei")
+	}
+	current, err := os.ReadFile(source)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(current, expect) {
+		return errors.New("seit der Planung verändert")
+	}
+	return os.Remove(source)
 }
 
 // prependFile writes head+expect to target via a temporary file in the same directory and an atomic rename,

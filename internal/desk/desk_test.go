@@ -341,7 +341,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	for _, tl := range a.Tools {
 		names = append(names, tl.Name)
 	}
-	if len(names) != 13 || names[0] != "sdd_next" {
+	if len(names) != 14 || names[0] != "sdd_next" {
 		t.Fatalf("tools must be exactly those of sdd mcp: %v", names)
 	}
 	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "x"}}, AllowedTools: []string{"shell_exec"}})
@@ -570,5 +570,33 @@ func TestInitIsWrite(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, "sdd.config.yaml")); err == nil {
 		t.Fatalf("preview wrote files")
+	}
+}
+
+// sdd-archive AC-4: sdd_archive with apply waits with its preview like every write.
+func TestArchiveIsWrite(t *testing.T) {
+	root := sddProject(t)
+	for rel, content := range map[string]string{
+		"docs/prd/billing.md": "---\nfeature: billing\nstatus: active\n---\n\n## Nicht-Ziele\n\n- nichts\n\n## Akzeptanzkriterien\n\n- **AC-1** Export\n",
+		"api/billing_test.go": "// billing AC-1: Export\n",
+	} {
+		p := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a := newAgent(t, root, &scripted{replies: []Message{call("a1", "sdd_archive", `{"feature":"billing","apply":true}`)}})
+	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "Archivieren"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || !res.Pending[0].Writes || !strings.Contains(string(res.Pending[0].Preview), `"action":"move"`) {
+		t.Fatalf("sdd_archive must wait with its preview: %+v", res)
+	}
+	if _, err := os.Stat(filepath.Join(root, "docs/prd/billing.md")); err != nil {
+		t.Fatalf("preview moved the file")
 	}
 }

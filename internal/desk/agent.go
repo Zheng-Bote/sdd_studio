@@ -82,7 +82,7 @@ var (
 )
 
 // writeTools are the sdd tools that change files when called with apply.
-var writeTools = []string{"sdd_new", "sdd_write", "sdd_init"}
+var writeTools = []string{"sdd_new", "sdd_write", "sdd_init", "sdd_archive"}
 
 // writes reports whether a call changes files: a write tool with apply.
 func writes(tc ToolCall) bool {

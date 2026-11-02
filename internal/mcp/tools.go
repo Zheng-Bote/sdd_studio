@@ -83,6 +83,11 @@ func toolList() []tool {
 				"git":     map[string]any{"type": "boolean", "description": "ohne Repository: git init und erster Commit"},
 				"apply":   map[string]any{"type": "boolean", "description": "wirklich anlegen"},
 			}), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
+		{Name: "sdd_archive", Title: "Feature archivieren", Description: "Wie `sdd archive`: verschiebt PRD, Tech Spec und Plan eines Features nach artifacts.archive und setzt status: archived (optional release). Nur wenn jedes Akzeptanzkriterium einen Testverweis hat; nach dem Release, nicht vor der Umsetzung. Ohne apply nur Vorschau; apply nur mit --allow-write.",
+			InputSchema: obj(map[string]any{
+				"feature": str("Feature-Slug"), "release": str("Version für release: im Frontmatter (optional)"),
+				"apply": map[string]any{"type": "boolean", "description": "wirklich verschieben"},
+			}, "feature"), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": true, "idempotentHint": false, "openWorldHint": false}},
 	}
 }
 
@@ -311,6 +316,9 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 
 	case "sdd_init":
 		return s.toolInit(raw)
+
+	case "sdd_archive":
+		return s.toolArchive(raw)
 
 	default:
 		return nil, fmt.Errorf("%w %q", errUnknownTool, name)

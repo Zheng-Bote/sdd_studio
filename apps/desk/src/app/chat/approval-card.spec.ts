@@ -44,6 +44,21 @@ describe('ApprovalCard', () => {
     expect(el.querySelector('pre[aria-label="Änderungen"]')?.textContent).toContain('+- AC-2 Import aus CSV');
   });
 
+  // sdd-archive AC-4: a move shows source, target and the frontmatter diff.
+  it('shows source, target and diff of a move', () => {
+    const { el } = render({
+      call_id: 'a1',
+      tool: 'sdd_archive',
+      arguments: { feature: 'billing', apply: true },
+      writes: true,
+      preview: { ops: [{ path: 'docs/archive/prd/billing.md', action: 'move', from: 'docs/prd/billing.md', diff: '-status: active\n+status: archived\n' }] },
+    });
+    expect(el.textContent).toContain('verschieben');
+    expect(el.textContent).toContain('docs/prd/billing.md');
+    expect(el.textContent).toContain('docs/archive/prd/billing.md');
+    expect(el.querySelector('pre[aria-label="Änderungen"]')?.textContent).toContain('+status: archived');
+  });
+
   it('offers once, session and deny for a read-only call and emits the choice', () => {
     const { el, buttons, decisions } = render({ call_id: 'c1', tool: 'sdd_next', arguments: {}, writes: false });
     expect(buttons).toEqual(['Einmal erlauben', 'Für diese Sitzung erlauben', 'Ablehnen']);
