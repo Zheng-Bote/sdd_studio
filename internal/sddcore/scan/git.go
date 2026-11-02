@@ -73,7 +73,22 @@ func (g CLIGit) ResolveBaseRef(configured string) (string, error) {
 			return cand, nil
 		}
 	}
-	return "", fmt.Errorf("%w: keine Merge-Basis ermittelbar (base_ref setzen)", ErrGit)
+	return "", fmt.Errorf("%w: %s", ErrGit, g.noBaseReason())
+}
+
+// noBaseReason says why no merge base was found. Without Git, without a repository or without a first commit,
+// setting base_ref does not help, so the message names the actual missing piece.
+func (g CLIGit) noBaseReason() string {
+	if _, err := exec.LookPath("git"); err != nil {
+		return "git ist nicht installiert oder nicht im PATH"
+	}
+	if _, err := g.run("rev-parse", "--is-inside-work-tree"); err != nil {
+		return "kein Git-Repository — `git init` ausführen und einen ersten Commit anlegen"
+	}
+	if !g.refExists("HEAD") {
+		return "das Git-Repository hat noch keinen Commit — einen ersten Commit anlegen"
+	}
+	return "keine Merge-Basis ermittelbar (base_ref setzen)"
 }
 
 // pushTarget reports whether upstream is the remote copy of the current feature branch (origin/feature/x for

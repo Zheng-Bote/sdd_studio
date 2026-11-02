@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
@@ -190,6 +191,30 @@ func TestCLIGit(t *testing.T) {
 	git("checkout", "-q", "main")
 	if base, err := g.ResolveBaseRef(""); err != nil || base != "origin/main" {
 		t.Fatalf("main: ResolveBaseRef = %q, %v", base, err)
+	}
+}
+
+// Without a repository or without a first commit, the error names that instead of suggesting base_ref.
+func TestCLIGitNoBaseReason(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	for _, env := range []string{"GITHUB_BASE_REF", "CI_MERGE_REQUEST_TARGET_BRANCH_NAME"} {
+		t.Setenv(env, "")
+	}
+	root := t.TempDir()
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(root)) // never pick up an enclosing repository
+	g := CLIGit{Root: root}
+	if _, err := g.ResolveBaseRef(""); err == nil || !errors.Is(err, ErrGit) || !strings.Contains(err.Error(), "kein Git-Repository") {
+		t.Fatalf("no repository: %v", err)
+	}
+	cmd := exec.Command("git", "init", "-q", "-b", "main")
+	cmd.Dir = root
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v\n%s", err, out)
+	}
+	if _, err := g.ResolveBaseRef(""); err == nil || !strings.Contains(err.Error(), "noch keinen Commit") {
+		t.Fatalf("no commit: %v", err)
 	}
 }
 
