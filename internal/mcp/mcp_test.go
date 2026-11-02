@@ -3,6 +3,7 @@ package mcp
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -165,8 +166,8 @@ func TestToolsMatchLibrary(t *testing.T) {
 		second["id"] != "AC-2" || len(second["tests"].([]any)) != 0 {
 		t.Errorf("sdd_trace: %v", tr)
 	}
-	if r := call(t, s, "sdd_lint", map[string]any{"gate": "bogus"}); r["isError"] != true {
-		t.Errorf("invalid gate must be a tool error: %v", r)
+	if r := call(t, s, "sdd_lint", map[string]any{"gate": "bogus"}); r["isError"] != true || !strings.Contains(fmt.Sprint(r["content"]), "erlaubt: pre-implementation, pre-merge, pre-release") {
+		t.Errorf("invalid gate must be a tool error naming the allowed gates: %v", r)
 	}
 }
 

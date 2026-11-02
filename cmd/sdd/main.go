@@ -69,7 +69,7 @@ func runLint(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	}
 
 	if *gate != "" && !isValidGate(*gate) {
-		fmt.Fprintf(stderr, "sdd lint: ungültiges Gate %q (erlaubt: pre-implementation, pre-merge, pre-release)\n", *gate)
+		fmt.Fprintf(stderr, "sdd lint: %v\n", catalog.InvalidGateError(*gate))
 		return 2
 	}
 
@@ -104,7 +104,7 @@ func runGate(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	}
 	gateName := args[0]
 	if !isValidGate(gateName) {
-		fmt.Fprintf(stderr, "sdd gate: ungültiges Gate %q (erlaubt: pre-implementation, pre-merge, pre-release)\n", gateName)
+		fmt.Fprintf(stderr, "sdd gate: %v\n", catalog.InvalidGateError(gateName))
 		return 2
 	}
 
@@ -155,7 +155,7 @@ func runBaseline(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	}
 
 	if *gate != "" && !isValidGate(*gate) {
-		fmt.Fprintf(stderr, "sdd baseline: ungültiges Gate %q\n", *gate)
+		fmt.Fprintf(stderr, "sdd baseline: %v\n", catalog.InvalidGateError(*gate))
 		return 2
 	}
 

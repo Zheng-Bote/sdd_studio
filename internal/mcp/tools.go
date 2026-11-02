@@ -179,7 +179,7 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 			return nil, err
 		}
 		if a.Gate != "" && !validGate(a.Gate) {
-			return nil, fmt.Errorf("ungültiges Gate %q", a.Gate)
+			return nil, catalog.InvalidGateError(a.Gate)
 		}
 		rep, err := sddcore.RunCheck(sddcore.RunOptions{RepoRoot: s.Root, Gate: a.Gate})
 		if err != nil {
@@ -197,7 +197,7 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 			return nil, err
 		}
 		if !validGate(a.Gate) {
-			return nil, fmt.Errorf("ungültiges Gate %q (erlaubt: %s)", a.Gate, strings.Join(catalog.AllGates, ", "))
+			return nil, catalog.InvalidGateError(a.Gate)
 		}
 		for _, p := range a.Paths {
 			if _, err := scan.CleanRel(p); err != nil {

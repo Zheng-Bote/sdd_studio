@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	sddstudio "github.com/Zheng-Bote/sdd_studio"
 	"gopkg.in/yaml.v3"
@@ -13,6 +14,11 @@ import (
 const DefaultCatalogRelPath = "catalog/catalog.yaml"
 
 var AllGates = []string{"pre-implementation", "pre-merge", "pre-release"}
+
+// InvalidGateError names the rejected gate and the allowed ones, so a caller (human or model) can correct itself.
+func InvalidGateError(gate string) error {
+	return fmt.Errorf("ungültiges Gate %q (erlaubt: %s)", gate, strings.Join(AllGates, ", "))
+}
 
 type Catalog struct {
 	Version string `yaml:"version"`

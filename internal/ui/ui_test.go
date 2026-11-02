@@ -261,8 +261,8 @@ func TestReadEndpoints(t *testing.T) {
 	if rep.Gate != "pre-merge" || len(rep.Findings) == 0 || rep.Findings[0].HandbookURL == "" || rep.Findings[0].Status == "" {
 		t.Errorf("findings %+v", rep)
 	}
-	if rec := do(t, s, http.MethodGet, "/api/findings?gate=bogus", ""); rec.Code != http.StatusBadRequest {
-		t.Errorf("invalid gate: %d", rec.Code)
+	if rec := do(t, s, http.MethodGet, "/api/findings?gate=bogus", ""); rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "erlaubt: pre-implementation, pre-merge, pre-release") {
+		t.Errorf("invalid gate: %d %s", rec.Code, rec.Body.String())
 	}
 }
 

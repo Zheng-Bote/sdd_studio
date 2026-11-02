@@ -46,7 +46,7 @@ func (s *Server) handleOverview(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleFindings(w http.ResponseWriter, r *http.Request) {
 	gate := r.URL.Query().Get("gate")
 	if gate != "" && !validGate(gate) {
-		writeError(w, http.StatusBadRequest, fmt.Errorf("ungültiges Gate %q", gate))
+		writeError(w, http.StatusBadRequest, catalog.InvalidGateError(gate))
 		return
 	}
 	rep, err := sddcore.RunCheck(sddcore.RunOptions{RepoRoot: s.Root, Gate: gate})
