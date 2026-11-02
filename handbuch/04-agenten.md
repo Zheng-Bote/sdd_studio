@@ -6,7 +6,7 @@ Dieser Teil richtet sich an LLM-Agenten (Claude Code, Claude Desktop, der KI-Des
 
 ## Einrichten {#agenten-einrichten}
 
-`sdd mcp` ist ein MCP-Server über stdio: ohne Port, ohne Netzwerk, ohne LLM (ADR 0002). Der Client startet ihn im Projektverzeichnis.
+`sdd mcp` ist ein MCP-Server über stdio: ohne Port, ohne Netzwerk, ohne LLM (ADR 0002, abgelöst durch ADR 0003). Der Client startet ihn im Projektverzeichnis.
 
 ```json
 {

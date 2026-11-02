@@ -717,17 +717,20 @@ Diese Liste steht **nur hier** und im Handbuch; andere Abschnitte verweisen dara
 
 ### 9.6 KI-Assistenz
 
-`sdd_process_3` verlangt Mechanismen statt Disziplin. Ein LLM ist kein Mechanismus — es ist ein Vorschlagswesen. Deshalb gilt seit [ADR 0002](adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md):
+`sdd_process_3` verlangt Mechanismen statt Disziplin. Ein LLM ist kein Mechanismus — es ist ein Vorschlagswesen. Deshalb gilt seit [ADR 0002](adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md), abgelöst durch [ADR 0003](adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md):
 
 - **`sdd` bleibt KI-frei und offline.** Kern, CLI, `sdd ui` und `sdd mcp` enthalten keinen LLM-Code und bauen keine ausgehenden Verbindungen auf.
 - **KI-Assistenz ist ein getrenntes, optionales Programm** (`sdd-desk`): Es führt durch den Prozess — von der Produkt-Idee über PRD, Tech Spec, ADR und Plan bis zu Tests, Gate und Archiv —, stellt Fragen und formuliert Entwürfe.
 - **Modellwahl:** lokales Ollama oder ein Cloud-Anbieter (Ollama Cloud, OpenRouter, NVIDIA NIM, Claude, Gemini), konfiguriert in `config/llm.env` im Programmverzeichnis des Desktops. Inhalte gehen ungeschwärzt an den gewählten Anbieter; der Desktop zeigt das vor dem ersten Aufruf an.
-- **Werkzeuge nur mit Erlaubnis:** Der Desktop führt `sdd`-Werkzeuge über `sdd mcp` aus — jeder Aufruf einzeln bestätigt oder für die Sitzung freigegeben, schreibende nur nach Vorschau.
-- **Die KI entscheidet nichts, was ein Gate bestehen lässt.** Sie formuliert; abnehmen muss der Mensch.
+- **Der Desktop darf alles, was `sdd` kann** — jede Aktion über ein `sdd`-Werkzeug mit festem Zweck (`sdd mcp`), freigegeben in drei Stufen:
+  - **lesend:** einzeln oder für die Sitzung je Werkzeug;
+  - **schreibend** (Artefakte mit Inhalt, Tests, Konfiguration, Init, Archiv): nach Vorschau bzw. Diff, einzeln oder für die Sitzung je Werkzeug; was geschrieben wurde, zeigt der Desktop danach im Gespräch;
+  - **kritisch** (Baseline, ADR-Lockfile, `adopt --apply`, ADR auf `accepted`): nur einzeln, nie für die Sitzung, mit der vollständigen Wirkung in der Bestätigung. `sdd mcp` bietet diese Werkzeuge nur mit `--allow-critical` an.
+- **Die KI entscheidet nichts, was ein Gate bestehen lässt.** Sie formuliert und schlägt vor; entscheiden und abnehmen muss der Mensch.
 
 **Assistierter Abgleich statt Regel (`SDD-060`):** Ob eine Tech Spec der Verfassung widerspricht, ist eine Frage der Bedeutung und nicht deterministisch entscheidbar. Eine Katalogregel müsste `sdd` selbst prüfen (`SDD-071`), und `sdd` ist KI-frei; ein Befund muss reproduzierbar sein, eine Modellantwort ist es nicht. Deshalb ist `SDD-060` keine Regel, sondern der geführte Ablauf `sdd-conflicts` in `sdd-desk`: Das Modell liest Verfassung, Tech Spec und verlinkte ADRs über das lesende Werkzeug `sdd_read` und meldet nur Widersprüche, die es auf beiden Seiten wörtlich mit Datei und Zeile zitieren kann. Das Ergebnis ist ein Hinweis, kein Befund — es erscheint in keinem Bericht und keiner Baseline; ob die Tech Spec angepasst oder die Verfassung über ein ADR geändert wird, entscheidet der Mensch.
 
-**Wichtig für das Ratchet:** Eine KI darf niemals Baseline-Einträge erzeugen, entfernen oder begründen. Sonst wäre die einzige Bremse im System maschinell verhandelbar.
+**Wichtig für das Ratchet:** Eine KI entscheidet nie über Baseline-Einträge. Sie kann sie vorschlagen; ausgeführt werden sie nur durch die einzelne Bestätigung des Menschen ([ADR 0003](adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)). Sonst wäre die einzige Bremse im System maschinell verhandelbar. Regeln mit `baseline: forbidden` lassen sich auf keinem Weg unterdrücken.
 
 ---
 
