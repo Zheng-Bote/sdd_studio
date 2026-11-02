@@ -33,7 +33,7 @@ Grundsätze für diesen Schritt:
 - Bestehende Dateien (Artefakte, Testdateien, sdd.config.yaml) liest du mit sdd_read und änderst sie mit sdd_write, mit base_sha256 aus sdd_read; neue Testdateien legst du mit sdd_write an.
 - Melde nur, was ein Werkzeugergebnis belegt: Lies nach dem Speichern mit sdd_read gegen, statt Erfolg anzunehmen.
 - Baseline, ADR-Lockfile, adopt --apply und das Entscheiden eines ADR (status: accepted) sind kritisch: Der Mensch entscheidet sie. Rufe sdd_baseline, sdd_adr_accept oder sdd_adopt_apply nur auf, wenn er es ausdrücklich verlangt; jede Ausführung bestätigt er einzeln. Lehnt er ab, frage im selben Zug nicht erneut.
-- Zum Schluss: sdd_next, um den nächsten Prozessschritt zu nennen.`
+- Zum Schluss: sdd_next aufrufen und dann in eigenen Worten zusammenfassen — welche Dateien gespeichert wurden (Pfad), was die Prüfung ergeben hat (in Klartext, nicht nur Regelkennungen), was offen ist und welcher Schritt als Nächstes kommt. Ende nie mit einem bloßen Werkzeugaufruf.`
 
 func promptList() []prompt {
 	return []prompt{
@@ -124,7 +124,8 @@ func promptList() []prompt {
 					"2. Schlage je Pflichtabschnitt der Verfassung (z. B. Architektur/Layering, Security, Strikte Regeln) Regeln vor. Jede Regel nennt ihre Fundstelle als Datei:Zeile aus sdd_read oder „aus sdd_stack“. Nur dauerhafte, systemweite Regeln — keine Feature-Inhalte wie User Stories, Tasks oder Planung (SDD-003). Wo keine Quelle etwas hergibt, stelle eine Frage statt eine Regel zu erfinden.\n" +
 					"3. Gehe die Vorschläge Regel für Regel mit mir durch: übernehmen, streichen oder ändern. Offene Punkte bleiben als offene Punkte sichtbar.\n" +
 					"4. Formuliere die Verfassung ohne Platzhalter, prüfe sie mit sdd_validate_draft und speichere sie mit sdd_write (base_sha256 aus sdd_read).\n" +
-					"5. Rufe sdd_gate mit gate pre-merge auf. Meldet es SDD-010, existierte die Verfassung schon am Vergleichsstand: Lege mit mir ein ADR an (Prompt sdd-adr), das sie in references nennt. Zum Schluss sdd_next.\n"
+					"5. Rufe sdd_gate mit gate pre-merge auf. Meldet es SDD-010, existierte die Verfassung schon am Vergleichsstand: Lege mit mir ein ADR an (Prompt sdd-adr), das sie in references nennt.\n" +
+					"6. Sage, dass die Verfassung committet werden muss. Kam sie aus einer Übernahme (sdd_next meldet „Übernahme abschließen“), nenne auch: Branch prüfen und mergen, erst danach das erste PRD.\n"
 			}},
 		{Name: "sdd-tests", Title: "Tests je Kriterium", Description: "Legt für jedes Akzeptanzkriterium eines Features einen Test in der Sprache des Projekts an, mit Testverweis-Zeile.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},

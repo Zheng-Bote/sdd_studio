@@ -81,3 +81,23 @@ func TestStartPrompts(t *testing.T) {
 		t.Errorf("instructions miss sdd-adopt/sdd-start: %s", instr)
 	}
 }
+
+// flow-closing AC-1: every guided prompt ends with a summary in words, never with a bare tool call; sdd-constitution
+// names commit and, after a take-over, review and merge.
+func TestPromptsDemandClosing(t *testing.T) {
+	s := newServer(project(t), false)
+	for _, name := range []string{"sdd-idea", "sdd-techspec", "sdd-adr", "sdd-plan", "sdd-adopt", "sdd-start", "sdd-constitution", "sdd-tests", "sdd-conflicts", "sdd-review"} {
+		text := promptText(t, s, name, `{"feature":"billing","title":"X"}`)
+		for _, want := range []string{"in eigenen Worten zusammenfassen", "Pfad", "in Klartext", "Ende nie mit einem bloßen Werkzeugaufruf"} {
+			if !strings.Contains(text, want) {
+				t.Errorf("%s misses %q", name, want)
+			}
+		}
+	}
+	text := promptText(t, s, "sdd-constitution", `{}`)
+	for _, want := range []string{"committet werden muss", "Übernahme abschließen", "Branch prüfen und mergen"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("sdd-constitution misses %q", want)
+		}
+	}
+}

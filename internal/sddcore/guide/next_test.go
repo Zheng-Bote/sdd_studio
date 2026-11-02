@@ -2,6 +2,7 @@ package guide_test
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -230,4 +231,66 @@ func regexpReplace(s string) string {
 		out = append(out, line)
 	}
 	return strings.Join(out, "\n")
+}
+
+// flow-closing AC-3: on the unmerged adopt branch, "Übernahme abschließen" names commit, diff and merge; after the
+// merge (on main, or back on the adopt branch) and without a report it is gone.
+func TestNextAdoptionStep(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	cfg := filepath.Join(t.TempDir(), "gitconfig")
+	if err := os.WriteFile(cfg, []byte("[user]\n\tname = T\n\temail = t@example.com\n[commit]\n\tgpgsign = false\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GIT_CONFIG_GLOBAL", cfg)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	for _, v := range []string{"GITHUB_HEAD_REF", "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", "CI_COMMIT_BRANCH"} {
+		t.Setenv(v, "")
+	}
+	root := project(t)
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(root))
+	git := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = root
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	adoption := func() *guide.Step {
+		t.Helper()
+		g, err := guide.Next(root, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return g.Adoption
+	}
+	git("init", "--quiet", "--initial-branch=main")
+	git("add", "-A")
+	git("commit", "--quiet", "-m", "init")
+	if a := adoption(); a != nil {
+		t.Fatalf("no report: %+v", a)
+	}
+	git("switch", "--quiet", "--create", "sdd/adopt")
+	write(t, root, ".sdd/adopt-report.md", "# Adopt-Bericht\n\nAngewendet am 2026-11-02 auf Branch `sdd/adopt` (ausgehend von `main`), Profil `standard`.\n")
+	git("add", "-A")
+	git("commit", "--quiet", "-m", "sdd adopt: Bericht")
+	a := adoption()
+	if a == nil || a.ID != "adoption" || !strings.Contains(a.Detail, "committen") || !strings.Contains(a.Detail, "in main mergen") || a.Command != "git diff main...sdd/adopt" {
+		t.Fatalf("pending adoption: %+v", a)
+	}
+	git("switch", "--quiet", "--create", "other")
+	if a := adoption(); a != nil {
+		t.Errorf("on another branch: %+v", a)
+	}
+	git("switch", "--quiet", "main")
+	git("merge", "--quiet", "--ff-only", "sdd/adopt")
+	if a := adoption(); a != nil {
+		t.Errorf("after the merge, on main: %+v", a)
+	}
+	git("switch", "--quiet", "sdd/adopt")
+	if a := adoption(); a != nil {
+		t.Errorf("after the merge, back on the adopt branch: %+v", a)
+	}
 }

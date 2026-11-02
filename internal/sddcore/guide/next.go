@@ -51,6 +51,31 @@ type Guide struct {
 	Start *Step `json:"start,omitempty"`
 	// Constitution is set while the constitution still holds template placeholders; it comes before everything else.
 	Constitution *Step `json:"constitution,omitempty"`
+	// Adoption is set while the branch of `sdd adopt --apply` is checked out and not yet merged; it comes right after
+	// Constitution.
+	Adoption *Step `json:"adoption,omitempty"`
+}
+
+// adoptRegex reads branch and base branch from the adopt report.
+var adoptRegex = regexp.MustCompile("auf Branch `([^`]+)` \\(ausgehend von `([^`]+)`\\)")
+
+// adoptionPending returns the adopt branch and its base branch while the adopt branch is checked out and HEAD is not
+// yet contained in the base branch; ok is false otherwise, also without Git.
+func adoptionPending(root string) (branch, from string, ok bool) {
+	data, err := os.ReadFile(filepath.Join(root, ".sdd", "adopt-report.md"))
+	if err != nil {
+		return "", "", false
+	}
+	m := adoptRegex.FindStringSubmatch(string(data))
+	if m == nil {
+		return "", "", false
+	}
+	g := scan.CLIGit{Root: root}
+	current, err := g.CurrentBranch()
+	if err != nil || current != m[1] || g.IsAncestor("HEAD", m[2]) {
+		return "", "", false
+	}
+	return m[1], m[2], true
 }
 
 // placeholderRegex is a list item that consists of nothing but a template placeholder, e.g. "1. <Regeln …>".
@@ -129,6 +154,11 @@ func Next(root, feature string) (*Guide, error) {
 		g.Constitution = &Step{ID: "constitution", Title: "Verfassung ausfüllen", State: StateOpen,
 			Detail:  fmt.Sprintf("%s enthält noch %d Platzhalter des Templates. Vor dem ersten PRD ausfüllen — nach sdd adopt noch auf dem Branch der Übernahme, dann gilt es als erstmaliges Anlegen (SDD-010).", rel, n),
 			Command: "Prompt sdd-constitution (sdd-desk oder sdd mcp)"}
+	}
+	if b, from, ok := adoptionPending(root); ok {
+		g.Adoption = &Step{ID: "adoption", Title: "Übernahme abschließen", State: StateOpen,
+			Detail:  fmt.Sprintf("Die Übernahme auf %s ist noch nicht in %s. Änderungen (Verfassung, Agenten-Dateien) auf %s committen, prüfen (git diff %s...%s) und in %s mergen — erst danach das erste PRD.", b, from, b, from, b, from),
+			Command: fmt.Sprintf("git diff %s...%s", from, b)}
 	}
 	if len(slugs) == 0 {
 		g.Start = &Step{ID: "idea", Title: "Idee als PRD festhalten", State: StateOpen,

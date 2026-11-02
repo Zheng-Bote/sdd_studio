@@ -13,6 +13,11 @@ import { Message } from '../core/types';
         <div class="ml-auto max-w-[80%] rounded-lg bg-primary px-4 py-2 text-primary-foreground whitespace-pre-wrap wrap-anywhere">{{ message().content }}</div>
       }
       @case ('assistant') {
+        @if (silent()) {
+          <p class="text-sm italic text-muted-foreground" role="note">
+            Das Modell hat ohne abschließende Antwort aufgehört. Fragen Sie nach, z. B. „Was ist der nächste Schritt?“
+          </p>
+        }
         @if (message().content) {
           <div class="max-w-[85%] rounded-lg border bg-card px-4 py-2 whitespace-pre-wrap wrap-anywhere">{{ message().content }}</div>
         }
@@ -34,6 +39,8 @@ import { Message } from '../core/types';
 })
 export class MessageView {
   readonly message = input.required<Message>();
+  /** An answer without text and without tool calls: the model stopped without saying anything. */
+  protected readonly silent = computed(() => !this.message().content?.trim() && !this.message().tool_calls?.length);
   protected readonly summary = computed(() => {
     const text = this.message().content.trim();
     return text.length > 90 ? text.slice(0, 90) + '…' : text;

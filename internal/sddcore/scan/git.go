@@ -41,6 +41,12 @@ func (g CLIGit) run(args ...string) (string, error) {
 	return stdout.String(), nil
 }
 
+// IsAncestor reports whether commit a is contained in b (git merge-base --is-ancestor); any error means false.
+func (g CLIGit) IsAncestor(a, b string) bool {
+	_, err := g.run("merge-base", "--is-ancestor", a, b)
+	return err == nil
+}
+
 func (g CLIGit) refExists(ref string) bool {
 	_, err := g.run("rev-parse", "--verify", "--quiet", ref+"^{commit}")
 	return err == nil
