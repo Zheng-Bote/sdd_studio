@@ -1,6 +1,6 @@
 ---
 feature: sdd-init-git
-status: active
+status: archived
 archive-after:
 touches:
   - cmd/sdd/**
@@ -10,6 +10,7 @@ touches:
   - internal/desk/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # PRD — Projekt-Init mit Git, auch aus dem KI-Desktop

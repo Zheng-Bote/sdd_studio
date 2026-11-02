@@ -2,6 +2,41 @@
 
 Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung [Semantic Versioning](https://semver.org/lang/de/). Der Regelkatalog trägt eine eigene Version (`catalog/catalog.yaml`).
 
+## [0.5.0] — 2026-11-02
+
+Regelkatalog unverändert `1.1.0` mit 22 Regeln, Berichtsformat unverändert `schema_version: 1`. Grundlage ist [ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), das ADR 0002 ablöst: Der KI-Desktop darf alles, was `sdd` kann, freigegeben in drei Stufen (lesend, schreibend, kritisch).
+
+### Hinzugefügt
+
+- **Arbeitsergebnisse mit Inhalt speichern:** `sdd_new` nimmt mit `content` den geprüften Entwurf statt des Templates. Das neue Werkzeug `sdd_write` legt Artefakte, `sdd.config.yaml` und Testdateien an oder ändert sie: eine bestehende Datei nur mit `base_sha256`, atomar, vorher mit den Regeln geprüft, mit Diff in Vorschau und Ergebnis. Ein ADR setzt es nie auf `accepted`.
+- **`sdd init --git`** und das Werkzeug `sdd_init`: in einem Ordner ohne Repository `git init` (Branch `main`) und ein erster Commit genau der angelegten Dateien; vorher geprüft, ob Git und eine Git-Identität vorhanden sind (zweite Ausnahme vom lesenden Git-Zugriff, Verfassung Security 4).
+- **`sdd archive --feature <slug> [--release <v>]`** und das Werkzeug `sdd_archive`: verschiebt PRD, Tech Spec und Plan nach `artifacts.archive` und setzt `status: archived`, nur wenn jedes Akzeptanzkriterium einen Testverweis hat.
+- **Kritische Werkzeuge** hinter `sdd mcp --allow-critical`: `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`. `sdd-desk` führt sie nur nach einzelner Bestätigung aus, nie für die ganze Sitzung, und lehnt nach einer Ablehnung weitere Aufrufe bis zur nächsten Nachricht ab.
+- **`sdd_stack`:** erkennt Sprachen aus Dateiendungen und Marker-Dateien, mit Testdatei-Mustern und Kommentarsyntax je Sprache.
+- **Agenten-Dateien:** `sdd init` und `sdd adopt` legen `AGENTS.md` (Verfassung, Präzedenz, Ablauf) sowie `CLAUDE.md`, `GEMINI.md` und `.github/copilot-instructions.md` mit Verweis darauf an; vorhandene Dateien erhalten den Verweis vorangestellt, ohne dass sich ihr übriger Inhalt ändert.
+- **Verfassung erarbeiten:** `sdd next` meldet „Verfassung ausfüllen“, solange Platzhalter des Templates drin sind; der Ablauf `sdd-constitution` schlägt Regeln mit Fundstelle aus README und Agenten-Dateien vor, die `sdd_read` jetzt lesen darf.
+- **Neue geführte Abläufe:** `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-tests`. `sdd-desk` erkennt ein nicht erfasstes Projekt beim Öffnen und bietet Übernahme oder Neuanlage an.
+- `sdd next` meldet nach `sdd adopt --apply` „Übernahme abschließen“, solange der Branch der Übernahme nicht gemergt ist.
+- `Makefile` baut alle Programme und installiert sie lokal (`make`, `make install`); `docs/anleitung.md` beschreibt die Einführung in ein neues oder bestehendes Projekt.
+
+### Geändert
+
+- `sdd-desk` darf schreibende Werkzeuge für die Sitzung freigeben; was sie geschrieben haben, steht mit Diff im Gespräch.
+- `sdd-idea` klärt die Technik vor den touches; jeder geführte Ablauf nennt die Reihenfolge des Prozesses und endet mit einer Zusammenfassung in Worten.
+- `sdd-desk` nennt dem Modell das heutige Datum; `sdd new` lehnt ein `archive-after` vor heute ab.
+- Die Logik von `sdd baseline` liegt in `sddcore` und wird von CLI und `sdd_baseline` geteilt; Ausgabe und Dateien sind unverändert.
+- Die GitHub Action und die Workflow-Vorlage von `sdd init` verweisen auf `@v0.5.0`.
+
+### Behoben
+
+- Der Chat in `sdd-desk` wird nicht mehr breiter als das Fenster.
+- Ein ungültiges Gate nennt die erlaubten Werte; fehlt das Git-Repository oder der erste Commit, sagt die Meldung das statt „base_ref setzen“.
+- Eine Antwort des Modells ohne Text erscheint in `sdd-desk` als Hinweis statt gar nicht.
+
+### Archiviert
+
+Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.5.0`): `archive-after-today`, `desk-write-content`, `sdd-init-git`, `sdd-archive`, `desk-critical-tools`, `desk-guided-flow`, `agent-files`, `constitution-guide`, `desk-project-start`, `flow-closing`.
+
 ## [0.4.0] — 2026-10-21
 
 Regelkatalog unverändert `1.1.0` mit 22 Regeln, Berichtsformat unverändert `schema_version: 1`.
@@ -92,6 +127,7 @@ Erste Version. Regelkatalog `1.0.0` mit 20 Regeln, Berichtsformat `schema_versio
 
 Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.1.0`): `sdd-core-v1`, `sdd-init-new`, `sdd-adopt`, `sdd-report`, `sdd-rules-v1-1`.
 
+[0.5.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.3.0
 [0.2.0]: https://github.com/Zheng-Bote/sdd_studio/releases/tag/v0.2.0

@@ -1,6 +1,6 @@
 # sdd-desk — Oberfläche
 
-Angular 22, Spartan-NG (Helm, Style „nova“) und Tailwind 4. Die Oberfläche des optionalen KI-Desktops `sdd-desk` ([ADR 0002](../../docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md)); das Go-Backend liegt in `cmd/sdd-desk` und `internal/desk`. Die Tauri-v2-Hülle liegt in `src-tauri/`; sie startet `sdd-desk` und `sdd` (gebündelt als `sdd-studio-sdd`) als Sidecars und zeigt die Oberfläche direkt vom Sidecar.
+Angular 22, Spartan-NG (Helm, Style „nova“) und Tailwind 4. Die Oberfläche des optionalen KI-Desktops `sdd-desk` ([ADR 0003](../../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), löst ADR 0002 ab); das Go-Backend liegt in `cmd/sdd-desk` und `internal/desk`. Die Tauri-v2-Hülle liegt in `src-tauri/`; sie startet `sdd-desk` und `sdd` (gebündelt als `sdd-studio-sdd`) als Sidecars und zeigt die Oberfläche direkt vom Sidecar.
 
 | Befehl | Zweck |
 |---|---|

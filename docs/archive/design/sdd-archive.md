@@ -1,6 +1,6 @@
 ---
 feature: sdd-archive
-status: active
+status: archived
 archive-after:
 touches:
   - cmd/sdd/**
@@ -11,11 +11,12 @@ touches:
   - apps/desk/src/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # Tech Spec — Features archivieren mit `sdd archive`
 
-Setzt das PRD `docs/prd/sdd-archive.md` um, auf Grundlage von ADR 0003 (Archivieren gehört zur Stufe „schreibend“) und Handbuch „Archivierung (SDD-050)“.
+Setzt das PRD `docs/archive/prd/sdd-archive.md` um, auf Grundlage von ADR 0003 (Archivieren gehört zur Stufe „schreibend“) und Handbuch „Archivierung (SDD-050)“.
 
 ## Architektur
 

@@ -1,6 +1,6 @@
 ---
 feature: desk-write-content
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
@@ -10,6 +10,7 @@ touches:
   - apps/desk/src/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # PRD — Arbeitsergebnisse aus dem KI-Desktop mit Inhalt speichern

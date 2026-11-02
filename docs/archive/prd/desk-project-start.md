@@ -1,6 +1,6 @@
 ---
 feature: desk-project-start
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
@@ -9,6 +9,7 @@ touches:
   - apps/desk/src/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # PRD — Nicht erfasste Projekte im KI-Desktop erkennen und starten

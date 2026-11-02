@@ -1,6 +1,6 @@
 ---
 feature: desk-guided-flow
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
@@ -8,6 +8,7 @@ touches:
   - internal/desk/**
   - handbuch/**
   - README.md
+release: v0.5.0
 ---
 
 # PRD — Geführter Ablauf: Technik vor touches, Reihenfolge, Tests je Sprache
