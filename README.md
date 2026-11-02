@@ -84,7 +84,7 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 
 ### Agenten (MCP)
 
-`sdd mcp` stellt vierzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
+`sdd mcp` stellt fünfzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_stack`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-tests`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
 
 ```json
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }

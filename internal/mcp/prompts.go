@@ -26,6 +26,7 @@ type prompt struct {
 // common is appended to every prompt: the boundaries every guided step shares.
 const common = `
 Grundsätze für diesen Schritt:
+- Reihenfolge des Prozesses: Idee → PRD → Tech Spec (wenn sdd_check_intent sie verlangt) → Plan → Tests je Kriterium → Umsetzung → Gate pre-merge → Merge → Release → Archiv. Archiviert wird erst nach dem Release. Ein überschrittenes archive-after vor der Umsetzung heißt: Stichtag mit dem Menschen korrigieren, nicht archivieren.
 - Frage, statt zu erfinden. Stelle eine Frage nach der anderen und formuliere nur aus, was der Mensch beantwortet hat. Offene Punkte bleiben als offene Punkte sichtbar.
 - Prüfe jeden Entwurf mit sdd_validate_draft, bevor du ihn speicherst; behebe die Befunde mit dem Menschen.
 - Neue Artefakte legst du mit sdd_new an und übergibst den geprüften Entwurf als content, nie das leere Template (zuerst ohne apply, dann mit apply nach Bestätigung).
@@ -49,9 +50,10 @@ func promptList() []prompt {
 					"1. Kläre das Problem: Wer hat es, wann, und was kostet es heute?\n" +
 					"2. Kläre Nutzer und Ziel: Was ist nach der Umsetzung anders?\n" +
 					"3. Kläre den Umfang und frage ausdrücklich nach Nicht-Zielen: Was gehört bewusst nicht dazu?\n" +
-					"4. Formuliere mit mir Akzeptanzkriterien, die ein Test prüfen kann, jedes mit Kennung AC-1, AC-2, … (nie umnummerieren).\n" +
-					"5. Schlage einen Feature-Slug vor (" + slugHint(a["feature"]) + ") und frage, welche Pfade die Umsetzung voraussichtlich berührt (touches). Prüfe sie mit sdd_check_intent: Greift die Größenschwelle, braucht es auch eine Tech Spec.\n" +
-					"6. Formuliere das PRD mit den Abschnitten Problem, Ziel, Nutzer, Umfang, Nicht-Ziele, Akzeptanzkriterien aus den Antworten, prüfe es mit sdd_validate_draft und lege es mit sdd_new an (types: [prd], content: der geprüfte Entwurf).\n"
+					"4. Kläre die Technik, bevor es um Dateien geht: Rufe sdd_stack auf. Hat das Projekt schon eine Sprache, nenne sie und lass sie bestätigen. Ist es leer, schlage eine Sprache bzw. Form vor (z. B. Shell-Skript, Go, Rust, C++ oder nur Markdown), begründe sie mit Art des Programms, Zielplattform und Umfang, und frage. Bei einem neuen Projekt biete an, die Wahl als ADR festzuhalten (Prompt sdd-adr).\n" +
+					"5. Formuliere mit mir Akzeptanzkriterien, die ein Test prüfen kann, jedes mit Kennung AC-1, AC-2, … (nie umnummerieren).\n" +
+					"6. Schlage einen Feature-Slug vor (" + slugHint(a["feature"]) + ") und frage, welche Pfade die Umsetzung voraussichtlich berührt (touches) — in den Konventionen der gewählten Sprache (Quell- und Testpfade wie aus sdd_stack), nie mit Platzhalter-Endungen. Prüfe sie mit sdd_check_intent: Greift die Größenschwelle, braucht es auch eine Tech Spec.\n" +
+					"7. Formuliere das PRD mit den Abschnitten Problem, Ziel, Nutzer, Umfang, Nicht-Ziele, Akzeptanzkriterien aus den Antworten, prüfe es mit sdd_validate_draft und lege es mit sdd_new an (types: [prd], content: der geprüfte Entwurf).\n"
 			}},
 		{Name: "sdd-techspec", Title: "Tech Spec zum PRD", Description: "Führt vom PRD zur Tech Spec, die jedes Akzeptanzkriterium einer Umsetzung zuordnet.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
@@ -86,6 +88,19 @@ func promptList() []prompt {
 					"2. Zerlege die Umsetzung in kleine, einzeln prüfbare Tasks in sinnvoller Reihenfolge.\n" +
 					"3. Jede Task ist eine Checkbox-Zeile und nennt mindestens ein Kriterium: - [ ] AC-2 …\n" +
 					"4. Formuliere den Plan, prüfe ihn mit sdd_validate_draft und lege ihn mit sdd_new an (types: [plan], content: der geprüfte Entwurf); sdd_trace zeigt, welche Kriterien noch keine Task haben.\n"
+			}},
+		{Name: "sdd-tests", Title: "Tests je Kriterium", Description: "Legt für jedes Akzeptanzkriterium eines Features einen Test in der Sprache des Projekts an, mit Testverweis-Zeile.",
+			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
+			rules:     []string{"SDD-022", "SDD-025"},
+			body: func(a map[string]string) string {
+				f := a["feature"]
+				return "Lege mit mir die Tests für das Feature " + f + " an.\n\n" +
+					"Vorgehen:\n" +
+					"1. sdd_trace (feature: " + f + "): Welche Kriterien haben noch keinen Test?\n" +
+					"2. sdd_stack: Sprache, übliche Testdatei-Muster und Kommentarsyntax des Projekts. Ist die Sprache unklar, frage.\n" +
+					"3. Lege mit mir fest, in welche Datei welcher Test kommt. Erfasst tests.include diese Datei nicht (tests_include aus sdd_stack), lies sdd.config.yaml mit sdd_read und ergänze tests.include mit sdd_write um das passende Muster.\n" +
+					"4. Schreibe je Kriterium einen Test in der Sprache des Projekts: einen echten, wenn das Verhalten schon klar ist, sonst ein Gerüst, das ausdrücklich fehlschlägt oder übersprungen wird, bis es umgesetzt ist. Direkt über jedem Test steht die Zeile <Kommentar> " + f + " AC-<n>: <was der Test prüft>. Neue Dateien legst du mit sdd_write an, bestehende liest du vorher mit sdd_read.\n" +
+					"5. Prüfe mit sdd_trace, dass jedes Kriterium einen Test hat, und nenne mit sdd_next den nächsten Schritt.\n"
 			}},
 		{Name: "sdd-conflicts", Title: "Abgleich mit der Verfassung", Description: "Sucht Widersprüche zwischen der Tech Spec eines Features und der Verfassung — mit wörtlichen Zitaten, ohne etwas zu ändern (SDD-060, assistiert).",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},

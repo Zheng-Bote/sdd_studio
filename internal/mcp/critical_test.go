@@ -161,3 +161,62 @@ func TestPromptsCriticalRule(t *testing.T) {
 		}
 	}
 }
+
+// desk-guided-flow AC-1: sdd_stack reports the languages and the configured tests.include.
+func TestStackTool(t *testing.T) {
+	root := project(t)
+	write(t, root, "go.mod", "module x\n")
+	info := structured(t, call(t, newServer(root, false), "sdd_stack", map[string]any{}))
+	langs := info["languages"].([]any)
+	if len(langs) == 0 || langs[0].(map[string]any)["name"] != "Go" || info["configured"] != true {
+		t.Errorf("sdd_stack: %v", info)
+	}
+}
+
+func promptText(t *testing.T, s *Server, name, args string) string {
+	t.Helper()
+	r := exchange(t, s, `{"jsonrpc":"2.0","id":2,"method":"prompts/get","params":{"name":"`+name+`","arguments":`+args+`}}`)
+	return r[0]["result"].(map[string]any)["messages"].([]any)[0].(map[string]any)["content"].(map[string]any)["text"].(string)
+}
+
+// desk-guided-flow AC-2: sdd-idea settles the technology after scope and before criteria and touches.
+func TestIdeaAsksTechnologyBeforeTouches(t *testing.T) {
+	text := promptText(t, newServer(project(t), false), "sdd-idea", `{}`)
+	scope, tech := strings.Index(text, "Nicht-Zielen"), strings.Index(text, "sdd_stack")
+	criteria, touches := strings.Index(text, "Akzeptanzkriterien, die ein Test prüfen kann"), strings.Index(text, "(touches)")
+	if scope < 0 || tech < 0 || criteria < 0 || touches < 0 || !(scope < tech && tech < criteria && criteria < touches) {
+		t.Errorf("order scope %d < technology %d < criteria %d < touches %d violated:\n%s", scope, tech, criteria, touches, text)
+	}
+	for _, want := range []string{"begründe sie", "als ADR festzuhalten", "nie mit Platzhalter-Endungen"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("sdd-idea misses %q", want)
+		}
+	}
+}
+
+// desk-guided-flow AC-3: every guided prompt names the process order and that an overdue archive-after before the
+// implementation is no reason to archive.
+func TestPromptsNameProcessOrder(t *testing.T) {
+	s := newServer(project(t), false)
+	for _, name := range []string{"sdd-idea", "sdd-techspec", "sdd-adr", "sdd-plan", "sdd-tests", "sdd-conflicts", "sdd-review"} {
+		text := promptText(t, s, name, `{"feature":"billing","title":"X"}`)
+		for _, want := range []string{"Tests je Kriterium → Umsetzung → Gate pre-merge → Merge → Release → Archiv", "Archiviert wird erst nach dem Release", "nicht archivieren"} {
+			if !strings.Contains(text, want) {
+				t.Errorf("%s misses %q", name, want)
+			}
+		}
+	}
+}
+
+// desk-guided-flow AC-4: sdd-tests walks trace, stack, tests.include, one test per criterion with the slug line, check.
+func TestTestsPrompt(t *testing.T) {
+	text := promptText(t, newServer(project(t), false), "sdd-tests", `{"feature":"billing"}`)
+	last := -1
+	for _, step := range []string{"sdd_trace (feature: billing)", "sdd_stack", "tests.include", "<Kommentar> billing AC-<n>:", "mit sdd_write an", "sdd_next"} {
+		i := strings.Index(text, step)
+		if i <= last {
+			t.Errorf("step %q missing or out of order", step)
+		}
+		last = i
+	}
+}

@@ -48,6 +48,7 @@ Bei einem Konflikt zwischen gleich bindenden Regeln: **nicht entscheiden, sonder
 | jederzeit | `sdd_next` | Wo steht das Feature im Prozess, was ist der nächste Schritt? |
 | beim Schreiben eines Artefakts | `sdd_validate_draft` | Regeln auf den Entwurf anwenden, bevor er gespeichert wird |
 | zum Anlegen | `sdd_new` | Vorschau, dann Anlegen nach Bestätigung, mit `content` aus dem geprüften Entwurf (nur mit `--allow-write`) |
+| vor touches und Tests | `sdd_stack` | Sprachen des Projekts aus Dateiendungen und Marker-Dateien, je Sprache Testdatei-Muster und Kommentarsyntax; liest keine Inhalte |
 | zum Lesen | `sdd_read` | Artefakt, `sdd.config.yaml` oder Testdatei mit Zeilennummern und SHA-256 |
 | zum Projektstart | `sdd_init` | wie `sdd init [--git]`: Vorschau, dann Anlegen nach Bestätigung (nur mit `--allow-write`) |
 | nach dem Release | `sdd_archive` | wie `sdd archive`: Feature ins Archiv verschieben, nur wenn jedes Kriterium getestet ist (nur mit `--allow-write`) |
@@ -56,7 +57,7 @@ Bei einem Konflikt zwischen gleich bindenden Regeln: **nicht entscheiden, sonder
 | bei einem Befund | `sdd_explain` | Regel, Begründung, Prüfvertrag |
 | zum Abschluss | `sdd_trace` | Hat jedes Kriterium Tech-Spec-Stelle, Test und Task? |
 
-Geführte Abläufe stehen als Prompts bereit: `sdd-idea` (Idee → PRD), `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-review`. Sie fragen, statt zu erfinden, und nennen die geltenden Regeln aus dem aktuellen Katalog.
+Geführte Abläufe stehen als Prompts bereit: `sdd-idea` (Idee → PRD), `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-tests` (je Kriterium ein Test in der Projektsprache), `sdd-conflicts`, `sdd-review`. Sie fragen, statt zu erfinden, nennen die geltenden Regeln aus dem aktuellen Katalog und die Reihenfolge des Prozesses: Idee → PRD → Tech Spec (wenn nötig) → Plan → Tests je Kriterium → Umsetzung → Gate → Merge → Release → Archiv. `sdd-idea` klärt mit `sdd_stack` die Technik, bevor es nach Pfaden (touches) fragt; bei einem neuen Projekt schlägt das Modell eine Sprache mit Begründung vor, der Mensch entscheidet.
 
 Ressourcen: `sdd://constitution`, `sdd://catalog`, `sdd://handbook` und `sdd://artifact/<pfad>` für jedes Artefakt.
 
@@ -104,7 +105,7 @@ bin/sdd-desk --project . --open                   # gibt URL mit Sitzungstoken a
 
 **Was der Desktop darf:**
 
-- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen siebzehn Werkzeuge (mit `--allow-critical`), keine eigenen. `sdd_read` und `sdd_write` erreichen nur Artefakte, `sdd.config.yaml` und Testdateien, keinen übrigen Code.
+- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen achtzehn Werkzeuge (mit `--allow-critical`), keine eigenen. `sdd_read` und `sdd_write` erreichen nur Artefakte, `sdd.config.yaml` und Testdateien, keinen übrigen Code.
 - **Kritische Aktionen** (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) brauchen jedes Mal eine einzelne Bestätigung; eine Freigabe für die Sitzung gibt es dafür nicht. Die Karte ist rot abgesetzt, zeigt die ganze Wirkung (Einträge, gelockte ADRs, Diff oder Bericht) und nennt die Aktion auf der Schaltfläche. Nach einer Ablehnung lehnt der Desktop weitere Aufrufe desselben Werkzeugs ab, bis Sie wieder schreiben. `sdd-desk` startet dafür `sdd mcp --allow-write --allow-critical`.
 - Jeder Aufruf braucht eine Freigabe: **einmal**, **für die Sitzung** (je Werkzeug) oder **Ablehnen**. Ein schreibender Aufruf (`sdd_new` oder `sdd_write` mit `apply`) zeigt vorher die Vorschau mit Inhalt bzw. Diff. Ist das Werkzeug für die Sitzung freigegeben, schreibt es ohne weitere Rückfrage; was es geschrieben hat (mit Diff), steht im Ergebnis im Gespräch ([ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), Stufe „schreibend“).
 - Vor dem ersten Aufruf eines Cloud-Anbieters muss der Hinweis „Inhalte verlassen dieses Gerät“ bestätigt sein; ohne Bestätigung lehnt das Backend ab. Inhalte werden nicht geschwärzt.

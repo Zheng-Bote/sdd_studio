@@ -269,7 +269,7 @@ func TestNoForbiddenCapabilities(t *testing.T) {
 			t.Errorf("forbidden tool %s", name)
 		}
 	}
-	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 14 {
+	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 15 {
 		t.Errorf("tool set changed (%d tools); review it against ADR 0003", n)
 	}
 	for _, r := range res[1]["result"].(map[string]any)["resources"].([]any) {
@@ -302,11 +302,11 @@ func TestPrompts(t *testing.T) {
 	for _, p := range res[0]["result"].(map[string]any)["prompts"].([]any) {
 		names = append(names, p.(map[string]any)["name"].(string))
 	}
-	if strings.Join(names, ",") != "sdd-idea,sdd-techspec,sdd-adr,sdd-plan,sdd-conflicts,sdd-review" {
+	if strings.Join(names, ",") != "sdd-idea,sdd-techspec,sdd-adr,sdd-plan,sdd-tests,sdd-conflicts,sdd-review" {
 		t.Fatalf("prompts %v", names)
 	}
-	args := map[string]string{"sdd-idea": `{}`, "sdd-techspec": `{"feature":"billing"}`, "sdd-adr": `{"title":"x"}`, "sdd-plan": `{"feature":"billing"}`, "sdd-conflicts": `{"feature":"billing"}`, "sdd-review": `{"feature":"billing"}`}
-	wantRule := map[string]string{"sdd-idea": "SDD-023", "sdd-techspec": "SDD-031", "sdd-adr": "SDD-011", "sdd-plan": "SDD-041", "sdd-conflicts": "SDD-010", "sdd-review": "SDD-022"}
+	args := map[string]string{"sdd-idea": `{}`, "sdd-techspec": `{"feature":"billing"}`, "sdd-adr": `{"title":"x"}`, "sdd-plan": `{"feature":"billing"}`, "sdd-tests": `{"feature":"billing"}`, "sdd-conflicts": `{"feature":"billing"}`, "sdd-review": `{"feature":"billing"}`}
+	wantRule := map[string]string{"sdd-idea": "SDD-023", "sdd-techspec": "SDD-031", "sdd-adr": "SDD-011", "sdd-plan": "SDD-041", "sdd-tests": "SDD-025", "sdd-conflicts": "SDD-010", "sdd-review": "SDD-022"}
 	for _, name := range names {
 		r := exchange(t, s, `{"jsonrpc":"2.0","id":2,"method":"prompts/get","params":{"name":"`+name+`","arguments":`+args[name]+`}}`)
 		text := r[0]["result"].(map[string]any)["messages"].([]any)[0].(map[string]any)["content"].(map[string]any)["text"].(string)
