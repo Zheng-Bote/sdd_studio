@@ -58,7 +58,7 @@ make uninstall       # alles wieder entfernen
 | `sdd lint [--json] [--gate <gate>]` | Befunde für das ganze Projekt |
 | `sdd gate <pre-implementation\|pre-merge\|pre-release> [--json] [--feature <slug>[,…]] [--paths <globs>]` | Gate prüfen, Exit-Code `0`/`1`/`2` |
 | `sdd baseline [--gate <gate>] [--prune] [--accept <regel-id>]` | Bestand einfrieren, quittieren (`--accept SDD-011` schreibt das ADR-Lockfile) |
-| `sdd init [--profile minimal\|standard\|regulated] [--dry-run] [--no-ci] [--git]` | Neues Projekt: Konfiguration, Verfassung, Artefaktordner, CI-Workflow, Agenten-Dateien (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`); mit `--git` ohne vorhandenes Repository auch `git init` und ein erster Commit |
+| `sdd init [--profile minimal\|standard\|regulated] [--dry-run] [--no-ci] [--git]` | Neues Projekt: Konfiguration, Verfassung, Artefaktordner, CI-Workflow, Agenten-Dateien (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`); mit `--git` ohne vorhandenes Repository auch `git init` und ein erster Commit |
 | `sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` | Feature-Artefakte aus Templates; `new --type adr\|doc --title …` |
 | `sdd archive --feature <slug> [--release <version>] [--dry-run]` | Feature nach dem Release ins Archiv verschieben (`status: archived`); nur wenn jedes Akzeptanzkriterium einen Testverweis hat |
 | `sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` | Bestandsprojekt übernehmen: Probelauf-Bericht; mit `--apply` auf neuem Branch, ein Commit je Schritt ([ADR 0001](docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md)) |

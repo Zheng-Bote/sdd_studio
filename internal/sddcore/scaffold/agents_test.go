@@ -45,6 +45,26 @@ func TestAgentFilesCreate(t *testing.T) {
 	}
 }
 
+// agent-files AC-2: a missing .github/copilot-instructions.md is created with a plain Markdown link to ../AGENTS.md.
+// agent-files AC-3: an existing one without the marker gets that link in front, the rest unchanged.
+func TestAgentFilesCopilot(t *testing.T) {
+	const pointer = scaffold.AgentsMarker + "\nLies zuerst [AGENTS.md](../AGENTS.md) — Verfassung, Präzedenz und Ablauf dieses Projekts (sdd).\n"
+	root := t.TempDir()
+	applyAgents(t, root)
+	if got := readFile(t, root, scaffold.CopilotFile); got != pointer {
+		t.Errorf("created: %q", got)
+	}
+	root = t.TempDir()
+	mustWrite(t, filepath.Join(root, scaffold.CopilotFile), "Prefer table-driven tests.\n")
+	applyAgents(t, root)
+	if got := readFile(t, root, scaffold.CopilotFile); got != pointer+"\nPrefer table-driven tests.\n" {
+		t.Errorf("prepended: %q", got)
+	}
+	if plan, _, err := scaffold.AgentFilesPlan(root, scaffold.DefaultConfig("standard")); err != nil || len(plan.Ops) != 0 {
+		t.Errorf("second run plans %+v, %v", plan.Ops, err)
+	}
+}
+
 // agent-files AC-2: with .gemini/GEMINI.md (or gemini/GEMINI.md) present, no root GEMINI.md is created; the existing
 // file gets the pointer with the relative path.
 func TestAgentFilesGeminiVariants(t *testing.T) {

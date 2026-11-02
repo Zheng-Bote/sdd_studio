@@ -18,10 +18,11 @@ Legt an: `sdd.config.yaml` (Profil, Standardpfade, leere Schwellen), `constituti
 
 #### Agenten-Dateien {#agenten-dateien}
 
-`sdd init` und `sdd adopt` sorgen dafür, dass Agenten (Claude Code, Codex, Gemini CLI …) zur Verfassung und zum sdd-Ablauf finden. Bestehender Inhalt bleibt erhalten:
+`sdd init` und `sdd adopt` sorgen dafür, dass Agenten (Claude Code, Codex, Gemini CLI, GitHub Copilot …) zur Verfassung und zum sdd-Ablauf finden. Bestehender Inhalt bleibt erhalten:
 
 - **`AGENTS.md`** trägt den Inhalt: Verfassung als ranghöchstes Artefakt, Präzedenz mit den konfigurierten Pfaden, Ablauf, Testverweis-Konvention, Entscheidungen des Menschen, Einbindung von `sdd mcp`.
 - **`CLAUDE.md`** und **`GEMINI.md`** verweisen darauf (`@AGENTS.md`). `GEMINI.md` wird nur angelegt, wenn weder `GEMINI.md` noch `.gemini/GEMINI.md` noch `gemini/GEMINI.md` existiert.
+- **`.github/copilot-instructions.md`** verweist mit einem Markdown-Link (`Lies zuerst [AGENTS.md](../AGENTS.md) …`), weil offen ist, ob Copilot `@`-Einbindungen auflöst.
 - **Vorhandene Dateien** ohne die Markierung `<!-- sdd:agents -->` erhalten am Anfang einen Block mit Verweis (in `AGENTS.md` auf die Verfassung, sonst auf `AGENTS.md`). Eine Datei mit Markierung bleibt unverändert, ebenso eine Datei mit Frontmatter (sie wird gemeldet). Bei `sdd init --git` nimmt der erste Commit nur neu angelegte Dateien mit.
 
 **`--git`:** Liegt der Ordner noch in keinem Git-Repository, folgen `git init` (Branch `main`) und ein Commit `chore: sdd init` mit genau den angelegten Dateien. Andere Dateien im Ordner bleiben unversioniert. So haben `pre-implementation` und `pre-merge` von Anfang an eine Merge-Basis. Liegt der Ordner schon in einem Repository, auch in einem übergeordneten, werden nur die Dateien angelegt. Fehlt Git oder eine Git-Identität (`user.name`, `user.email`), bricht `sdd init --git` vor dem ersten Schreibzugriff mit Exit-Code `2` ab. Das ist die zweite Ausnahme vom lesenden Git-Zugriff (Verfassung, Security 4; [ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)); `push` gibt es nicht.

@@ -21,11 +21,15 @@ const AgentsFile = "AGENTS.md"
 // geminiFiles are the places Gemini instructions are kept; GEMINI.md is created only if none exists.
 var geminiFiles = []string{"GEMINI.md", ".gemini/GEMINI.md", "gemini/GEMINI.md"}
 
+// CopilotFile holds the instructions for GitHub Copilot. It points to AGENTS.md with a plain Markdown link, because it
+// is unclear whether Copilot resolves @-imports like Claude Code and Gemini CLI.
+const CopilotFile = ".github/copilot-instructions.md"
+
 type agentsData struct {
 	Constitution, ADR, PRD, Design, Plans string
 }
 
-// AgentFilesPlan makes AGENTS.md, CLAUDE.md and GEMINI.md lead to the constitution and the sdd process: missing files
+// AgentFilesPlan makes AGENTS.md, CLAUDE.md, GEMINI.md and .github/copilot-instructions.md lead to the constitution and the sdd process: missing files
 // are created, existing ones without AgentsMarker get a block in front (nothing else changes). It returns the plan and
 // one line per change or skipped file.
 func AgentFilesPlan(root string, cfg *config.Config) (Plan, []string, error) {
@@ -66,7 +70,11 @@ func AgentFilesPlan(root string, cfg *config.Config) (Plan, []string, error) {
 	pointer := func(rel string) func() ([]byte, error) {
 		return func() ([]byte, error) {
 			target, _ := filepath.Rel(filepath.FromSlash(path.Dir(rel)), AgentsFile)
-			return []byte(AgentsMarker + "\nLies zuerst @" + filepath.ToSlash(target) + " — Verfassung, Präzedenz und Ablauf dieses Projekts (sdd).\n\n"), nil
+			ref := "@" + filepath.ToSlash(target)
+			if rel == CopilotFile {
+				ref = "[" + AgentsFile + "](" + filepath.ToSlash(target) + ")"
+			}
+			return []byte(AgentsMarker + "\nLies zuerst " + ref + " — Verfassung, Präzedenz und Ablauf dieses Projekts (sdd).\n\n"), nil
 		}
 	}
 	created := func(rel string) func() ([]byte, error) {
@@ -97,6 +105,9 @@ func AgentFilesPlan(root string, cfg *config.Config) (Plan, []string, error) {
 		if err := add(g, create, pointer(g)); err != nil {
 			return Plan{}, nil, err
 		}
+	}
+	if err := add(CopilotFile, created(CopilotFile), pointer(CopilotFile)); err != nil {
+		return Plan{}, nil, err
 	}
 	return plan, details, plan.Validate()
 }
