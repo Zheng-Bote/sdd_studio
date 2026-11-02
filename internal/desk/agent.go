@@ -81,9 +81,12 @@ var (
 	ErrUnknownProvider = errors.New("unbekannter oder nicht konfigurierter Anbieter")
 )
 
-// writes reports whether a call changes files: sdd_new or sdd_write with apply.
+// writeTools are the sdd tools that change files when called with apply.
+var writeTools = []string{"sdd_new", "sdd_write", "sdd_init"}
+
+// writes reports whether a call changes files: a write tool with apply.
 func writes(tc ToolCall) bool {
-	if tc.Name != "sdd_new" && tc.Name != "sdd_write" {
+	if !slices.Contains(writeTools, tc.Name) {
 		return false
 	}
 	var a struct {

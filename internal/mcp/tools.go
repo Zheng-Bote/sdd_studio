@@ -76,6 +76,13 @@ func toolList() []tool {
 				"base_sha256": str("sha256 des aktuellen Inhalts aus sdd_read; Pflicht, wenn die Datei existiert"),
 				"apply":       map[string]any{"type": "boolean", "description": "Datei wirklich schreiben"},
 			}, "path", "content"), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": true, "idempotentHint": true, "openWorldHint": false}},
+		{Name: "sdd_init", Title: "Projekt anlegen", Description: "Wie `sdd init [--git]`: Konfiguration, Verfassung, Verzeichnisse, CI-Workflow und leere Baseline, nie überschreibend. Mit git in einem Ordner ohne Git-Repository auch git init (Branch main) und ein erster Commit der angelegten Dateien. Ohne apply nur Vorschau; apply nur mit --allow-write.",
+			InputSchema: obj(map[string]any{
+				"profile": map[string]any{"type": "string", "enum": []string{"minimal", "standard", "regulated"}, "description": "Profil (Standard: standard)"},
+				"no_ci":   map[string]any{"type": "boolean", "description": "keinen GitHub-Actions-Workflow anlegen"},
+				"git":     map[string]any{"type": "boolean", "description": "ohne Repository: git init und erster Commit"},
+				"apply":   map[string]any{"type": "boolean", "description": "wirklich anlegen"},
+			}), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
 	}
 }
 
@@ -301,6 +308,9 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 
 	case "sdd_write":
 		return s.toolWrite(raw)
+
+	case "sdd_init":
+		return s.toolInit(raw)
 
 	default:
 		return nil, fmt.Errorf("%w %q", errUnknownTool, name)

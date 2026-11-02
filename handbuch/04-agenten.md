@@ -16,7 +16,7 @@ Dieser Teil richtet sich an LLM-Agenten (Claude Code, Claude Desktop, der KI-Des
 }
 ```
 
-Mit `--allow-write` dürfen `sdd_new` und `sdd_write` schreiben; ohne liefern sie nur die Vorschau.
+Mit `--allow-write` dürfen `sdd_new`, `sdd_write` und `sdd_init` schreiben; ohne liefern sie nur die Vorschau.
 
 - **`sdd_new`** legt neue Artefakte an, aus dem Template oder mit `content` (genau ein Typ) aus dem geprüften Entwurf. Bestehende Dateien überspringt es.
 - **`sdd_write`** legt an oder ersetzt, aber nur die Verfassung, Markdown-Artefakte (`adr`, `prd`, `design`, `plans`, `archive`, `docs`), `sdd.config.yaml` und Testdateien (`tests.include`, leer = Fallback-Liste). `.git/`, `.sdd/`, `exclude`-Treffer und symbolische Links nach außen sind ausgeschlossen. Eine bestehende Datei ersetzt es nur mit `base_sha256` aus `sdd_read`, atomar und mit gleichen Dateirechten.
@@ -49,6 +49,7 @@ Bei einem Konflikt zwischen gleich bindenden Regeln: **nicht entscheiden, sonder
 | beim Schreiben eines Artefakts | `sdd_validate_draft` | Regeln auf den Entwurf anwenden, bevor er gespeichert wird |
 | zum Anlegen | `sdd_new` | Vorschau, dann Anlegen nach Bestätigung, mit `content` aus dem geprüften Entwurf (nur mit `--allow-write`) |
 | zum Lesen | `sdd_read` | Artefakt, `sdd.config.yaml` oder Testdatei mit Zeilennummern und SHA-256 |
+| zum Projektstart | `sdd_init` | wie `sdd init [--git]`: Vorschau, dann Anlegen nach Bestätigung (nur mit `--allow-write`) |
 | zum Ändern | `sdd_write` | Artefakt, Testdatei oder `sdd.config.yaml` ändern bzw. anlegen; Diff vorab (nur mit `--allow-write`) |
 | nach der Änderung | `sdd_lint`, `sdd_gate` | Befunde, Gate bestanden? |
 | bei einem Befund | `sdd_explain` | Regel, Begründung, Prüfvertrag |
@@ -99,7 +100,7 @@ bin/sdd-desk --project . --open                   # gibt URL mit Sitzungstoken a
 
 **Was der Desktop darf:**
 
-- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen zwölf Werkzeuge, keine eigenen. `sdd_read` und `sdd_write` erreichen nur Artefakte, `sdd.config.yaml` und Testdateien, keinen übrigen Code.
+- Werkzeuge ausschließlich über einen selbst gestarteten `sdd mcp` — genau dessen dreizehn Werkzeuge, keine eigenen. `sdd_read` und `sdd_write` erreichen nur Artefakte, `sdd.config.yaml` und Testdateien, keinen übrigen Code.
 - Jeder Aufruf braucht eine Freigabe: **einmal**, **für die Sitzung** (je Werkzeug) oder **Ablehnen**. Ein schreibender Aufruf (`sdd_new` oder `sdd_write` mit `apply`) zeigt vorher die Vorschau mit Inhalt bzw. Diff. Ist das Werkzeug für die Sitzung freigegeben, schreibt es ohne weitere Rückfrage; was es geschrieben hat (mit Diff), steht im Ergebnis im Gespräch ([ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), Stufe „schreibend“).
 - Vor dem ersten Aufruf eines Cloud-Anbieters muss der Hinweis „Inhalte verlassen dieses Gerät“ bestätigt sein; ohne Bestätigung lehnt das Backend ab. Inhalte werden nicht geschwärzt.
 - Lokaler Server nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken für jeden API-Aufruf, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.

@@ -21,8 +21,20 @@ func runInit(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	profile := fs.String("profile", "standard", "Profil: minimal, standard oder regulated")
 	dryRun := fs.Bool("dry-run", false, "Nur anzeigen, was angelegt würde")
 	noCI := fs.Bool("no-ci", false, "Keinen GitHub-Actions-Workflow anlegen")
+	withGit := fs.Bool("git", false, "Ohne Git-Repository: git init (Branch main) und ein erster Commit der angelegten Dateien")
 	if err := fs.Parse(args); err != nil {
 		return 2
+	}
+	mode := scaffold.GitSkip
+	if *withGit {
+		var err error
+		if mode, err = scaffold.CheckGitInit(repoRoot); err != nil {
+			fmt.Fprintf(stderr, "sdd init: %v\n", err)
+			return 2
+		}
+		if mode == scaffold.GitSkip {
+			fmt.Fprintf(stdout, "Git: %s\n", scaffold.GitSkipNote)
+		}
 	}
 
 	project := "Projekt"
@@ -34,8 +46,21 @@ func runInit(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "sdd init: %v\n", err)
 		return 2
 	}
-	if code := applyPlan("sdd init", plan, repoRoot, *dryRun, stdout, stderr); code != 0 {
+	results, code := applyPlanResults("sdd init", plan, repoRoot, *dryRun, stdout, stderr)
+	if code != 0 {
 		return code
+	}
+	if *withGit && mode == scaffold.GitCreate {
+		if *dryRun {
+			fmt.Fprintf(stdout, "Git: würde git init (Branch %s) ausführen und die angelegten Dateien committen\n", scaffold.InitBranch)
+		} else {
+			hash, err := scaffold.CommitInit(repoRoot, results)
+			if err != nil {
+				fmt.Fprintf(stderr, "sdd init: Dateien angelegt, Git fehlgeschlagen: %v\n", err)
+				return 2
+			}
+			fmt.Fprintf(stdout, "Git: git init (Branch %s), Commit %s\n", scaffold.InitBranch, hash)
+		}
 	}
 	if !*dryRun {
 		fmt.Fprintln(stdout, "Nächster Schritt: thresholds.layers und thresholds.feature_artifacts_required_when.touched_paths in sdd.config.yaml an das Projekt anpassen — solange beide leer sind, verlangt SDD-020/030 nie ein PRD.")
@@ -85,6 +110,12 @@ func runNew(args []string, repoRoot string, stdout, stderr io.Writer) int {
 
 // applyPlan previews or applies a scaffold plan and prints one line per operation.
 func applyPlan(cmd string, plan scaffold.Plan, repoRoot string, dryRun bool, stdout, stderr io.Writer) int {
+	_, code := applyPlanResults(cmd, plan, repoRoot, dryRun, stdout, stderr)
+	return code
+}
+
+// applyPlanResults applies (or previews) plan, prints each result and returns the results with the exit code.
+func applyPlanResults(cmd string, plan scaffold.Plan, repoRoot string, dryRun bool, stdout, stderr io.Writer) ([]scaffold.Result, int) {
 	var results []scaffold.Result
 	var err error
 	if dryRun {
@@ -104,9 +135,9 @@ func applyPlan(cmd string, plan scaffold.Plan, repoRoot string, dryRun bool, std
 	}
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: %v\n", cmd, err)
-		return 2
+		return results, 2
 	}
-	return 0
+	return results, 0
 }
 
 func splitList(raw string) []string {

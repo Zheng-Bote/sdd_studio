@@ -11,10 +11,12 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 ### `sdd init` {#sdd-init}
 
 ```text
-sdd init [--profile minimal|standard|regulated] [--dry-run] [--no-ci]
+sdd init [--profile minimal|standard|regulated] [--dry-run] [--no-ci] [--git]
 ```
 
 Legt an: `sdd.config.yaml` (Profil, Standardpfade, leere Schwellen), `constitution.md` mit den Pflichtabschnitten aus `SDD-002a`, die Verzeichnisse `docs/{adr,prd,design,plans,archive,notes}` (je mit `.gitkeep`, nur wenn das Verzeichnis fehlt), den Workflow `.github/workflows/sdd.yml` und eine leere `.sdd/baseline.json` — ein neues Projekt startet ohne Altlasten.
+
+**`--git`:** Liegt der Ordner noch in keinem Git-Repository, folgen `git init` (Branch `main`) und ein Commit `chore: sdd init` mit genau den angelegten Dateien. Andere Dateien im Ordner bleiben unversioniert. So haben `pre-implementation` und `pre-merge` von Anfang an eine Merge-Basis. Liegt der Ordner schon in einem Repository, auch in einem übergeordneten, werden nur die Dateien angelegt. Fehlt Git oder eine Git-Identität (`user.name`, `user.email`), bricht `sdd init --git` vor dem ersten Schreibzugriff mit Exit-Code `2` ab. Das ist die zweite Ausnahme vom lesenden Git-Zugriff (Verfassung, Security 4; [ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)); `push` gibt es nicht.
 
 **Danach:** `thresholds.layers` und `thresholds.feature_artifacts_required_when.touched_paths` an das Projekt anpassen. Solange beide leer sind, ist die [Größenschwelle](#groessenschwelle) nie überschritten.
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// GitWriter is the writing Git access permitted by ADR 0001, used only by `sdd adopt --apply`:
+// GitWriter is the writing Git access permitted by ADR 0001 for `sdd adopt --apply`:
 // inspect the worktree, create and switch to a new branch, and commit explicit paths. No push, merge, rebase or reset.
 type GitWriter interface {
 	// IsRepo reports whether the root is inside a Git work tree.
@@ -78,4 +78,20 @@ func (g CLIGit) Commit(message string, paths []string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(out), nil
+}
+
+// InitRepo creates a new repository in Root with the given initial branch (ADR 0003, decision 8: only `sdd init --git`
+// in a folder that is not yet inside a repository).
+func (g CLIGit) InitRepo(branch string) error {
+	if _, err := g.run("check-ref-format", "--branch", branch); err != nil {
+		return fmt.Errorf("%w: ungültiger Branch-Name %q", ErrGit, branch)
+	}
+	_, err := g.run("init", "--quiet", "--initial-branch="+branch)
+	return err
+}
+
+// HasIdentity reports whether Git can name a committer (configuration or environment), also outside a repository.
+func (g CLIGit) HasIdentity() bool {
+	_, err := g.run("var", "GIT_COMMITTER_IDENT")
+	return err == nil
 }

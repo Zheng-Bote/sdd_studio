@@ -341,7 +341,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	for _, tl := range a.Tools {
 		names = append(names, tl.Name)
 	}
-	if len(names) != 12 || names[0] != "sdd_next" {
+	if len(names) != 13 || names[0] != "sdd_next" {
 		t.Fatalf("tools must be exactly those of sdd mcp: %v", names)
 	}
 	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "x"}}, AllowedTools: []string{"shell_exec"}})
@@ -554,5 +554,21 @@ func TestSessionAllowsWrites(t *testing.T) {
 	}
 	if data, err := os.ReadFile(filepath.Join(root, "api/search_test.go")); err != nil || string(data) != "// search AC-1: Titel\n" {
 		t.Fatalf("file: %q %v", data, err)
+	}
+}
+
+// sdd-init-git AC-5: sdd_init with apply waits with its preview like every write.
+func TestInitIsWrite(t *testing.T) {
+	root := t.TempDir()
+	a := newAgent(t, root, &scripted{replies: []Message{call("i1", "sdd_init", `{"apply":true}`)}})
+	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "Neues Projekt"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || !res.Pending[0].Writes || !strings.Contains(string(res.Pending[0].Preview), "sdd.config.yaml") {
+		t.Fatalf("sdd_init must wait with its preview: %+v", res)
+	}
+	if _, err := os.Stat(filepath.Join(root, "sdd.config.yaml")); err == nil {
+		t.Fatalf("preview wrote files")
 	}
 }

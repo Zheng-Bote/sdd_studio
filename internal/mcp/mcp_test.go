@@ -269,7 +269,7 @@ func TestNoForbiddenCapabilities(t *testing.T) {
 			t.Errorf("forbidden tool %s", name)
 		}
 	}
-	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 12 {
+	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 13 {
 		t.Errorf("tool set changed (%d tools); review it against ADR 0003", n)
 	}
 	for _, r := range res[1]["result"].(map[string]any)["resources"].([]any) {

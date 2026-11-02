@@ -3,8 +3,10 @@ package scaffold_test
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -488,5 +490,121 @@ func TestUnifiedDiff(t *testing.T) {
 	}
 	if d := scaffold.UnifiedDiff("docs/x.md", []byte(old), []byte(old)); d != "" {
 		t.Errorf("equal contents: %q", d)
+	}
+}
+
+// gitEnv isolates Git from the user's configuration and from enclosing repositories; identity sets user.name/email.
+func gitEnv(t *testing.T, identity bool) {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	cfg := filepath.Join(t.TempDir(), "gitconfig")
+	content := ""
+	if identity {
+		content = "[user]\n\tname = T\n\temail = t@example.com\n[commit]\n\tgpgsign = false\n"
+	}
+	if err := os.WriteFile(cfg, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GIT_CONFIG_GLOBAL", cfg)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	for _, v := range []string{"GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "EMAIL"} {
+		t.Setenv(v, "")
+		os.Unsetenv(v)
+	}
+}
+
+func gitOut(t *testing.T, root string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = root
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// sdd-init-git AC-1: outside a repository, git init on main and one commit with exactly the created files.
+func TestInitWithGit(t *testing.T) {
+	gitEnv(t, true)
+	root := t.TempDir()
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(root))
+	if err := os.WriteFile(filepath.Join(root, "notizen.txt"), []byte("privat"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// An existing constitution is skipped by init and therefore not part of the commit either.
+	if err := os.WriteFile(filepath.Join(root, "constitution.md"), []byte("# Eigene Verfassung\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	mode, err := scaffold.CheckGitInit(root)
+	if err != nil || mode != scaffold.GitCreate {
+		t.Fatalf("CheckGitInit = %v, %v", mode, err)
+	}
+	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: "standard", Project: "demo", CI: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	results, err := plan.Apply(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash, err := scaffold.CommitInit(root, results)
+	if err != nil || hash == "" {
+		t.Fatalf("CommitInit = %q, %v", hash, err)
+	}
+	if b := gitOut(t, root, "rev-parse", "--abbrev-ref", "HEAD"); b != "main" {
+		t.Errorf("branch %q", b)
+	}
+	var created []string
+	for _, r := range results {
+		if r.Status == scaffold.StatusCreated {
+			created = append(created, r.Path)
+		}
+	}
+	sort.Strings(created)
+	committed := strings.Split(gitOut(t, root, "ls-tree", "-r", "--name-only", "HEAD"), "\n")
+	sort.Strings(committed)
+	if !reflect.DeepEqual(committed, created) {
+		t.Errorf("committed %v, created %v", committed, created)
+	}
+	if st := gitOut(t, root, "status", "--porcelain"); st != "?? constitution.md\n?? notizen.txt" {
+		t.Errorf("status %q: other files must stay untracked", st)
+	}
+	if n := gitOut(t, root, "rev-list", "--count", "HEAD"); n != "1" {
+		t.Errorf("%s commits", n)
+	}
+}
+
+// sdd-init-git AC-2: inside an existing repository (also a parent one) no git init and no commit.
+func TestInitWithGitInsideRepo(t *testing.T) {
+	gitEnv(t, true)
+	parent := t.TempDir()
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(parent))
+	gitOut(t, parent, "init", "--quiet")
+	root := filepath.Join(parent, "sub")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if mode, err := scaffold.CheckGitInit(root); err != nil || mode != scaffold.GitSkip {
+		t.Fatalf("CheckGitInit = %v, %v", mode, err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".git")); err == nil {
+		t.Errorf("git init ran inside a repository")
+	}
+}
+
+// sdd-init-git AC-3: without a Git identity the precondition fails before anything is written.
+func TestInitWithGitNeedsIdentity(t *testing.T) {
+	gitEnv(t, false)
+	root := t.TempDir()
+	t.Setenv("GIT_CEILING_DIRECTORIES", filepath.Dir(root))
+	_, err := scaffold.CheckGitInit(root)
+	if !errors.Is(err, scaffold.ErrGitInit) || !strings.Contains(err.Error(), "git config --global user.name") {
+		t.Fatalf("want ErrGitInit naming the remedy, got %v", err)
+	}
+	if entries, _ := os.ReadDir(root); len(entries) != 0 {
+		t.Errorf("files written: %v", entries)
 	}
 }
