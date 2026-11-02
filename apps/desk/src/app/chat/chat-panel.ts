@@ -11,11 +11,11 @@ import { MessageView } from './message-view';
 @Component({
   selector: 'desk-chat-panel',
   imports: [MessageView, ApprovalCard, HlmButtonImports, HlmTextareaImports, HlmAlertImports, HlmSpinnerImports],
-  host: { class: 'flex min-h-0 flex-1 flex-col' },
+  host: { class: 'flex min-h-0 min-w-0 flex-1 flex-col' },
   template: `
     <div
       #log
-      class="flex-1 space-y-3 overflow-y-auto p-4"
+      class="min-w-0 flex-1 space-y-3 overflow-x-hidden overflow-y-auto p-4"
       role="log"
       aria-live="polite"
       aria-label="Gespräch"

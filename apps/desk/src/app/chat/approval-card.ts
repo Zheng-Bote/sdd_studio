@@ -9,7 +9,7 @@ import { Decision, Pending } from '../core/types';
   selector: 'desk-approval-card',
   imports: [HlmCardImports, HlmButtonImports, HlmBadgeImports],
   template: `
-    <section hlmCard class="border-amber-500/60" [attr.aria-labelledby]="'approval-' + pending().call_id">
+    <section hlmCard class="min-w-0 border-amber-500/60" [attr.aria-labelledby]="'approval-' + pending().call_id">
       <div hlmCardHeader>
         <h3 hlmCardTitle [id]="'approval-' + pending().call_id">
           Werkzeug <code>{{ pending().tool }}</code> ausführen?
@@ -33,7 +33,7 @@ import { Decision, Pending } from '../core/types';
         }
         @for (op of pending().preview?.ops ?? []; track op.path) {
           <div class="rounded-md border">
-            <div class="flex items-center gap-2 border-b px-3 py-1.5 text-sm">
+            <div class="flex flex-wrap items-center gap-2 border-b px-3 py-1.5 text-sm wrap-anywhere">
               <span hlmBadge [variant]="op.action === 'skip' ? 'outline' : 'default'">
                 {{ op.action === 'skip' ? 'übersprungen' : 'anlegen' }}
               </span>

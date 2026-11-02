@@ -59,7 +59,7 @@ import { ProcessPanel } from './process/process-panel';
       <aside class="w-80 shrink-0 overflow-y-auto border-r max-md:hidden" aria-label="Prozess">
         <desk-process-panel (started)="chat()?.prefill($event)" />
       </aside>
-      <main class="flex min-h-0 flex-1 flex-col"><desk-chat-panel /></main>
+      <main class="flex min-h-0 min-w-0 flex-1 flex-col"><desk-chat-panel /></main>
     </div>
   `,
 })

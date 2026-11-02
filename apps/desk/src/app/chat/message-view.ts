@@ -10,21 +10,21 @@ import { Message } from '../core/types';
   template: `
     @switch (message().role) {
       @case ('user') {
-        <div class="ml-auto max-w-[80%] rounded-lg bg-primary px-4 py-2 text-primary-foreground whitespace-pre-wrap">{{ message().content }}</div>
+        <div class="ml-auto max-w-[80%] rounded-lg bg-primary px-4 py-2 text-primary-foreground whitespace-pre-wrap wrap-anywhere">{{ message().content }}</div>
       }
       @case ('assistant') {
         @if (message().content) {
-          <div class="max-w-[85%] rounded-lg border bg-card px-4 py-2 whitespace-pre-wrap">{{ message().content }}</div>
+          <div class="max-w-[85%] rounded-lg border bg-card px-4 py-2 whitespace-pre-wrap wrap-anywhere">{{ message().content }}</div>
         }
         @for (call of message().tool_calls ?? []; track call.id) {
-          <p class="mt-1 text-xs text-muted-foreground">möchte <code>{{ call.name }}</code> aufrufen</p>
+          <p class="mt-1 text-xs text-muted-foreground wrap-anywhere">möchte <code>{{ call.name }}</code> aufrufen</p>
         }
       }
       @case ('tool') {
         <details class="max-w-[85%] rounded-md border border-dashed px-3 py-1.5 text-xs">
           <summary class="cursor-pointer">
             <span hlmBadge variant="outline">{{ message().tool_name || 'Werkzeug' }}</span>
-            <span class="ml-2 text-muted-foreground">{{ summary() }}</span>
+            <span class="ml-2 text-muted-foreground wrap-anywhere">{{ summary() }}</span>
           </summary>
           <pre class="mt-2 max-h-72 overflow-auto">{{ message().content }}</pre>
         </details>
