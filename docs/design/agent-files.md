@@ -37,6 +37,7 @@ Konstante `AgentsMarker = "<!-- sdd:agents -->"`. Für jede Datei wird `Lstat` g
 | `AGENTS.md` | anlegen aus `agents.md.tmpl` | `agents-block.md.tmpl` voranstellen |
 | `CLAUDE.md` | anlegen: Markierung, `@AGENTS.md`, ein Satz | Verweisblock voranstellen |
 | `GEMINI.md`, `.gemini/GEMINI.md`, `gemini/GEMINI.md` | nur `GEMINI.md`, und nur wenn keine der drei existiert | Verweisblock voranstellen |
+| `.github/copilot-instructions.md` | anlegen: Markierung, Link-Verweis | Link-Verweisblock voranstellen |
 
 Der **Verweisblock** lautet:
 
@@ -46,7 +47,15 @@ Lies zuerst @<rel> — Verfassung, Präzedenz und Ablauf dieses Projekts (sdd).
 
 ```
 
-`<rel>` ist der Pfad von der Datei zu `AGENTS.md` (`AGENTS.md`, aus `.gemini/` `../AGENTS.md`). Voranstellen nutzt die bestehende `Op{Prepend, Expect}`; ändert sich die Datei zwischen Planung und Anwendung, wird übersprungen. Beginnt eine Datei mit `---`-Frontmatter, wird sie nicht geändert; die Details nennen „Frontmatter vorhanden — Verweis von Hand ergänzen“.
+Für `.github/copilot-instructions.md` lautet er als Markdown-Link, weil offen ist, ob Copilot `@`-Einbindungen auflöst:
+
+```
+<!-- sdd:agents -->
+Lies zuerst [AGENTS.md](../AGENTS.md) — Verfassung, Präzedenz und Ablauf dieses Projekts (sdd).
+
+```
+
+`<rel>` ist der Pfad von der Datei zu `AGENTS.md` (`AGENTS.md`, aus `.gemini/` und `.github/` `../AGENTS.md`). Voranstellen nutzt die bestehende `Op{Prepend, Expect}`; ändert sich die Datei zwischen Planung und Anwendung, wird übersprungen. Beginnt eine Datei mit `---`-Frontmatter, wird sie nicht geändert; die Details nennen „Frontmatter vorhanden — Verweis von Hand ergänzen“.
 
 Die Templates erhalten `Constitution`, `ADR`, `PRD`, `Design` und `Plans` aus `cfg.Artifacts`.
 
@@ -60,6 +69,6 @@ Die Templates erhalten `Constitution`, `ADR`, `PRD`, `Design` und `Plans` aus `c
 | AC | Umsetzung | Test |
 |---|---|---|
 | AC-1 | `agents.md.tmpl`, `agents.go` | `TestAgentFilesCreate` |
-| AC-2 | `agents.go` | `TestAgentFilesCreate`, `TestAgentFilesGeminiVariants` |
-| AC-3 | `agents.go` (Prepend, Markierung, Frontmatter) | `TestAgentFilesPrepend` |
+| AC-2 | `agents.go` | `TestAgentFilesCreate`, `TestAgentFilesGeminiVariants`, `TestAgentFilesCopilot` |
+| AC-3 | `agents.go` (Prepend, Markierung, Frontmatter) | `TestAgentFilesPrepend`, `TestAgentFilesCopilot` |
 | AC-4 | `cmd/sdd/scaffold.go`, `mcp/init.go`, `adopt/plan.go` | `TestInitWithGit`, `TestInitTool`, `TestAdoptAgentStep` |
