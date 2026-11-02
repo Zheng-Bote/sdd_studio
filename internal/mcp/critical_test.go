@@ -198,7 +198,7 @@ func TestIdeaAsksTechnologyBeforeTouches(t *testing.T) {
 // implementation is no reason to archive.
 func TestPromptsNameProcessOrder(t *testing.T) {
 	s := newServer(project(t), false)
-	for _, name := range []string{"sdd-idea", "sdd-techspec", "sdd-adr", "sdd-plan", "sdd-tests", "sdd-conflicts", "sdd-review"} {
+	for _, name := range []string{"sdd-idea", "sdd-techspec", "sdd-adr", "sdd-plan", "sdd-constitution", "sdd-tests", "sdd-conflicts", "sdd-review"} {
 		text := promptText(t, s, name, `{"feature":"billing","title":"X"}`)
 		for _, want := range []string{"Tests je Kriterium → Umsetzung → Gate pre-merge → Merge → Release → Archiv", "Archiviert wird erst nach dem Release", "nicht archivieren"} {
 			if !strings.Contains(text, want) {

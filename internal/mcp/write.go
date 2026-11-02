@@ -31,7 +31,12 @@ const (
 	classArtifact
 	classConfig
 	classTest
+	classContext // read only: README, agent files … (sources for the constitution)
 )
+
+// contextFiles are project context files sdd_read may read (never write): sources for the constitution.
+var contextFiles = []string{"README.md", "CONTRIBUTING.md", "AGENTS.md", "CLAUDE.md", "GEMINI.md", ".gemini/GEMINI.md",
+	"gemini/GEMINI.md", ".github/copilot-instructions.md", ".cursorrules"}
 
 // classify decides whether rel may be read or written by sdd_read/sdd_write: the constitution and Markdown artifacts,
 // sdd.config.yaml, and test files (tests.include, empty = fallback list). .git, .sdd and exclude matches never are.
@@ -45,6 +50,11 @@ func classify(cfg *config.Config, rel string) (pathClass, error) {
 	}
 	if rel == config.DefaultConfigFileName {
 		return classConfig, nil
+	}
+	for _, c := range contextFiles {
+		if rel == c {
+			return classContext, nil
+		}
 	}
 	a := cfg.Artifacts
 	if c, err := scan.CleanRel(a.Constitution); err == nil && c == rel {
@@ -192,6 +202,9 @@ func (s *Server) toolWrite(raw json.RawMessage) (*toolResult, error) {
 	class, err := classify(cfg, rel)
 	if err != nil {
 		return nil, err
+	}
+	if class == classContext {
+		return nil, fmt.Errorf("nicht beschreibbar: %s ist eine Kontextdatei (nur lesbar)", rel)
 	}
 	old, exists, err := readExisting(s.Root, rel)
 	if err != nil {

@@ -70,7 +70,7 @@ func baseTools() []tool {
 			InputSchema: obj(map[string]any{"feature": str("Feature-Slug")}, "feature"), Annotations: readOnly},
 		{Name: "sdd_stack", Title: "Technik erkennen", Description: "Sprachen des Repositorys aus Dateiendungen und Marker-Dateien (go.mod, Cargo.toml, CMakeLists.txt, package.json …), nach Zahl der Quelldateien; je Sprache Testdatei-Muster, Kommentarsyntax und Beispiel für die Testverweis-Zeile; dazu das aktuelle tests.include. Liest keine Dateiinhalte.",
 			InputSchema: obj(map[string]any{}), Annotations: readOnly},
-		{Name: "sdd_read", Title: "Artefakt lesen", Description: "Text eines Artefakts (Verfassung, ADR, PRD, Tech Spec, Plan, Archiv, Doku), von sdd.config.yaml oder einer Testdatei (tests.include) mit Zeilennummern und sha256 des Inhalts; ohne path die Liste der lesbaren Artefakte. Liest nichts anderes.",
+		{Name: "sdd_read", Title: "Artefakt lesen", Description: "Text eines Artefakts (Verfassung, ADR, PRD, Tech Spec, Plan, Archiv, Doku), von sdd.config.yaml, einer Testdatei (tests.include) oder einer Kontextdatei (README.md, AGENTS.md, CLAUDE.md, GEMINI.md, .gemini/GEMINI.md, …) mit Zeilennummern und sha256 des Inhalts; ohne path die Liste der lesbaren Artefakte und Kontextdateien. Liest nichts anderes.",
 			InputSchema: obj(map[string]any{"path": str("Pfad relativ zum Repository, z. B. docs/design/<feature>.md; leer = Liste")}), Annotations: readOnly},
 		{Name: "sdd_validate_draft", Title: "Entwurf prüfen", Description: "Prüft einen noch nicht gespeicherten Artefakt-Entwurf mit den Regeln, als läge er schon unter path.",
 			InputSchema: obj(map[string]any{"path": str("Zielpfad relativ zum Repository"), "content": str("vollständiger Dateiinhalt")}, "path", "content"), Annotations: readOnly},
@@ -203,7 +203,13 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 			if err != nil {
 				return nil, err
 			}
-			return resultOf(map[string]any{"artifacts": paths, "config": config.DefaultConfigFileName}), nil
+			context := []string{}
+			for _, c := range contextFiles {
+				if _, ok, err := readExisting(s.Root, c); ok && err == nil {
+					context = append(context, c)
+				}
+			}
+			return resultOf(map[string]any{"artifacts": paths, "config": config.DefaultConfigFileName, "context": context}), nil
 		}
 		rel, text, err := s.readReadable(a.Path)
 		if err != nil {

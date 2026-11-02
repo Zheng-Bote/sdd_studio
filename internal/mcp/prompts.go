@@ -47,6 +47,7 @@ func promptList() []prompt {
 				}
 				return "Begleite mich von einer Produkt-Idee zu einem PRD.\n\nIdee: " + idea + "\n\n" +
 					"Vorgehen:\n" +
+					"0. Rufe sdd_next auf. Meldet es den Schritt „Verfassung ausfüllen“, schlage vor, zuerst den Ablauf sdd-constitution zu gehen, und fahre erst danach fort — jedes PRD wird an der Verfassung gemessen.\n" +
 					"1. Kläre das Problem: Wer hat es, wann, und was kostet es heute?\n" +
 					"2. Kläre Nutzer und Ziel: Was ist nach der Umsetzung anders?\n" +
 					"3. Kläre den Umfang und frage ausdrücklich nach Nicht-Zielen: Was gehört bewusst nicht dazu?\n" +
@@ -88,6 +89,19 @@ func promptList() []prompt {
 					"2. Zerlege die Umsetzung in kleine, einzeln prüfbare Tasks in sinnvoller Reihenfolge.\n" +
 					"3. Jede Task ist eine Checkbox-Zeile und nennt mindestens ein Kriterium: - [ ] AC-2 …\n" +
 					"4. Formuliere den Plan, prüfe ihn mit sdd_validate_draft und lege ihn mit sdd_new an (types: [plan], content: der geprüfte Entwurf); sdd_trace zeigt, welche Kriterien noch keine Task haben.\n"
+			}},
+		{Name: "sdd-constitution", Title: "Verfassung erarbeiten", Description: "Erarbeitet die Verfassung aus den Quellen des Projekts (README, Agenten-Dateien, Technik): Regel für Regel mit Fundstelle, entschieden vom Menschen.",
+			Arguments: []promptArg{},
+			rules:     []string{"SDD-002a", "SDD-003", "SDD-010"},
+			body: func(map[string]string) string {
+				return "Erarbeite mit mir die Verfassung dieses Projekts.\n\n" +
+					"Wann: vor dem ersten PRD. Nach sdd adopt noch auf dem Branch der Übernahme, vor dem Merge — dann gilt das Ausfüllen als erstmaliges Anlegen und braucht kein ADR (SDD-010).\n\n" +
+					"Vorgehen:\n" +
+					"1. sdd_read ohne path: Finde die Verfassung (constitution) und die Kontextdateien (context: README, AGENTS.md, CLAUDE.md, GEMINI.md …). Lies die Verfassung und jede Kontextdatei mit sdd_read; rufe sdd_stack für Sprache und Struktur auf.\n" +
+					"2. Schlage je Pflichtabschnitt der Verfassung (z. B. Architektur/Layering, Security, Strikte Regeln) Regeln vor. Jede Regel nennt ihre Fundstelle als Datei:Zeile aus sdd_read oder „aus sdd_stack“. Nur dauerhafte, systemweite Regeln — keine Feature-Inhalte wie User Stories, Tasks oder Planung (SDD-003). Wo keine Quelle etwas hergibt, stelle eine Frage statt eine Regel zu erfinden.\n" +
+					"3. Gehe die Vorschläge Regel für Regel mit mir durch: übernehmen, streichen oder ändern. Offene Punkte bleiben als offene Punkte sichtbar.\n" +
+					"4. Formuliere die Verfassung ohne Platzhalter, prüfe sie mit sdd_validate_draft und speichere sie mit sdd_write (base_sha256 aus sdd_read).\n" +
+					"5. Rufe sdd_gate mit gate pre-merge auf. Meldet es SDD-010, existierte die Verfassung schon am Vergleichsstand: Lege mit mir ein ADR an (Prompt sdd-adr), das sie in references nennt. Zum Schluss sdd_next.\n"
 			}},
 		{Name: "sdd-tests", Title: "Tests je Kriterium", Description: "Legt für jedes Akzeptanzkriterium eines Features einen Test in der Sprache des Projekts an, mit Testverweis-Zeile.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},

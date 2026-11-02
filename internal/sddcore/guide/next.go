@@ -5,6 +5,7 @@ package guide
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -48,6 +49,40 @@ type Guide struct {
 	Features []FeatureGuide `json:"features"`
 	// Start is set when no feature exists yet: how to begin.
 	Start *Step `json:"start,omitempty"`
+	// Constitution is set while the constitution still holds template placeholders; it comes before everything else.
+	Constitution *Step `json:"constitution,omitempty"`
+}
+
+// placeholderRegex is a list item that consists of nothing but a template placeholder, e.g. "1. <Regeln …>".
+var placeholderRegex = regexp.MustCompile(`^\s*(?:[-*+]|\d+[.)])\s+<[^<>]+>\s*$`)
+
+// constitutionPlaceholders counts the placeholder list items of a Markdown constitution outside code blocks.
+func constitutionPlaceholders(root string, cfg *config.Config) (string, int) {
+	rel := strings.TrimSpace(cfg.Artifacts.Constitution)
+	if !strings.EqualFold(path.Ext(rel), ".md") {
+		return rel, 0
+	}
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil {
+		return rel, 0
+	}
+	n, fence := 0, ""
+	for _, line := range strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
+			switch {
+			case fence == "":
+				fence = trimmed[:3]
+			case strings.HasPrefix(trimmed, fence):
+				fence = ""
+			}
+			continue
+		}
+		if fence == "" && placeholderRegex.MatchString(line) {
+			n++
+		}
+	}
+	return rel, n
 }
 
 var acIDRegex = regexp.MustCompile(`\bAC-[1-9][0-9]*\b`)
@@ -90,6 +125,11 @@ func Next(root, feature string) (*Guide, error) {
 	}
 
 	g := &Guide{Features: []FeatureGuide{}}
+	if rel, n := constitutionPlaceholders(root, cfg); n > 0 {
+		g.Constitution = &Step{ID: "constitution", Title: "Verfassung ausfüllen", State: StateOpen,
+			Detail:  fmt.Sprintf("%s enthält noch %d Platzhalter des Templates. Vor dem ersten PRD ausfüllen — nach sdd adopt noch auf dem Branch der Übernahme, dann gilt es als erstmaliges Anlegen (SDD-010).", rel, n),
+			Command: "Prompt sdd-constitution (sdd-desk oder sdd mcp)"}
+	}
 	if len(slugs) == 0 {
 		g.Start = &Step{ID: "idea", Title: "Idee als PRD festhalten", State: StateOpen,
 			Detail:  "Noch kein Feature. Ein Feature beginnt mit einem PRD: Problem, Ziel, Nutzer, Nicht-Ziele, Akzeptanzkriterien.",

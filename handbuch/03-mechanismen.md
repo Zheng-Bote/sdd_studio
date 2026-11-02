@@ -86,7 +86,7 @@ Zeigt den Stand des Projekts: Reifegrad L0–L4 mit nächstem Schritt (dieselben
 sdd next [--feature <slug>] [--json]
 ```
 
-Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abgeleitet wie `sdd lint`, ohne etwas zu schreiben. Mit `--feature` alle Schritte des Features, ohne nur den nächsten Schritt je aktivem Feature; gibt es noch keines, den Einstieg (`sdd new --feature <slug> --type prd`).
+Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abgeleitet wie `sdd lint`, ohne etwas zu schreiben. Enthält die Verfassung noch Platzhalter des Templates (eine Listenzeile nur aus `<…>`, außerhalb von Codeblöcken), steht davor **„Verfassung ausfüllen“**: vor dem ersten PRD, nach `sdd adopt` noch auf dem Branch der Übernahme — dort gilt das Ausfüllen als erstmaliges Anlegen und braucht kein ADR (`SDD-010`). Geführt wird der Schritt vom Prompt `sdd-constitution` (`sdd-desk`, `sdd mcp`). Mit `--feature` alle Schritte des Features, ohne nur den nächsten Schritt je aktivem Feature; gibt es noch keines, den Einstieg (`sdd new --feature <slug> --type prd`).
 
 | Schritt | erledigt, wenn |
 |---|---|

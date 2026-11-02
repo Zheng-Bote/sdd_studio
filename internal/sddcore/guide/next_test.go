@@ -194,3 +194,40 @@ func TestNextWithoutFeature(t *testing.T) {
 		t.Errorf("invalid slug must be rejected")
 	}
 }
+
+// constitution-guide AC-2: placeholders in the constitution put "Verfassung ausfüllen" first; code blocks do not
+// count; without placeholders the step is gone.
+func TestNextConstitutionStep(t *testing.T) {
+	root := project(t) // the init template: three placeholder list items
+	g, err := guide.Next(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Constitution == nil || g.Constitution.ID != "constitution" || !strings.Contains(g.Constitution.Detail, "3 Platzhalter") ||
+		!strings.Contains(g.Constitution.Detail, "Branch der Übernahme") || !strings.Contains(g.Constitution.Command, "sdd-constitution") {
+		t.Fatalf("constitution step: %+v", g.Constitution)
+	}
+	cpath := filepath.Join(root, "constitution.md")
+	data, _ := os.ReadFile(cpath)
+	filled := regexpReplace(string(data))
+	write(t, root, "constitution.md", filled+"\n```\n1. <Beispiel im Codeblock>\n```\n")
+	g, err = guide.Next(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Constitution != nil {
+		t.Errorf("filled constitution still reported: %+v", g.Constitution)
+	}
+}
+
+// regexpReplace fills every placeholder list item of the template with a real rule.
+func regexpReplace(s string) string {
+	var out []string
+	for _, line := range strings.Split(s, "\n") {
+		if strings.HasPrefix(line, "1. <") {
+			line = "1. Eine echte Regel."
+		}
+		out = append(out, line)
+	}
+	return strings.Join(out, "\n")
+}

@@ -49,7 +49,7 @@ Bei einem Konflikt zwischen gleich bindenden Regeln: **nicht entscheiden, sonder
 | beim Schreiben eines Artefakts | `sdd_validate_draft` | Regeln auf den Entwurf anwenden, bevor er gespeichert wird |
 | zum Anlegen | `sdd_new` | Vorschau, dann Anlegen nach Bestätigung, mit `content` aus dem geprüften Entwurf (nur mit `--allow-write`) |
 | vor touches und Tests | `sdd_stack` | Sprachen des Projekts aus Dateiendungen und Marker-Dateien, je Sprache Testdatei-Muster und Kommentarsyntax; liest keine Inhalte |
-| zum Lesen | `sdd_read` | Artefakt, `sdd.config.yaml` oder Testdatei mit Zeilennummern und SHA-256 |
+| zum Lesen | `sdd_read` | Artefakt, `sdd.config.yaml`, Testdatei oder Kontextdatei (`README.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.gemini/GEMINI.md` …, nur lesbar) mit Zeilennummern und SHA-256 |
 | zum Projektstart | `sdd_init` | wie `sdd init [--git]`: Vorschau, dann Anlegen nach Bestätigung (nur mit `--allow-write`) |
 | nach dem Release | `sdd_archive` | wie `sdd archive`: Feature ins Archiv verschieben, nur wenn jedes Kriterium getestet ist (nur mit `--allow-write`) |
 | zum Ändern | `sdd_write` | Artefakt, Testdatei oder `sdd.config.yaml` ändern bzw. anlegen; Diff vorab (nur mit `--allow-write`) |
@@ -57,7 +57,7 @@ Bei einem Konflikt zwischen gleich bindenden Regeln: **nicht entscheiden, sonder
 | bei einem Befund | `sdd_explain` | Regel, Begründung, Prüfvertrag |
 | zum Abschluss | `sdd_trace` | Hat jedes Kriterium Tech-Spec-Stelle, Test und Task? |
 
-Geführte Abläufe stehen als Prompts bereit: `sdd-idea` (Idee → PRD), `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-tests` (je Kriterium ein Test in der Projektsprache), `sdd-conflicts`, `sdd-review`. Sie fragen, statt zu erfinden, nennen die geltenden Regeln aus dem aktuellen Katalog und die Reihenfolge des Prozesses: Idee → PRD → Tech Spec (wenn nötig) → Plan → Tests je Kriterium → Umsetzung → Gate → Merge → Release → Archiv. `sdd-idea` klärt mit `sdd_stack` die Technik, bevor es nach Pfaden (touches) fragt; bei einem neuen Projekt schlägt das Modell eine Sprache mit Begründung vor, der Mensch entscheidet.
+Geführte Abläufe stehen als Prompts bereit: `sdd-idea` (Idee → PRD), `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-constitution` (Verfassung aus README und Agenten-Dateien erarbeiten, Regel für Regel mit Fundstelle), `sdd-tests` (je Kriterium ein Test in der Projektsprache), `sdd-conflicts`, `sdd-review`. Sie fragen, statt zu erfinden, nennen die geltenden Regeln aus dem aktuellen Katalog und die Reihenfolge des Prozesses: Idee → PRD → Tech Spec (wenn nötig) → Plan → Tests je Kriterium → Umsetzung → Gate → Merge → Release → Archiv. `sdd-idea` klärt mit `sdd_stack` die Technik, bevor es nach Pfaden (touches) fragt; bei einem neuen Projekt schlägt das Modell eine Sprache mit Begründung vor, der Mensch entscheidet.
 
 Ressourcen: `sdd://constitution`, `sdd://catalog`, `sdd://handbook` und `sdd://artifact/<pfad>` für jedes Artefakt.
 

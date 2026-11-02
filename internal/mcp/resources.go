@@ -150,8 +150,8 @@ func (s *Server) readReadable(rel string) (string, string, error) {
 	if cerr != nil {
 		return "", "", err
 	}
-	if class, cerr := classify(cfg, clean); cerr != nil || (class != classConfig && class != classTest) {
-		return "", "", fmt.Errorf("weder Artefakt, Konfiguration noch Testdatei: %s", clean)
+	if class, cerr := classify(cfg, clean); cerr != nil || (class != classConfig && class != classTest && class != classContext) {
+		return "", "", fmt.Errorf("weder Artefakt, Konfiguration, Testdatei noch Kontextdatei: %s", clean)
 	}
 	data, ok, rerr := readExisting(s.Root, clean)
 	if rerr != nil {
