@@ -202,6 +202,6 @@ func (s *Server) dispatch(method string, raw json.RawMessage) (any, *rpcError) {
 const instructions = `sdd prüft Spec-Driven Development deterministisch. Ablauf: vor einer Änderung sdd_check_intent und sdd_context; ` +
 	`für den Prozessstand sdd_next; Entwürfe vor dem Schreiben mit sdd_validate_draft prüfen; neue Artefakte mit sdd_new samt content anlegen, ` +
 	`bestehende Dateien mit sdd_read lesen und mit sdd_write ändern; Erfolg nur melden, wenn ein Werkzeugergebnis ihn belegt; danach sdd_lint bzw. sdd_gate. ` +
-	`Fehlt die Projektkonfiguration, schlage sdd_init vor (für ein neues Projekt mit git: true). ` +
+	`Fehlt die Projektkonfiguration: Hat der Ordner schon Inhalt (sdd_stack: files > 0), schlage den Ablauf sdd-adopt vor, sonst sdd-start (sdd_init mit git: true). ` +
 	`Baseline, ADR-Lockfile, adopt --apply und das Entscheiden von ADRs sind kritisch: Der Mensch entscheidet sie; ` +
 	`sdd_baseline, sdd_adr_accept und sdd_adopt_apply nur auf seinen ausdrücklichen Wunsch, jede Ausführung bestätigt er einzeln, nach einer Ablehnung nicht erneut fragen.`

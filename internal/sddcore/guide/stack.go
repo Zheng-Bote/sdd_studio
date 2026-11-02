@@ -44,6 +44,7 @@ type Language struct {
 
 // StackInfo is what sdd_stack reports.
 type StackInfo struct {
+	Files        int        `json:"files"` // all counted files, without .git, .sdd and exclude matches
 	Languages    []Language `json:"languages"`
 	TestsInclude []string   `json:"tests_include"`
 	Configured   bool       `json:"configured"`
@@ -69,6 +70,7 @@ func Stack(root string) (*StackInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	info.Files = len(files)
 	for _, l := range languages {
 		found := Language{Name: l.Name, Markers: []string{}, TestGlobs: l.TestGlobs, Comment: l.Comment,
 			Example: l.Comment + " <slug> AC-1: <was der Test prüft>"}

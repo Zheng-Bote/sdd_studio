@@ -25,11 +25,15 @@ export interface Provider {
   note?: string;
 }
 
+/** Whether the opened project is covered by sdd (from sdd_stack); missing if it could not be determined. */
+export type ProjectState = 'configured' | 'existing' | 'empty';
+
 export interface Meta {
   project: string;
   config_path: string;
   warnings: string[];
   providers: Provider[];
+  project_state?: ProjectState;
 }
 
 export interface PlannedOp {

@@ -15,7 +15,8 @@ func TestStack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(empty.Languages) != 0 || !empty.Configured {
+	// desk-project-start AC-1: files counts every file except .git, .sdd and exclude matches.
+	if len(empty.Languages) != 0 || !empty.Configured || empty.Files == 0 {
 		t.Fatalf("fresh project: %+v", empty)
 	}
 	for rel, content := range map[string]string{
@@ -29,6 +30,9 @@ func TestStack(t *testing.T) {
 	info, err := guide.Stack(root)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if info.Files != empty.Files+7 { // 13 written, minus 4 under vendor/ (exclude), minus one each under .sdd and .git
+		t.Errorf("files %d, want %d", info.Files, empty.Files+7)
 	}
 	var names []string
 	for _, l := range info.Languages {

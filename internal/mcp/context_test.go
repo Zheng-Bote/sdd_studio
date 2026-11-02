@@ -57,3 +57,27 @@ func TestConstitutionPrompt(t *testing.T) {
 		t.Errorf("sdd-idea must start with sdd_next and the constitution hint")
 	}
 }
+
+// desk-project-start AC-4: sdd-adopt goes report → confirmed apply → constitution on the adopt branch → commit and
+// merge; sdd-start goes init with git → technology → constitution → first feature; the instructions name both.
+func TestStartPrompts(t *testing.T) {
+	s := newServer(project(t), false)
+	inOrder := func(name string, steps ...string) {
+		t.Helper()
+		rest := promptText(t, s, name, `{}`)
+		for _, step := range steps {
+			i := strings.Index(rest, step)
+			if i < 0 {
+				t.Errorf("%s: %q missing or out of order", name, step)
+				continue
+			}
+			rest = rest[i+len(step):]
+		}
+	}
+	inOrder("sdd-adopt", "sdd_stack", "sdd_adopt_apply ohne apply", "Agenten-Dateien", "sdd_adopt_apply mit apply", "ich bestätige einzeln", "sdd-constitution", "vor dem Merge", "committen", "mergen")
+	inOrder("sdd-start", "sdd_init mit git: true", "sdd_stack", "Begründung", "ADR", "sdd-constitution", "sdd-idea")
+	init := exchange(t, s, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}`)
+	if instr, _ := init[0]["result"].(map[string]any)["instructions"].(string); !strings.Contains(instr, "sdd-adopt") || !strings.Contains(instr, "sdd-start") {
+		t.Errorf("instructions miss sdd-adopt/sdd-start: %s", instr)
+	}
+}

@@ -119,9 +119,39 @@ func (s *Server) handleMeta(w http.ResponseWriter, r *http.Request) {
 		}
 		providers = append(providers, v)
 	}
-	writeJSON(w, http.StatusOK, map[string]any{
+	meta := map[string]any{
 		"project": s.Project, "config_path": s.Config.Path, "warnings": s.Config.Warnings, "providers": providers,
-	})
+	}
+	if state := s.projectState(); state != "" {
+		meta["project_state"] = state
+	}
+	writeJSON(w, http.StatusOK, meta)
+}
+
+// projectState says whether the project is covered by sdd: "configured", "existing" (files, no configuration) or
+// "empty". The desk itself asks sdd_stack (read-only, not on behalf of the model); "" if that fails.
+func (s *Server) projectState() string {
+	if s.Agent == nil || s.Agent.Runner == nil {
+		return ""
+	}
+	res, err := s.Agent.Runner.CallTool("sdd_stack", json.RawMessage(`{}`))
+	if err != nil || res.IsError {
+		return ""
+	}
+	var info struct {
+		Configured bool `json:"configured"`
+		Files      int  `json:"files"`
+	}
+	if err := json.Unmarshal(res.Structured, &info); err != nil {
+		return ""
+	}
+	switch {
+	case info.Configured:
+		return "configured"
+	case info.Files > 0:
+		return "existing"
+	}
+	return "empty"
 }
 
 func containsString(list []string, s string) bool {

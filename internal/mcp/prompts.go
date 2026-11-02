@@ -90,6 +90,29 @@ func promptList() []prompt {
 					"3. Jede Task ist eine Checkbox-Zeile und nennt mindestens ein Kriterium: - [ ] AC-2 …\n" +
 					"4. Formuliere den Plan, prüfe ihn mit sdd_validate_draft und lege ihn mit sdd_new an (types: [plan], content: der geprüfte Entwurf); sdd_trace zeigt, welche Kriterien noch keine Task haben.\n"
 			}},
+		{Name: "sdd-adopt", Title: "Bestehendes Projekt übernehmen", Description: "Übernimmt ein bestehendes Projekt in sdd: Bericht, Übernahme auf eigenem Branch, dann die Verfassung vor dem Merge.",
+			Arguments: []promptArg{},
+			rules:     []string{"SDD-001", "SDD-002a", "SDD-010"},
+			body: func(map[string]string) string {
+				return "Übernimm mit mir dieses bestehende Projekt in sdd.\n\n" +
+					"Vorgehen:\n" +
+					"1. sdd_stack: Welche Sprachen und wie viele Dateien hat das Projekt?\n" +
+					"2. sdd_adopt_apply ohne apply: Erkläre den Bericht — Reifegrad, die geplanten Schritte (Konfiguration, Verfassung, Agenten-Dateien, Frontmatter, Baseline, Bericht), Konflikte und Archivhinweise.\n" +
+					"3. Frage, ob ich übernehmen will. Erst dann sdd_adopt_apply mit apply (kritisch: ich bestätige einzeln). Es legt einen neuen Branch an, ein Commit je Schritt; der Ausgangsbranch bleibt unverändert.\n" +
+					"4. Danach steht die Verfassung als Gerüst auf dem Branch der Übernahme. Erarbeite sie jetzt mit mir (Ablauf sdd-constitution), noch vor dem Merge — dann gilt das Ausfüllen als erstmaliges Anlegen (SDD-010).\n" +
+					"5. Sag mir, dass ich die Verfassung auf dem Branch committen, den Branch prüfen und mergen soll. Danach sdd_next.\n"
+			}},
+		{Name: "sdd-start", Title: "Neues Projekt anlegen", Description: "Legt ein neues Projekt mit sdd an: Init mit Git, Technik, Verfassung, erstes Feature.",
+			Arguments: []promptArg{},
+			rules:     []string{"SDD-001", "SDD-002a"},
+			body: func(map[string]string) string {
+				return "Lege mit mir ein neues Projekt mit sdd an.\n\n" +
+					"Vorgehen:\n" +
+					"1. sdd_init mit git: true — zuerst die Vorschau zeigen, nach meiner Bestätigung mit apply. Fehlt eine Git-Identität, nenne mir die Befehle.\n" +
+					"2. Kläre die Technik: sdd_stack; schlage eine Sprache bzw. Form mit Begründung vor (Art des Programms, Zielplattform, Umfang) und frage. Biete an, die Wahl als ADR festzuhalten (Ablauf sdd-adr), das die Verfassung in references nennt.\n" +
+					"3. Erarbeite mit mir die Verfassung (Ablauf sdd-constitution).\n" +
+					"4. Dann das erste Feature (Ablauf sdd-idea).\n"
+			}},
 		{Name: "sdd-constitution", Title: "Verfassung erarbeiten", Description: "Erarbeitet die Verfassung aus den Quellen des Projekts (README, Agenten-Dateien, Technik): Regel für Regel mit Fundstelle, entschieden vom Menschen.",
 			Arguments: []promptArg{},
 			rules:     []string{"SDD-002a", "SDD-003", "SDD-010"},

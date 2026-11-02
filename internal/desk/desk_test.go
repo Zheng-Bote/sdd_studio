@@ -688,3 +688,35 @@ func TestCriticalNotRetriedAfterDenial(t *testing.T) {
 		t.Fatalf("ADR changed without a confirmation")
 	}
 }
+
+// desk-project-start AC-2: /api/meta reports configured, existing (files, no configuration) or empty.
+func TestMetaProjectState(t *testing.T) {
+	state := func(root string) string {
+		t.Helper()
+		c := inProcessMCP(t, root)
+		cfg := &Config{Path: "x"}
+		s := &Server{Addr: "127.0.0.1:48001", Token: "tok", Project: "demo", MCP: c, HTTP: http.DefaultClient, Config: cfg,
+			Agent: &Agent{Runner: c}}
+		rec := request(t, s.Handler(), http.MethodGet, "/api/meta", "", auth)
+		var meta struct {
+			State string `json:"project_state"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &meta); err != nil || rec.Code != 200 {
+			t.Fatalf("meta %d %s", rec.Code, rec.Body.String())
+		}
+		return meta.State
+	}
+	if got := state(sddProject(t)); got != "configured" {
+		t.Errorf("configured project: %q", got)
+	}
+	existing := t.TempDir()
+	if err := os.WriteFile(filepath.Join(existing, "main.go"), []byte("package main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := state(existing); got != "existing" {
+		t.Errorf("folder with files: %q", got)
+	}
+	if got := state(t.TempDir()); got != "empty" {
+		t.Errorf("empty folder: %q", got)
+	}
+}

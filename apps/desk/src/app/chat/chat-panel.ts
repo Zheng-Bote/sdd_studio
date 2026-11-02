@@ -4,13 +4,15 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { HlmTextareaImports } from '@spartan-ng/helm/textarea';
 import { ChatSession } from '../core/chat-session';
+import { DeskApi } from '../core/desk-api';
+import { ProjectStart } from './project-start';
 import { ApprovalCard } from './approval-card';
 import { MessageView } from './message-view';
 
 /** Conversation, pending approvals, cloud disclosure and the composer. */
 @Component({
   selector: 'desk-chat-panel',
-  imports: [MessageView, ApprovalCard, HlmButtonImports, HlmTextareaImports, HlmAlertImports, HlmSpinnerImports],
+  imports: [MessageView, ApprovalCard, ProjectStart, HlmButtonImports, HlmTextareaImports, HlmAlertImports, HlmSpinnerImports],
   host: { class: 'flex min-h-0 min-w-0 flex-1 flex-col' },
   template: `
     <div
@@ -23,6 +25,7 @@ import { MessageView } from './message-view';
       (scroll)="onScroll()"
     >
       @if (session.messages().length === 0) {
+        <desk-project-start [state]="session.meta()?.project_state" (start)="startPrompt($event)" />
         <div class="mx-auto mt-16 max-w-md text-center text-muted-foreground">
           <p class="text-lg font-medium text-foreground">Wobei soll ich helfen?</p>
           <p class="mt-2 text-sm">Beschreiben Sie eine Idee oder starten Sie links einen geführten Ablauf — von der Idee zum PRD bis zur Prüfung.</p>
@@ -88,6 +91,7 @@ import { MessageView } from './message-view';
 })
 export class ChatPanel {
   protected readonly session = inject(ChatSession);
+  private readonly api = inject(DeskApi);
   protected readonly draft = signal('');
   /** The end of the reasoning is what matters while the model works; long reasoning is cut at the front. */
   protected readonly thinkingTail = computed(() => {
@@ -125,6 +129,16 @@ export class ChatPanel {
     }
     this.draft.set('');
     await this.session.send(text);
+  }
+
+  /** Fetches a guided prompt without arguments (sdd-adopt, sdd-start) and puts it into the composer, unsent. */
+  protected async startPrompt(name: string): Promise<void> {
+    try {
+      const res = await this.api.prompt(name, {});
+      this.prefill(res.messages.map((m) => m.content.text).join('\n\n'));
+    } catch (e) {
+      this.session.error.set(e instanceof Error ? e.message : String(e));
+    }
   }
 
   /** Puts a guided prompt into the composer so the user can read and adjust it before sending. */
