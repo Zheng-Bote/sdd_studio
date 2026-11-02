@@ -8,6 +8,7 @@ touches:
   - internal/sddcore/guide/**
   - internal/mcp/**
   - internal/desk/**
+  - apps/desk/src/**
   - handbuch/**
   - README.md
 ---
