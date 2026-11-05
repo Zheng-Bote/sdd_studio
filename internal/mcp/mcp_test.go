@@ -448,3 +448,19 @@ func TestNoOutboundNetworkCode(t *testing.T) {
 		}
 	}
 }
+
+// An unknown argument is still refused, but the error names the allowed fields and asks for a new call (live test with
+// qwen3:14b: sdd_read with "apply": false; the model handed the bare error to the user instead of retrying).
+func TestUnknownArgumentNamesAllowedFields(t *testing.T) {
+	s := newServer(project(t), false)
+	r := call(t, s, "sdd_read", map[string]any{"path": "constitution.md", "apply": false})
+	if r["isError"] != true {
+		t.Fatalf("unknown field accepted: %v", r)
+	}
+	msg := errText(r)
+	for _, want := range []string{`unknown field "apply"`, "erlaubt sind nur: path", "erneut auf"} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("message %q lacks %q", msg, want)
+		}
+	}
+}

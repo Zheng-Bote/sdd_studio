@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
@@ -139,9 +140,30 @@ func args[T any](raw json.RawMessage) (T, error) {
 	dec := json.NewDecoder(strings.NewReader(string(raw)))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&v); err != nil {
+		if strings.Contains(err.Error(), "unknown field") {
+			// Name what is allowed and ask for a new call: a model that only sees "unknown field" tends to hand the
+			// error to the user instead of correcting its own call (live test with qwen3:14b, 2026-11-05).
+			return v, fmt.Errorf("ungültige Argumente: %w — erlaubt sind nur: %s. Rufe das Werkzeug ohne das unbekannte Feld erneut auf", err, strings.Join(jsonFields(v), ", "))
+		}
 		return v, fmt.Errorf("ungültige Argumente: %w", err)
 	}
 	return v, nil
+}
+
+// jsonFields lists the JSON names of the fields of struct v.
+func jsonFields(v any) []string {
+	t := reflect.TypeOf(v)
+	if t == nil || t.Kind() != reflect.Struct {
+		return nil
+	}
+	var names []string
+	for i := 0; i < t.NumField(); i++ {
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		if name != "" && name != "-" {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 func validGate(g string) bool {

@@ -26,6 +26,7 @@ Regelkatalog `1.2.0` mit 23 Regeln. Grundlage ist ein Live-Test des KI-Desktops 
 - `sdd next` zählt bei „Akzeptanzkriterien mit Kennung“ jede Kennung nur einmal; eine in offenen Punkten erneut genannte `AC-n` ergab bisher ein Kriterium zu viel.
 - Die Beschreibung von `sdd_write` bot nach der Einführung von `sdd_config` noch `sdd.config.yaml` an.
 - `sdd baseline --prune` schrieb `"entries": null`, wenn es den letzten Eintrag entfernte; jetzt steht dort `[]`.
+- Ein unbekanntes Argument eines MCP-Werkzeugs wird weiter abgelehnt; die Meldung nennt jetzt die erlaubten Felder und fordert einen neuen Aufruf an, statt nur das Feld zu nennen.
 
 ## [0.5.0] — 2026-11-02
 
