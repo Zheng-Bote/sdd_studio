@@ -44,7 +44,6 @@ Ein mit `sdd` geführtes Projekt hat Verfassung, ADRs und Feature-Artefakte, abe
 ## Nicht-Ziele
 
 - Eine Katalogregel, die die Doku verlangt. Sie bleibt ein Schritt in `sdd next`, kein Befund.
-- Diagramme erzeugen.
 - Die Doku bei `sdd init` oder `sdd adopt` automatisch anlegen. Zu Beginn gibt es noch keinen fertigen Stand.
 - Andere Sprachen als Deutsch für das Template.
 
@@ -56,3 +55,4 @@ Ein mit `sdd` geführtes Projekt hat Verfassung, ADRs und Feature-Artefakte, abe
 - **AC-4** `sdd next` zeigt einen Projektschritt „Architekturdoku nachführen“. Er ist offen, sobald mindestens ein Feature-Artefakt mit `release:` im Archiv liegt und `<artifacts.docs[0]>/arc42.md` fehlt oder in `release:` nicht das höchste Release der archivierten Artefakte nennt. Sonst entfällt der Schritt.
 - **AC-5** Der geführte Ablauf `sdd-arc42` liest Verfassung, ADRs, aktive und archivierte Tech Specs und Kontextdateien mit `sdd_read`. Er füllt Abschnitt für Abschnitt nur mit Belegtem, mit Verweis auf die Quelle, lässt Unbelegtes als offen stehen, setzt `release:` auf das genannte Release und speichert mit `sdd_new` bzw. `sdd_write`.
 - **AC-6** Handbuch, README und CHANGELOG beschreiben Template, Befehl, Schritt und Ablauf.
+- **AC-7** Das Template enthält Mermaid-Gerüste in Kontextabgrenzung, Bausteinsicht, Laufzeitsicht und Verteilungssicht, die sich fehlerfrei rendern lassen. `sdd-arc42` zeichnet diese Diagramme in Mermaid (flowchart, sequenceDiagram) nur aus belegten Elementen.

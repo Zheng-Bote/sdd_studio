@@ -36,6 +36,10 @@ cmd/sdd/main.go                      Hilfetext von new
 
 Die Datei beginnt mit dem Frontmatter (`status: active`, `release:`), damit sie wie jedes Dokument mit `---` anfängt. Direkt danach folgt der Lizenzkopf als HTML-Kommentar: in der gerenderten Ansicht unsichtbar, in der Datei erhalten. Es folgen der Titel `Architekturdokumentation — {{.Project}}` und eine sichtbare Zeile „Gliederung nach dem arc42-Template 9.1 (© …), lizenziert unter CC BY-SA 4.0; deutsche Fassung der Gliederung“. Danach kommen die zwölf Abschnitte mit den Ankern des Originals (`{#section-introduction-and-goals}` …), je mit einem Platzhalter `<…>` als Kurzhinweis.
 
+### Mermaid (AC-7)
+
+Gerüste als ```` ```mermaid ````-Blöcke: `flowchart LR` mit Nutzer, System (`{{.Project}}`) und Nachbarsystem in der Kontextabgrenzung; `flowchart TB` mit drei Bausteinen in der Bausteinsicht; ein `sequenceDiagram` in der Laufzeitsicht; `flowchart LR` mit einem Knoten (`subgraph`) und Speicher in der Verteilungssicht. Beschriftungen stehen in Anführungszeichen, damit Projektnamen mit Sonderzeichen nicht brechen. `sdd` rendert kein Mermaid (KI-frei, ohne JavaScript); der Test prüft, dass die vier Blöcke in den richtigen Abschnitten stehen und den erwarteten Diagrammtyp haben.
+
 ### `sdd new --type arc42` (AC-2, AC-3)
 
 `TypeArc42 = "arc42"` zählt zu den Nicht-Feature-Typen. `otherPlan` braucht für `arc42` keinen Titel. Ziel: `path.Join(cfg.Artifacts.Docs[0], "arc42.md")`. `Project` ist `filepath.Base(absRoot)`. Ist `artifacts.docs` leer, kommt `ErrInvalidInput`. Bestehende Dateien überspringt der Plan wie bei jedem `create` (Status `skip`). `sdd_new` mit `content` nutzt den vorhandenen Weg (geprüfter Entwurf statt Template).
@@ -66,3 +70,4 @@ Argument `release` (optional). Vorgehen: `sdd_read` ohne path; Verfassung, ADRs,
 | AC-4 | `guide/next.go` | `TestNextArchitectureStep` |
 | AC-5 | `mcp/prompts.go` | `TestArc42Prompt` |
 | AC-6 | Handbuch, README, CHANGELOG | `TestArc42Documented` |
+| AC-7 | `templates/arc42.md.tmpl`, `prompts.go` | `TestArc42Mermaid`, `TestArc42Prompt`; Syntax der Gerüste und von `docs/arc42.md` geprüft mit `mermaid.parse` (mermaid 11) |
