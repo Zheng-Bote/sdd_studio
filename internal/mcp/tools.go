@@ -81,7 +81,7 @@ func baseTools() []tool {
 				"slug":    str("Slug für adr/doc"), "touches": strs("erklärte Änderungsabsicht"), "archive_after": str("YYYY-MM-DD"),
 				"apply": map[string]any{"type": "boolean", "description": "Dateien wirklich anlegen"},
 			}), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
-		{Name: "sdd_write", Title: "Datei schreiben", Description: "Legt ein Artefakt, sdd.config.yaml oder eine Testdatei (tests.include) an oder ersetzt ihren Inhalt. Ohne apply nur Vorschau (Diff bzw. Inhalt); apply nur mit --allow-write. Eine bestehende Datei nur mit base_sha256 aus sdd_read. Artefakte werden vorher mit den Regeln geprüft, ein Fehler verhindert das Schreiben; ein ADR auf accepted setzt dieses Werkzeug nie.",
+		{Name: "sdd_write", Title: "Datei schreiben", Description: "Legt ein Artefakt oder eine Testdatei (tests.include) an oder ersetzt ihren Inhalt; sdd.config.yaml ändert nur sdd_config (kritisch). Ohne apply nur Vorschau (Diff bzw. Inhalt); apply nur mit --allow-write. Eine bestehende Datei nur mit base_sha256 aus sdd_read. Artefakte werden vorher mit den Regeln geprüft, ein Fehler verhindert das Schreiben; ein ADR auf accepted setzt dieses Werkzeug nie.",
 			InputSchema: obj(map[string]any{
 				"path": str("Pfad relativ zum Repository"), "content": str("vollständiger neuer Inhalt"),
 				"base_sha256": str("sha256 des aktuellen Inhalts aus sdd_read; Pflicht, wenn die Datei existiert"),
@@ -99,6 +99,7 @@ func baseTools() []tool {
 				"feature": str("Feature-Slug"), "release": str("Version für release: im Frontmatter (optional)"),
 				"apply": map[string]any{"type": "boolean", "description": "wirklich verschieben"},
 			}, "feature"), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": true, "idempotentHint": false, "openWorldHint": false}},
+		conflictsTool,
 	}
 }
 
@@ -190,6 +191,9 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 			return nil, err
 		}
 		return resultOf(info), nil
+
+	case "sdd_conflicts_check":
+		return s.toolConflictsCheck(raw)
 
 	case "sdd_read":
 		a, err := args[struct {
@@ -347,7 +351,7 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 	case "sdd_archive":
 		return s.toolArchive(raw)
 
-	case "sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply":
+	case "sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply", "sdd_config":
 		return s.runCritical(name, raw)
 
 	default:

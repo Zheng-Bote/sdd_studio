@@ -294,12 +294,16 @@ func featureGuide(root string, cfg *config.Config, slug string, set *artifactSet
 		} else {
 			add(Step{ID: "non-goals", Title: "Nicht-Ziele benennen", State: StateDone, Detail: "Abschnitt vorhanden"})
 		}
-		acs := 0
+		// Distinct IDs: an AC named again elsewhere in the PRD (open points, notes) is not another criterion.
+		ids := map[string]bool{}
 		for _, p := range set.prds {
 			if data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(p.Path))); err == nil {
-				acs += len(acIDRegex.FindAllString(string(data), -1))
+				for _, id := range acIDRegex.FindAllString(string(data), -1) {
+					ids[id] = true
+				}
 			}
 		}
+		acs := len(ids)
 		fs := findingsAt(findings, "SDD-021", set.prds)
 		switch {
 		case acs == 0:

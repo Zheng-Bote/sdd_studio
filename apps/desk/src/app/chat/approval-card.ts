@@ -31,6 +31,10 @@ import { Decision, Pending, PlannedOp } from '../core/types';
             <span hlmBadge variant="destructive">schreibt Dateien</span>
             Erst nach Ihrer Freigabe. Für die Sitzung freigegeben, schreibt dieses Werkzeug ohne weitere Rückfrage; was es
             geschrieben hat, steht danach im Gespräch.
+          } @else if (pending().preview_only) {
+            <span hlmBadge variant="secondary">nur Vorschau</span>
+            Das Modell will sehen, was geschrieben würde; geschrieben wird dabei nichts. Für die Sitzung freigegeben, gilt das
+            nur für Vorschauen dieses Werkzeugs, Schreiben wird erneut gefragt.
           } @else {
             <span hlmBadge variant="secondary">nur lesend</span>
           }
@@ -57,6 +61,28 @@ import { Decision, Pending, PlannedOp } from '../core/types';
                 <li><span class="text-destructive">Änderung quittieren</span> {{ p }}</li>
               }
             </ul>
+          }
+          @if (pv.findings_delta?.length || pv.unchecked?.length) {
+            <div class="space-y-1 text-xs" aria-label="Wirkung auf die Befunde">
+              <p class="font-medium">Wirkung auf die Befunde</p>
+              @for (d of pv.findings_delta ?? []; track d.gate) {
+                <p class="text-muted-foreground">{{ d.gate }}</p>
+                <ul class="space-y-0.5">
+                  @for (f of d.dropped; track $index) {
+                    <li><span class="text-destructive">− fällt weg</span> {{ f.rule_id }} {{ f.path }}{{ f.line ? ':' + f.line : '' }}</li>
+                  }
+                  @for (f of d.added; track $index) {
+                    <li><span class="text-muted-foreground">+ kommt hinzu</span> {{ f.rule_id }} {{ f.path }}{{ f.line ? ':' + f.line : '' }}</li>
+                  }
+                </ul>
+              }
+              @if (pv.findings_delta && !pv.findings_delta.length) {
+                <p>Keine Befunde fallen weg oder kommen hinzu. Das heißt nicht, dass nichts abgeschwächt wird: Prüfen Sie den Diff.</p>
+              }
+              @for (u of pv.unchecked ?? []; track u.gate) {
+                <p class="text-muted-foreground">{{ u.gate }}: nicht verglichen ({{ u.error }})</p>
+              }
+            </div>
           }
           @if (pv.report) {
             <pre class="max-h-64 overflow-auto rounded-md border p-3 text-xs" aria-label="Bericht">{{ pv.report }}</pre>

@@ -30,7 +30,8 @@ Grundsätze für diesen Schritt:
 - Frage, statt zu erfinden. Stelle eine Frage nach der anderen und formuliere nur aus, was der Mensch beantwortet hat. Offene Punkte bleiben als offene Punkte sichtbar.
 - Prüfe jeden Entwurf mit sdd_validate_draft, bevor du ihn speicherst; behebe die Befunde mit dem Menschen.
 - Neue Artefakte legst du mit sdd_new an und übergibst den geprüften Entwurf als content, nie das leere Template (zuerst ohne apply, dann mit apply nach Bestätigung).
-- Bestehende Dateien (Artefakte, Testdateien, sdd.config.yaml) liest du mit sdd_read und änderst sie mit sdd_write, mit base_sha256 aus sdd_read; neue Testdateien legst du mit sdd_write an.
+- Bestehende Dateien (Artefakte, Testdateien) liest du mit sdd_read und änderst sie mit sdd_write, mit base_sha256 aus sdd_read; neue Testdateien legst du mit sdd_write an.
+- Die Konfiguration (sdd.config.yaml) liest du mit sdd_read und änderst sie nur mit sdd_config (kritisch, ADR 0004). Braucht der Ablauf eine Änderung, erkläre sie in Worten und zeige die Vorschau (Diff, wegfallende und hinzukommende Befunde); ausgeführt wird sie nur nach der einzelnen Bestätigung des Menschen. Lehnt er ab, frage im selben Zug nicht erneut.
 - Melde nur, was ein Werkzeugergebnis belegt: Lies nach dem Speichern mit sdd_read gegen, statt Erfolg anzunehmen.
 - Baseline, ADR-Lockfile, adopt --apply und das Entscheiden eines ADR (status: accepted) sind kritisch: Der Mensch entscheidet sie. Rufe sdd_baseline, sdd_adr_accept oder sdd_adopt_apply nur auf, wenn er es ausdrücklich verlangt; jede Ausführung bestätigt er einzeln. Lehnt er ab, frage im selben Zug nicht erneut.
 - Zum Schluss: sdd_next aufrufen und dann in eigenen Worten zusammenfassen — welche Dateien gespeichert wurden (Pfad), was die Prüfung ergeben hat (in Klartext, nicht nur Regelkennungen), was offen ist und welcher Schritt als Nächstes kommt. Ende nie mit einem bloßen Werkzeugaufruf.`
@@ -136,7 +137,7 @@ func promptList() []prompt {
 					"Vorgehen:\n" +
 					"1. sdd_trace (feature: " + f + "): Welche Kriterien haben noch keinen Test?\n" +
 					"2. sdd_stack: Sprache, übliche Testdatei-Muster und Kommentarsyntax des Projekts. Ist die Sprache unklar, frage.\n" +
-					"3. Lege mit mir fest, in welche Datei welcher Test kommt. Erfasst tests.include diese Datei nicht (tests_include aus sdd_stack), lies sdd.config.yaml mit sdd_read und ergänze tests.include mit sdd_write um das passende Muster.\n" +
+					"3. Lege mit mir fest, in welche Datei welcher Test kommt. Erfasst tests.include diese Datei nicht (tests_include aus sdd_stack), lies sdd.config.yaml mit sdd_read und ergänze tests.include mit sdd_config um das passende Muster (kritisch: erkläre die Änderung, ich bestätige einzeln).\n" +
 					"4. Schreibe je Kriterium einen Test in der Sprache des Projekts: einen echten, wenn das Verhalten schon klar ist, sonst ein Gerüst, das ausdrücklich fehlschlägt oder übersprungen wird, bis es umgesetzt ist. Direkt über jedem Test steht die Zeile <Kommentar> " + f + " AC-<n>: <was der Test prüft>. Neue Dateien legst du mit sdd_write an, bestehende liest du vorher mit sdd_read.\n" +
 					"5. Prüfe mit sdd_trace, dass jedes Kriterium einen Test hat, und nenne mit sdd_next den nächsten Schritt.\n"
 			}},
@@ -149,8 +150,9 @@ func promptList() []prompt {
 					"1. sdd_read ohne path: Finde Verfassung, Tech Spec (feature: " + a["feature"] + ") und ADRs.\n" +
 					"2. Lies mit sdd_read die Verfassung und die Tech Spec vollständig, dann die ADRs, auf die die Tech Spec verweist. Lies nur Pfade aus dieser Liste; verweist die Tech Spec auf kein ADR, überspringe die ADRs.\n" +
 					"3. Gehe die Regeln der Verfassung einzeln durch, jede nummerierte Regel jedes Abschnitts — gemeint sind die Regeln der Verfassung, nicht die SDD-Regeln des Katalogs. Suche zu jeder die Stellen der Tech Spec, die etwas vorsehen, das die Regel verbietet. Ein angenommenes ADR, das die Abweichung erlaubt, löst sie auf.\n" +
-					"4. Melde nur, was du auf beiden Seiten wörtlich zitieren kannst, mit Datei:Zeile aus sdd_read. Ohne wörtliches Zitat keine Meldung. Fehlt etwas in der Tech Spec, gehört es nicht in die Tabelle.\n" +
-					"5. Antworte mit einer Tabelle: Verfassung (Zitat, Datei:Zeile) | Tech Spec (Zitat, Datei:Zeile) | Einschätzung (Widerspruch, Spannung oder unklar) | Vorschlag (Tech Spec anpassen oder ADR für eine Verfassungsänderung). Darunter eine Liste aller Regeln der Verfassung mit Datei:Zeile und je „Treffer in der Tabelle“ oder „kein Widerspruch gefunden“.\n\n" +
+					"4. Melde nur, was du auf beiden Seiten wörtlich zitieren kannst, mit Datei:Zeile aus sdd_read, je Seite ein Zitat aus genau einer Zeile (ohne die Zeilennummer). Ohne wörtliches Zitat keine Meldung. Fehlt etwas in der Tech Spec, gehört es nicht in die Tabelle.\n" +
+					"5. Prüfe dein Ergebnis, bevor du antwortest: Rufe sdd_conflicts_check (feature: " + a["feature"] + ") mit allen Meldungen (constitution und spec mit path, line, quote; kind: Widerspruch, Spannung oder unklar; suggestion: Tech Spec anpassen oder ADR für eine Verfassungsänderung) und der vollständigen Liste aller Regeln der Verfassung auf (path, line, result: Treffer oder kein Widerspruch). Nennt das Ergebnis fehlende Regeln, gehe diese nach und rufe sdd_conflicts_check erneut auf.\n" +
+					"6. Antworte mit der Tabelle aus markdown des Ergebnisses; sie enthält nur belegte Meldungen mit den geprüften Zeilen. Darunter die verworfenen Meldungen mit Grund (nicht gefunden, zu kurz, nicht zulässig) — erfinde keine Ersatzzitate. Dann die Regelliste mit Datei:Zeile und je „Treffer in der Tabelle“ oder „kein Widerspruch gefunden“.\n\n" +
 					"Das Ergebnis ist ein Hinweis, kein Befund: Es erscheint in keinem Bericht und in keiner Baseline. Ob ein Widerspruch vorliegt und wie er aufgelöst wird, entscheidet der Mensch. Ändere nichts.\n"
 			}},
 		{Name: "sdd-review", Title: "Stand prüfen", Description: "Prüft den Stand eines Features und nennt Lücken und den nächsten Schritt — ohne etwas zu ändern.",

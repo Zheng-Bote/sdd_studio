@@ -294,3 +294,20 @@ func TestNextAdoptionStep(t *testing.T) {
 		t.Errorf("after the merge, back on the adopt branch: %+v", a)
 	}
 }
+
+// The acceptance step counts distinct AC IDs: an AC named again in open points is not another criterion (found in the
+// live test on 2026-11-05: "5 Kennungen" for AC-1 to AC-4).
+func TestNextCountsDistinctACs(t *testing.T) {
+	root := project(t)
+	write(t, root, "docs/prd/billing.md", "---\nfeature: billing\nstatus: active\n---\n## Nicht-Ziele\n- nichts\n"+
+		"## Akzeptanzkriterien\n- **AC-1** x\n- **AC-2** y\n## Offene Punkte\n- Wohin meldet AC-2? Siehe auch AC-1.\n")
+	g, err := guide.Next(root, "billing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range g.Features[0].Steps {
+		if s.ID == "acceptance" && s.Detail != "2 Kennungen" {
+			t.Errorf("acceptance detail = %q, want 2 Kennungen", s.Detail)
+		}
+	}
+}

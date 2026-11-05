@@ -99,7 +99,13 @@ func readExisting(root, rel string) (data []byte, exists bool, err error) {
 }
 
 // insideRoot rejects rel if its nearest existing parent directory resolves (through symbolic links) outside root.
+// root may be relative (sdd runs with "."); it is made absolute first, because EvalSymlinks keeps a relative path
+// relative and "docs/prd" would never lie under ".".
 func insideRoot(root, rel string) error {
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return err
+	}
 	realRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		return err
@@ -205,6 +211,9 @@ func (s *Server) toolWrite(raw json.RawMessage) (*toolResult, error) {
 	}
 	if class == classContext {
 		return nil, fmt.Errorf("nicht beschreibbar: %s ist eine Kontextdatei (nur lesbar)", rel)
+	}
+	if class == classConfig {
+		return nil, fmt.Errorf("nicht beschreibbar mit sdd_write: %s ändert nur sdd_config (kritisch, ADR 0004)", rel)
 	}
 	old, exists, err := readExisting(s.Root, rel)
 	if err != nil {

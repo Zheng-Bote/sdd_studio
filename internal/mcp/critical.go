@@ -35,6 +35,7 @@ var criticalTools = []tool{
 			"branch":  str("neuer Branch (Standard: sdd/adopt)"),
 			"apply":   map[string]any{"type": "boolean", "description": "wirklich anwenden"},
 		}), Annotations: criticalHints},
+	configTool,
 }
 
 var criticalHints = map[string]any{"readOnlyHint": false, "destructiveHint": true, "idempotentHint": false, "openWorldHint": false}
@@ -48,6 +49,8 @@ func (s *Server) runCritical(name string, raw json.RawMessage) (*toolResult, err
 		return s.toolBaseline(raw)
 	case "sdd_adr_accept":
 		return s.toolADRAccept(raw)
+	case "sdd_config":
+		return s.toolConfig(raw)
 	default:
 		return s.toolAdoptApply(raw)
 	}

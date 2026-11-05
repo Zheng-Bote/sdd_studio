@@ -85,12 +85,10 @@ func TestNewWithContent(t *testing.T) {
 func TestWritePathClasses(t *testing.T) {
 	root := project(t)
 	s := newServer(root, true)
-	cfgText := readFileT(t, root, "sdd.config.yaml")
 	allowed := map[string]map[string]any{
 		"docs/prd/neu.md":     {"content": strings.ReplaceAll(searchPRD, "search", "neu")},
 		"docs/notes/notiz.md": {"content": "---\nstatus: active\n---\n\n# Notiz\n"},
 		"api/search_test.go":  {"content": "// search AC-1: Titel\n"},
-		"sdd.config.yaml":     {"content": cfgText + "\n", "base_sha256": shaOf(cfgText)},
 	}
 	for rel, a := range allowed {
 		a["path"] = rel
@@ -167,14 +165,6 @@ func TestWriteReplace(t *testing.T) {
 		t.Errorf("content %q, mode %v", got, info.Mode().Perm())
 	}
 
-	cfgText := readFileT(t, root, "sdd.config.yaml")
-	bad := strings.Replace(cfgText, "profile: standard", "profile: bogus", 1)
-	if r := call(t, s, "sdd_write", map[string]any{"path": "sdd.config.yaml", "content": bad, "base_sha256": shaOf(cfgText), "apply": true}); r["isError"] != true || !strings.Contains(errText(r), "bogus") {
-		t.Errorf("invalid configuration must be refused: %v", r)
-	}
-	if readFileT(t, root, "sdd.config.yaml") != cfgText {
-		t.Errorf("configuration changed")
-	}
 }
 
 // desk-write-content AC-4: sdd_write never decides an ADR, neither in a new file nor by changing the status.
@@ -272,5 +262,43 @@ func TestPromptsDemandContent(t *testing.T) {
 		if !strings.Contains(step, "content: der geprüfte Entwurf") || strings.Contains(step, "dann ausfüllen") {
 			t.Errorf("%s must store the checked draft, not fill a template afterwards", name)
 		}
+	}
+}
+
+// sdd mcp runs with the repository root "." (cmd/sdd). Existing files in subdirectories must stay writable, and a
+// symbolic link out of the repository must still be refused. Found in the live test on 2026-11-05: sdd_write refused
+// every PRD as "über symbolischen Link", sdd_adr_accept wrote and then reported that error.
+func TestRelativeRoot(t *testing.T) {
+	root := project(t)
+	const adr = "docs/adr/0002-neu.md"
+	proposed := "---\nstatus: proposed\ndate: 2026-10-20\nsupersedes: []\nreferences: []\n---\n\n# ADR 0002 — Neu\n"
+	write(t, root, adr, proposed)
+	outside := t.TempDir()
+	write(t, outside, "secret_test.go", "geheim")
+	if err := os.Symlink(outside, filepath.Join(root, "api/out")); err != nil {
+		t.Skipf("symlinks unsupported: %v", err)
+	}
+	t.Chdir(root)
+	s := criticalServer(".")
+
+	const prd = "docs/prd/billing.md"
+	old := readFileT(t, root, prd)
+	updated := strings.Replace(old, "- AC-2 Import", "- AC-2 Import aus CSV", 1)
+	if r := call(t, s, "sdd_write", map[string]any{"path": prd, "content": updated, "base_sha256": shaOf(old), "apply": true}); r["isError"] == true {
+		t.Fatalf("sdd_write %s: %s", prd, errText(r))
+	}
+	if got := readFileT(t, root, prd); got != updated {
+		t.Errorf("%s not written: %q", prd, got)
+	}
+	if r := call(t, s, "sdd_adr_accept", map[string]any{"path": adr, "apply": true}); r["isError"] == true {
+		t.Errorf("sdd_adr_accept: %s", errText(r))
+	}
+	for _, apply := range []bool{false, true} { // the preview would show the outside content in its diff
+		if r := call(t, s, "sdd_write", map[string]any{"path": "api/out/secret_test.go", "content": "x\n", "base_sha256": shaOf("geheim"), "apply": apply}); r["isError"] != true {
+			t.Errorf("sdd_write through a symbolic link out of the repository (apply %v): %v", apply, r)
+		}
+	}
+	if got := readFileT(t, outside, "secret_test.go"); got != "geheim" {
+		t.Errorf("file outside the repository changed: %q", got)
 	}
 }

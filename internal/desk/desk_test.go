@@ -2,6 +2,8 @@ package desk
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"go/parser"
@@ -343,7 +345,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	for _, tl := range a.Tools {
 		names = append(names, tl.Name)
 	}
-	if len(names) != 18 || names[0] != "sdd_next" {
+	if len(names) != 20 || names[0] != "sdd_next" {
 		t.Fatalf("tools must be exactly those of sdd mcp: %v", names)
 	}
 	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "x"}}, AllowedTools: []string{"shell_exec"}})
@@ -528,6 +530,7 @@ func TestSddDoesNotImportDesk(t *testing.T) {
 
 // desk-write-content AC-7: sdd_write with apply is a write with preview; a write tool allowed for the session runs
 // without a card and its result shows what was written.
+// desk-approval-scope AC-1: the session approval for writes is allowed_writes.
 func TestSessionAllowsWrites(t *testing.T) {
 	root := sddProject(t)
 	ctx := context.Background()
@@ -547,7 +550,7 @@ func TestSessionAllowsWrites(t *testing.T) {
 	}
 
 	a = newAgent(t, root, &scripted{replies: []Message{call("w2", "sdd_write", args)}})
-	res, err = a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_write"}})
+	res, err = a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedWrites: []string{"sdd_write"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -641,7 +644,7 @@ func TestCriticalNeedsSingleApproval(t *testing.T) {
 	ctx := context.Background()
 	base := []Message{{Role: "user", Content: "Entscheide ADR 0001."}}
 	a := newAgent(t, root, &scripted{replies: []Message{call("k1", "sdd_adr_accept", `{"path":"docs/adr/0001-x.md","apply":true}`)}})
-	res, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_adr_accept"}})
+	res, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_adr_accept"}, AllowedWrites: []string{"sdd_adr_accept"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -718,5 +721,126 @@ func TestMetaProjectState(t *testing.T) {
 	}
 	if got := state(t.TempDir()); got != "empty" {
 		t.Errorf("empty folder: %q", got)
+	}
+}
+
+// desk-approval-scope AC-1, AC-2, AC-4: a session approval given on a preview (allowed_tools) runs further previews
+// without a card but never a write; the preview card is marked preview_only. Live test 2026-11-05: sdd_new allowed on its
+// template preview later wrote the PRD without a card.
+func TestPreviewSessionDoesNotAllowWrites(t *testing.T) {
+	root := sddProject(t)
+	ctx := context.Background()
+	base := []Message{{Role: "user", Content: "Leg das PRD an."}}
+	const preview = `{"feature":"neu","types":["prd"]}`
+	content := "---\nfeature: neu\nstatus: draft\narchive-after:\ntouches: []\n---\n\n# PRD — Neu\n\n## Problem\n\nx\n\n" +
+		"## Nicht-Ziele\n\n- nichts\n\n## Akzeptanzkriterien\n\n- **AC-1** x\n"
+	write, _ := json.Marshal(map[string]any{"feature": "neu", "types": []string{"prd"}, "content": content, "apply": true})
+
+	a := newAgent(t, root, &scripted{replies: []Message{call("p1", "sdd_new", preview)}})
+	res, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || res.Pending[0].Writes || !res.Pending[0].PreviewOnly {
+		t.Fatalf("preview card must be marked preview_only: %+v", res.Pending)
+	}
+
+	// desk-approval-scope AC-2: allowed for the session on that card, the next preview runs without a card.
+	a = newAgent(t, root, &scripted{replies: []Message{call("p2", "sdd_new", preview), {Role: "assistant", Content: "ok"}}})
+	res, err = a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_new"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 0 || !strings.Contains(lastTool(res.Messages).Content, `"applied": false`) {
+		t.Fatalf("session-allowed preview must run: %+v", res)
+	}
+
+	// desk-approval-scope AC-1: the write still waits with its preview.
+	a = newAgent(t, root, &scripted{replies: []Message{call("p3", "sdd_new", string(write))}})
+	res, err = a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedTools: []string{"sdd_new"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || !res.Pending[0].Writes || res.Pending[0].PreviewOnly || !strings.Contains(string(res.Pending[0].Preview), "neu") {
+		t.Fatalf("write must wait despite the preview approval: %+v", res.Pending)
+	}
+	if _, err := os.Stat(filepath.Join(root, "docs/prd/neu.md")); err == nil {
+		t.Fatalf("write ran with a preview approval only")
+	}
+
+	// desk-approval-scope AC-2: allowed_writes also covers previews of that tool.
+	a = newAgent(t, root, &scripted{replies: []Message{call("p4", "sdd_new", preview), {Role: "assistant", Content: "ok"}}})
+	res, err = a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base, AllowedWrites: []string{"sdd_new"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 0 {
+		t.Fatalf("allowed_writes must cover previews: %+v", res.Pending)
+	}
+}
+
+// desk-approval-scope AC-5: the handbook describes both session approvals.
+func TestHandbookApprovalScope(t *testing.T) {
+	data, err := os.ReadFile("../../handbuch/04-agenten.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"nur Vorschau", "Schreiben wird erneut gefragt"} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("handbook lacks %q", want)
+		}
+	}
+}
+
+// desk-config-critical AC-6: sdd_config with apply is critical: it waits for a single confirmation with summary and
+// diff even if sdd_config is in both session lists, and only the approval of exactly this call writes.
+func TestConfigIsCritical(t *testing.T) {
+	root := sddProject(t)
+	ctx := context.Background()
+	cfgPath := filepath.Join(root, "sdd.config.yaml")
+	old, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(old)
+	changed := strings.Replace(string(old), "exclude:\n", "exclude:\n  - docs/notes/**\n", 1)
+	args, _ := json.Marshal(map[string]any{"content": changed, "base_sha256": hex.EncodeToString(sum[:]), "apply": true})
+	base := []Message{{Role: "user", Content: "Nimm docs/notes aus."}}
+
+	a := newAgent(t, root, &scripted{replies: []Message{call("c1", "sdd_config", string(args))}})
+	res, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base,
+		AllowedTools: []string{"sdd_config"}, AllowedWrites: []string{"sdd_config"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || !res.Pending[0].Critical || !strings.Contains(res.Pending[0].Summary, "exclude") ||
+		!strings.Contains(string(res.Pending[0].Preview), "docs/notes/**") {
+		t.Fatalf("sdd_config must wait for a single confirmation: %+v", res.Pending)
+	}
+	if data, _ := os.ReadFile(cfgPath); string(data) != string(old) {
+		t.Fatal("configuration changed before the confirmation")
+	}
+	if _, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: res.Messages, ApprovedCalls: []string{"c1"}}); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(cfgPath); string(data) != changed {
+		t.Fatalf("confirmed call did not write: %s", data)
+	}
+}
+
+// desk-config-critical AC-8: the handbook lists sdd_config among the critical actions and counts the tools of sdd mcp
+// (nineteen then, twenty since conflicts-quote-check).
+func TestHandbookConfigTool(t *testing.T) {
+	data, err := os.ReadFile("../../handbuch/04-agenten.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"zwanzig Werkzeuge", "sdd_config", "ADR 0004"} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("handbook lacks %q", want)
+		}
+	}
+	if strings.Contains(string(data), "achtzehn Werkzeuge") || strings.Contains(string(data), "neunzehn Werkzeuge") {
+		t.Error("handbook counts a stale number of tools")
 	}
 }

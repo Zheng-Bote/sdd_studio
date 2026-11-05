@@ -57,19 +57,19 @@ func TestCriticalToolsNeedFlag(t *testing.T) {
 	root := project(t)
 	plain := toolNames(t, newServer(root, true))
 	for _, n := range plain {
-		if n == "sdd_baseline" || n == "sdd_adr_accept" || n == "sdd_adopt_apply" {
+		if n == "sdd_baseline" || n == "sdd_adr_accept" || n == "sdd_adopt_apply" || n == "sdd_config" {
 			t.Errorf("%s offered without --allow-critical", n)
 		}
 	}
-	for _, n := range []string{"sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply"} {
+	for _, n := range []string{"sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply", "sdd_config"} {
 		res := exchange(t, newServer(root, true), `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"`+n+`","arguments":{}}}`)
 		if res[0]["error"] == nil {
 			t.Errorf("%s callable without --allow-critical: %v", n, res)
 		}
 	}
 	all := exchange(t, criticalServer(root), `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)[0]["result"].(map[string]any)["tools"].([]any)
-	if len(all) != len(plain)+3 {
-		t.Fatalf("with --allow-critical: %d tools, want %d", len(all), len(plain)+3)
+	if len(all) != len(plain)+4 {
+		t.Fatalf("with --allow-critical: %d tools, want %d", len(all), len(plain)+4)
 	}
 	for _, tl := range all[len(plain):] {
 		if tl.(map[string]any)["annotations"].(map[string]any)["destructiveHint"] != true {
@@ -112,7 +112,9 @@ func TestADRAcceptTool(t *testing.T) {
 	if op := prev["ops"].([]any)[0].(map[string]any); prev["critical"] != true || !strings.Contains(op["diff"].(string), "-status: proposed\n+status: accepted") {
 		t.Fatalf("preview: %v", prev)
 	}
-	call(t, s, "sdd_adr_accept", map[string]any{"path": rel, "apply": true})
+	if r := call(t, s, "sdd_adr_accept", map[string]any{"path": rel, "apply": true}); r["isError"] == true {
+		t.Fatalf("apply: %s", errText(r))
+	}
 	if got := readFileT(t, root, rel); got != strings.Replace(proposed, "status: proposed", "status: accepted", 1) {
 		t.Errorf("content %q", got)
 	}
