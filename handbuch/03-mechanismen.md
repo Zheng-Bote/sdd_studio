@@ -682,7 +682,7 @@ Für jede Regel im Katalog (`catalog/catalog.yaml`) muss gelten:
 #### SDD-072 Prüfvertrag {#sdd-072-vertrag}
 
 Für jedes Gate $g \in \{\text{pre-implementation}, \text{pre-merge}, \text{pre-release}\}$ wird die effektive Regelmenge $\text{Eff}(g)$ bestimmt:
-1. Ist in `sdd.config.yaml` für das Gate $g$ ein nicht-leeres `override` konfiguriert, gilt $\text{Eff}(g) = \text{override}(g)$.
+1. Ist in `sdd.config.yaml` für das Gate $g$ ein nicht-leeres `override` konfiguriert, gilt $\text{Eff}(g) = \text{override}(g) \cup \text{pinned}(g)$. Dabei ist $\text{pinned}(g)$ die Menge der Katalogregeln mit `pinned: true`, deren `gate_default` das Gate $g$ enthält ([ADR 0005](../docs/adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md)): Ein Override kann sie nicht abwählen. Eine `pinned`-Regel muss `profile: minimal` und `baseline: forbidden` tragen, sonst lehnt `sdd` den Katalog ab.
 2. Andernfalls gilt $\text{Eff}(g) = \text{gate\_default}(g)$ aus `catalog/catalog.yaml`.
 3. Jede im gewählten Projektprofil (`minimal` $\subset$ `standard` $\subset$ `regulated`) aktive Regel muss in der Vereinigungsmenge $\bigcup_g \text{Eff}(g)$ enthalten sein und in mindestens einem dieser Gates einen effektiven Schweregrad besitzen.
 

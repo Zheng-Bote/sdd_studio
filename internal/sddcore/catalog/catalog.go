@@ -33,9 +33,12 @@ type Rule struct {
 	Check       string       `yaml:"check"`
 	GateDefault []string     `yaml:"gate_default"`
 	Baseline    string       `yaml:"baseline"`
-	Contract    string       `yaml:"contract"`
-	Rationale   string       `yaml:"rationale"`
-	Handbook    string       `yaml:"handbook"`
+	// Pinned keeps the rule in every gate of its gate_default even when gates.<gate>.override leaves it out, so the
+	// configuration cannot switch it off (ADR 0005). It requires profile minimal and baseline forbidden.
+	Pinned    bool   `yaml:"pinned"`
+	Contract  string `yaml:"contract"`
+	Rationale string `yaml:"rationale"`
+	Handbook  string `yaml:"handbook"`
 }
 
 // SeveritySpec normalizes both short syntax (`severity: error`) and object syntax
@@ -135,6 +138,11 @@ func Parse(data []byte) (*Catalog, error) {
 	var cat Catalog
 	if err := yaml.Unmarshal(data, &cat); err != nil {
 		return nil, fmt.Errorf("Regelkatalog ungültig: %w", err)
+	}
+	for _, r := range cat.Rules {
+		if r.Pinned && (r.Profile != "minimal" || r.Baseline != "forbidden") {
+			return nil, fmt.Errorf("Regelkatalog ungültig: %s ist pinned und braucht profile: minimal und baseline: forbidden, sonst ließe sie sich über Profil oder Baseline abschalten (ADR 0005)", r.ID)
+		}
 	}
 	return &cat, nil
 }

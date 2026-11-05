@@ -482,7 +482,7 @@ exclude:
 
 Damit sind alle Pfade und Schwellen deklarativ konfigurierbar. Das Programm erzwingt keine bestimmte Ordnerstruktur (und kollidiert nicht mit vorhandenen Frameworks wie GitHub Spec Kit, MADR oder arc42), sondern prüft die konfigurierte Zuordnung.
 
-**Gate-Zugehörigkeit hat genau eine Quelle.** Maßgeblich ist die effektive Menge `Eff(g)`: der `override` des Gates, falls gesetzt, sonst `gate_default` aus dem Katalog — nie eine Vereinigung beider. `sdd lint` meldet über SDD-072 jede aktive Regel, die in keinem `Eff(g)` vorkommt; sonst ist eine Regel unsichtbar und läuft nie.
+**Gate-Zugehörigkeit hat genau eine Quelle.** Maßgeblich ist die effektive Menge `Eff(g)`: der `override` des Gates, falls gesetzt, sonst `gate_default` aus dem Katalog — nie eine Vereinigung beider. Einzige Ausnahme sind Regeln mit `pinned: true` ([ADR 0005](adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md)): Sie gehören in den Gates ihrer `gate_default` immer dazu, auch neben einem `override`, und tragen `profile: minimal` und `baseline: forbidden`. So lässt sich eine Regel, die Abschwächungen der Konfiguration prüft, nicht durch genau diese Abschwächung abschalten. `sdd lint` meldet über SDD-072 jede aktive Regel, die in keinem `Eff(g)` vorkommt; sonst ist eine Regel unsichtbar und läuft nie.
 
 **Ohne `sdd.config.yaml`** bricht jeder Befehl mit Exit-Code `2` und der Meldung „keine Projektkonfiguration gefunden; `sdd adopt` oder `sdd init` ausführen" ab. Es gibt keine stillschweigenden Defaults — ein Prüfer, der ohne Konfiguration rät, prüft das falsche Projekt. Ausnahmen: `sdd init`, `sdd adopt` und `sdd new` legen die Datei selbst an bzw. funktionieren mit einem Vorschlag.
 
