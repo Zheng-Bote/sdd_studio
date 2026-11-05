@@ -150,7 +150,9 @@ func TestConflictsCheckRefusesValues(t *testing.T) {
 	if _, r := conflictsCall(t, s, map[string]any{"feature": "billing", "conflicts": []any{}, "rules": rules}); r["isError"] != true {
 		t.Errorf("rule result: %v", r)
 	}
-	if _, r := conflictsCall(t, s, map[string]any{"feature": "fehlt", "conflicts": []any{}, "rules": allRules}); r["isError"] != true {
+	// An unknown slug names the features that have a Tech Spec (counter-test with qwen3:14b).
+	if _, r := conflictsCall(t, s, map[string]any{"feature": "feature-billing", "conflicts": []any{}, "rules": allRules}); r["isError"] != true ||
+		!strings.Contains(errText(r), "Tech Specs gibt es für: billing") {
 		t.Errorf("feature without Tech Spec: %v", r)
 	}
 }

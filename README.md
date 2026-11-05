@@ -175,5 +175,5 @@ go run ./cmd/sdd lint
 
 ## Nächste Schritte
 
-- **Praxistest mit weiteren Modellen:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher); kleine lokale Modelle halten Form- und Zitierregeln weniger zuverlässig ein. Ob `sdd_conflicts_check` deren Zitate im Alltag auffängt, zeigt ein Lauf mit z. B. `qwen3:14b`.
+- **Kleine lokale Modelle:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher). Im Gegentest mit `qwen3:14b` erfand das Modell bei `sdd-conflicts` Pfade, Zeilen und Zitate und fand die eingebauten Widersprüche nicht; `sdd_conflicts_check` hätte jede dieser Meldungen verworfen, und den versuchten Schreibvorgang hielt die Freigabekarte auf. Für `sdd-conflicts` taugt ein Modell dieser Größe nicht; welche Mindestgröße reicht, ist offen.
 - **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.
