@@ -42,16 +42,9 @@ Jedes Zitat aus `sdd-conflicts` ist maschinell gegen die Datei geprüft, bevor d
 ## Akzeptanzkriterien
 
 - **AC-1** `sdd mcp` bietet das lesende Werkzeug `sdd_conflicts_check` (`feature`, `conflicts`, `rules`) an, ohne Schalter und mit `readOnlyHint: true`. Es schreibt nichts.
-- **AC-2** Jedes Zitat (`path`, `line`, `quote`) wird gegen die Datei geprüft:
-  - **belegt**, wenn es in der angegebenen Zeile steht;
-  - **belegt, andere Zeile**, wenn es in genau einer anderen Zeile steht (diese Zeile wird genannt);
-  - **nicht gefunden** in jedem anderen Fall.
-  Der Vergleich ignoriert Unterschiede in Leerraum und Markdown-Hervorhebungen (`*`, `_`, Backticks). Ein Zitat unter 12 Zeichen gilt als **zu kurz**. Zulässig sind nur die Verfassung, die Tech Spec des Features und ADRs, sonst gilt das Zitat als **nicht zulässig**.
+- **AC-2** Jedes Zitat (`path`, `line`, `quote`) wird gegen die Datei geprüft. Es ist **belegt**, wenn es in der angegebenen Zeile steht, **belegt, andere Zeile**, wenn es in genau einer anderen Zeile steht (diese Zeile wird genannt), und sonst **nicht gefunden**. Der Vergleich ignoriert Unterschiede in Leerraum und Markdown-Hervorhebungen (`*`, `_`, Backticks). Ein Zitat unter 12 Zeichen gilt als **zu kurz**. Zulässig sind nur die Verfassung, die Tech Spec des Features und ADRs, sonst gilt das Zitat als **nicht zulässig**.
 - **AC-3** Eine Meldung (`constitution`, `spec`, `kind`, `suggestion`) gilt als belegt, wenn beide Zitate belegt sind, auch mit anderer Zeile. `kind` muss `Widerspruch`, `Spannung` oder `unklar` sein, `suggestion` muss `Tech Spec anpassen` oder `ADR für eine Verfassungsänderung` sein. Andere Werte werden abgelehnt.
 - **AC-4** Bei einer Markdown-Verfassung ist jeder nummerierte Listenpunkt unter einer Überschrift der zweiten Ebene eine Regel (Datei:Zeile). Das Ergebnis nennt die Regeln, die in `rules` fehlen, und die Einträge in `rules`, die keine Regel sind. Bei einer Verfassung im SDD-Format steht dort „Regelliste nicht prüfbar“.
 - **AC-5** Das Ergebnis enthält je Meldung den Prüfstatus beider Zitate, eine Zusammenfassung (belegt, nicht belegt, fehlende Regeln) und eine Markdown-Tabelle der belegten Meldungen mit den geprüften Zeilen.
-- **AC-6** Der Prompt `sdd-conflicts` verlangt:
-  - Vor der Antwort ruft das Modell `sdd_conflicts_check` mit allen Meldungen und der vollständigen Regelliste auf.
-  - Nennt das Ergebnis fehlende Regeln, prüft das Modell diese nach und ruft das Werkzeug erneut auf.
-  - Die Antwort zeigt nur belegte Meldungen, mit den geprüften Zeilen. Nicht belegte Meldungen nennt sie getrennt als verworfen, mit Grund.
+- **AC-6** Der Prompt `sdd-conflicts` verlangt, dass das Modell vor der Antwort `sdd_conflicts_check` mit allen Meldungen und der vollständigen Regelliste aufruft. Nennt das Ergebnis fehlende Regeln, prüft das Modell diese nach und ruft das Werkzeug erneut auf. Die Antwort zeigt nur belegte Meldungen, mit den geprüften Zeilen, und nennt nicht belegte Meldungen getrennt als verworfen, mit Grund.
 - **AC-7** Konzept und Handbuch beschreiben die maschinelle Prüfung der Zitate. Das Ergebnis bleibt ein Hinweis, kein Befund, und SDD-060 steht weiter nicht im Katalog.
