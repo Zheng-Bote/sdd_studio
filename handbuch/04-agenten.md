@@ -51,7 +51,7 @@ Bei einem Konflikt zwischen gleich bindenden Regeln: **nicht entscheiden, sonder
 | vor touches und Tests | `sdd_stack` | Sprachen des Projekts aus Dateiendungen und Marker-Dateien, je Sprache Testdatei-Muster und Kommentarsyntax; liest keine Inhalte |
 | zum Lesen | `sdd_read` | Artefakt, `sdd.config.yaml`, Testdatei oder Kontextdatei (`README.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.gemini/GEMINI.md` …, nur lesbar) mit Zeilennummern und SHA-256 |
 | zum Projektstart | `sdd_init` | wie `sdd init [--git]`: Vorschau, dann Anlegen nach Bestätigung (nur mit `--allow-write`) |
-| nach dem Release | `sdd_archive` | wie `sdd archive`: Feature ins Archiv verschieben, nur wenn jedes Kriterium getestet ist (nur mit `--allow-write`) |
+| nach dem Release | `sdd_archive` | wie `sdd archive`: Feature ins Archiv verschieben, nur wenn kein PRD mehr `status: draft` trägt und jedes Kriterium getestet ist (nur mit `--allow-write`) |
 | zum Ändern | `sdd_write` | Artefakt oder Testdatei ändern bzw. anlegen; Diff vorab (nur mit `--allow-write`) |
 | Konfiguration ändern | `sdd_config` | kritisch: Diff und je Prüflauf wegfallende und hinzukommende Befunde vorab, einzeln bestätigt (nur mit `--allow-critical`) |
 | nach `sdd-conflicts` | `sdd_conflicts_check` | Zitate gegen Datei und Zeile prüfen, fehlende Regeln der Verfassung nennen; bewertet nichts |

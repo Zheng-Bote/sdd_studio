@@ -44,3 +44,23 @@ func TestArchiveTool(t *testing.T) {
 		t.Errorf("archived PRD lacks status: archived")
 	}
 }
+
+// archive-not-draft AC-2: sdd_archive refuses a feature with a draft PRD, as preview and with apply.
+func TestArchiveToolRefusesDraft(t *testing.T) {
+	root := project(t)
+	write(t, root, "api/export_test.go", "// billing AC-1: export\n// billing AC-2: import\n")
+	prd := readFileT(t, root, "docs/prd/billing.md")
+	write(t, root, "docs/prd/billing.md", strings.Replace(prd, "status: active", "status: draft", 1))
+	if readFileT(t, root, "docs/prd/billing.md") == prd {
+		t.Fatal("test setup: billing PRD has no status: active")
+	}
+	for _, apply := range []bool{false, true} {
+		r := call(t, newServer(root, true), "sdd_archive", map[string]any{"feature": "billing", "apply": apply})
+		if r["isError"] != true || !strings.Contains(errText(r), "status: draft") {
+			t.Errorf("apply %v: %v", apply, r)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(root, "docs/prd/billing.md")); err != nil {
+		t.Fatal("draft PRD moved")
+	}
+}

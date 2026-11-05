@@ -3,10 +3,12 @@ feature: archive-not-draft
 status: active
 archive-after:
 touches:
+  - cmd/sdd/**
   - internal/sddcore/guide/**
   - internal/mcp/**
   - handbuch/**
   - README.md
+  - CHANGELOG.md
 ---
 
 # PRD — Kein Archiv für ein Feature im Entwurf

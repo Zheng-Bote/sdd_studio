@@ -546,6 +546,7 @@ sdd archive --feature <slug> [--release <version>] [--dry-run]
 - **Was verschoben wird:** jede Datei des Features unter `artifacts.prd`, `artifacts.design` und `artifacts.plans`, die noch nicht im Archiv liegt. Zum Feature gehört sie über `feature:`, ohne Feld über den Dateinamen. Ziel ist `<artifacts.archive>/<Typordner>/<Rest des Pfades>`, z. B. `docs/prd/x.md` → `docs/archive/prd/x.md`; bei einem Datei-Glob ist der Typordner der letzte Ordner des statischen Präfixes.
 - **Frontmatter:** Danach steht `status: archived`, mit `--release` auch `release: <version>`. Der übrige Inhalt bleibt byteweise gleich. Die Quelle wird erst entfernt, wenn das Ziel geschrieben ist. Git bleibt unberührt.
 - **Abbruch** mit Exit-Code `2`, ohne etwas zu verschieben, wenn
+  - ein PRD des Features außerhalb des Archivs noch `status: draft` trägt (ein Entwurf ist nicht fertig; archiviert wird nach Umsetzung und Merge, vor dem Release),
   - ein Akzeptanzkriterium des Features keinen Testverweis hat (gezählt wie bei `SDD-022`; ein Feature ohne Tests ist nicht fertig),
   - eine Zieldatei schon existiert,
   - das Feature keine Datei außerhalb des Archivs hat,

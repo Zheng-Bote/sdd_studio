@@ -15,6 +15,7 @@ Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert
 
 - **Konfiguration ändern ist im Desktop kritisch** ([ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md)): einzeln bestätigt, nie für die Sitzung. `sdd_write` lehnt `sdd.config.yaml` ab; andere MCP-Clients ohne `--allow-critical` können die Konfiguration nicht mehr ändern.
 - **Sitzungsfreigabe je Stufe:** Eine Freigabe für die Sitzung gilt nur für die Stufe der Karte, auf der sie erteilt wurde. Auf einer Vorschau („nur Vorschau“) erlaubt sie nur weitere Vorschauen, Schreiben wird erneut gefragt. Bisher gab sie auch spätere Schreibvorgänge frei, ohne dass der Inhalt je gezeigt worden war. API: `allowed_writes` neben `allowed_tools`.
+- **`sdd archive` und `sdd_archive` lehnen ein Feature ab, dessen PRD noch `status: draft` trägt.** Bisher genügte ein Testverweis je Kriterium, im Live-Test hätte so ein Entwurf mit lauter übersprungenen Gerüst-Tests archiviert werden können.
 - Konzept §9.6: `baseline: forbidden` schützt nur vor der Baseline; `profile: minimal` schaltet SDD-011, SDD-050 und SDD-051 ab.
 
 ### Behoben

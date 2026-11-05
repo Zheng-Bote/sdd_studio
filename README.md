@@ -60,7 +60,7 @@ make uninstall       # alles wieder entfernen
 | `sdd baseline [--gate <gate>] [--prune] [--accept <regel-id>]` | Bestand einfrieren, quittieren (`--accept SDD-011` schreibt das ADR-Lockfile) |
 | `sdd init [--profile minimal\|standard\|regulated] [--dry-run] [--no-ci] [--git]` | Neues Projekt: Konfiguration, Verfassung, Artefaktordner, CI-Workflow, Agenten-Dateien (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`); mit `--git` ohne vorhandenes Repository auch `git init` und ein erster Commit |
 | `sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` | Feature-Artefakte aus Templates; `new --type adr\|doc --title …` |
-| `sdd archive --feature <slug> [--release <version>] [--dry-run]` | Feature nach dem Release ins Archiv verschieben (`status: archived`); nur wenn jedes Akzeptanzkriterium einen Testverweis hat |
+| `sdd archive --feature <slug> [--release <version>] [--dry-run]` | Feature nach dem Release ins Archiv verschieben (`status: archived`); nur wenn kein PRD mehr `status: draft` trägt und jedes Akzeptanzkriterium einen Testverweis hat |
 | `sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` | Bestandsprojekt übernehmen: Probelauf-Bericht; mit `--apply` auf neuem Branch, ein Commit je Schritt ([ADR 0001](docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md)) |
 | `sdd report [--format markdown\|json] [--since <ref>]` | Reifegrad, Befunde, Gates, Schuldenstand mit Trend |
 | `sdd next [--feature <slug>]` | nächster Prozessschritt je Feature |
@@ -175,5 +175,4 @@ go run ./cmd/sdd lint
 
 - **Praxistest mit weiteren Modellen:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher); kleine lokale Modelle halten Form- und Zitierregeln weniger zuverlässig ein. Ob `sdd_conflicts_check` deren Zitate im Alltag auffängt, zeigt ein Lauf mit z. B. `qwen3:14b`.
 - **Profilwechsel nach unten in `sdd` selbst sperren?** `profile: minimal` schaltet SDD-011, SDD-050 und SDD-051 ab, obwohl die Baseline sie nicht unterdrücken darf. Im Desktop ist das seit ADR 0004 eine kritische Aktion; ob `sdd` es auch im Terminal und in CI ohne ADR verweigern soll, entscheidet ein späteres ADR.
-- **Archivieren erst nach dem Release:** `sdd archive` prüft heute nur, ob jedes Kriterium einen Testverweis hat; ein Feature mit übersprungenen Gerüst-Tests ließe sich vor der Umsetzung archivieren. Im Live-Test hat das Modell es verhindert, nicht das Werkzeug.
 - **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.
