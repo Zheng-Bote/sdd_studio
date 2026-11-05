@@ -81,7 +81,7 @@ func baseTools() []tool {
 				"slug":    str("Slug für adr/doc"), "touches": strs("erklärte Änderungsabsicht"), "archive_after": str("YYYY-MM-DD"),
 				"apply": map[string]any{"type": "boolean", "description": "Dateien wirklich anlegen"},
 			}), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
-		{Name: "sdd_write", Title: "Datei schreiben", Description: "Legt ein Artefakt, sdd.config.yaml oder eine Testdatei (tests.include) an oder ersetzt ihren Inhalt. Ohne apply nur Vorschau (Diff bzw. Inhalt); apply nur mit --allow-write. Eine bestehende Datei nur mit base_sha256 aus sdd_read. Artefakte werden vorher mit den Regeln geprüft, ein Fehler verhindert das Schreiben; ein ADR auf accepted setzt dieses Werkzeug nie.",
+		{Name: "sdd_write", Title: "Datei schreiben", Description: "Legt ein Artefakt oder eine Testdatei (tests.include) an oder ersetzt ihren Inhalt; sdd.config.yaml ändert nur sdd_config (kritisch). Ohne apply nur Vorschau (Diff bzw. Inhalt); apply nur mit --allow-write. Eine bestehende Datei nur mit base_sha256 aus sdd_read. Artefakte werden vorher mit den Regeln geprüft, ein Fehler verhindert das Schreiben; ein ADR auf accepted setzt dieses Werkzeug nie.",
 			InputSchema: obj(map[string]any{
 				"path": str("Pfad relativ zum Repository"), "content": str("vollständiger neuer Inhalt"),
 				"base_sha256": str("sha256 des aktuellen Inhalts aus sdd_read; Pflicht, wenn die Datei existiert"),

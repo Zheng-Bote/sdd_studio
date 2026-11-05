@@ -176,7 +176,21 @@ func TestPromptsConfigTool(t *testing.T) {
 			t.Errorf("%s still changes the configuration with sdd_write", name)
 		}
 	}
+	for _, tl := range toolList(t, s) {
+		if tl["name"] == "sdd_write" && !strings.Contains(tl["description"].(string), "sdd.config.yaml ändert nur sdd_config") {
+			t.Errorf("sdd_write description still offers the configuration: %s", tl["description"])
+		}
+	}
 	if !strings.Contains(texts["sdd-tests"], "tests.include mit sdd_config") || !strings.Contains(texts["sdd-idea"], "einzelnen Bestätigung") {
 		t.Errorf("sdd-tests or common lacks the critical config rule")
 	}
+}
+
+func toolList(t *testing.T, s *Server) []map[string]any {
+	t.Helper()
+	var out []map[string]any
+	for _, tl := range exchange(t, s, `{"jsonrpc":"2.0","id":9,"method":"tools/list"}`)[0]["result"].(map[string]any)["tools"].([]any) {
+		out = append(out, tl.(map[string]any))
+	}
+	return out
 }
