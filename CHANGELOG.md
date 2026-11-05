@@ -4,10 +4,12 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
-Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert-expiry-watcher, vom leeren Ordner bis zu den Tests je Kriterium) und [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md).
+Regelkatalog `1.2.0` mit 23 Regeln. Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert-expiry-watcher, vom leeren Ordner bis zu den Tests je Kriterium), [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md) und [ADR 0005](docs/adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md).
 
 ### Hinzugefügt
 
+- **`SDD-012` — Abschwächende Änderung der Konfiguration verweist auf ein ADR** (ADR 0005): In `pre-implementation` und `pre-merge` ein `error`, wenn `sdd.config.yaml` gegenüber der Merge-Basis ein niedrigeres Profil, einen geänderten Override, ein neues `exclude`-Muster oder gelockerte Schwellen bekommt und kein ADR im selben Diff die Datei nennt. Bestehende Konfigurationen sind nicht betroffen.
+- **Katalogattribut `pinned`:** Eine so markierte Regel läuft in den Gates ihrer `gate_default` auch neben einem `gates.<gate>.override`; sie muss `profile: minimal` und `baseline: forbidden` tragen. Bisher einzige: `SDD-012`.
 - **`sdd_config`:** kritisches Werkzeug (nur mit `--allow-critical`) für Änderungen an `sdd.config.yaml`. Die Vorschau zeigt den Diff und je Prüflauf (Lint und die drei Gates) die Befunde, die mit der neuen Konfiguration wegfallen oder hinzukommen; die Schaltfläche nennt die geänderten Schlüssel, einen Profilwechsel mit altem und neuem Wert und jede Änderung an `override`.
 - **`sdd_conflicts_check`:** lesendes Werkzeug, das das Ergebnis von `sdd-conflicts` maschinell prüft: Steht jedes Zitat wörtlich in der genannten Datei und Zeile, und fehlt eine Regel der Verfassung in der Regelliste? Es vergleicht nur Zeichenketten und bewertet nichts. `sdd-conflicts` ruft es vor der Antwort auf und zeigt nur belegte Meldungen.
 

@@ -22,7 +22,7 @@ Letzte Version: **0.5.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`. 
 | Bereich | Regeln |
 |---|---|
 | Verfassung | `SDD-001` vorhanden, `SDD-002a` Pflichtabschnitte, `SDD-002b` `.sdd`-Grammatik, `SDD-003` keine Feature-Inhalte (heuristisch) |
-| ADR | `SDD-010` ADR bei Verfassungsänderung, `SDD-011` unveränderliche ADRs (`.sdd/adr-lock.json`) |
+| ADR | `SDD-010` ADR bei Verfassungsänderung, `SDD-011` unveränderliche ADRs (`.sdd/adr-lock.json`), `SDD-012` ADR bei abschwächender Änderung der Konfiguration (Profil, Override, `exclude`, Schwellen; nicht abwählbar) |
 | Feature | `SDD-020` PRD und `SDD-030` Tech Spec ab Größenschwelle; Feature-Auflösung `--feature` → Frontmatter im Diff → Branch, fail-closed |
 | PRD & Akzeptanzkriterien | `SDD-021` stabile Kennung `AC-<n>`, `SDD-023` Nicht-Ziele genannt, `SDD-022` in Tests referenziert (mit Feature-Slug, sobald es mehr als ein Feature gibt), `SDD-025` Kennung in Testdeklaration oder -rumpf, `SDD-031` Tech Spec nennt die umgesetzten AC-Kennungen |
 | Umfang & Plan | `SDD-024` Diff weicht nicht von der erklärten Absicht (`touches`) ab, `SDD-040` Plan vor der ersten Task, `SDD-041` jede Task nennt ein Akzeptanzkriterium |
@@ -174,5 +174,4 @@ go run ./cmd/sdd lint
 ## Nächste Schritte
 
 - **Praxistest mit weiteren Modellen:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher); kleine lokale Modelle halten Form- und Zitierregeln weniger zuverlässig ein. Ob `sdd_conflicts_check` deren Zitate im Alltag auffängt, zeigt ein Lauf mit z. B. `qwen3:14b`.
-- **Profilwechsel nach unten in `sdd` selbst sperren?** `profile: minimal` schaltet SDD-011, SDD-050 und SDD-051 ab, obwohl die Baseline sie nicht unterdrücken darf. Im Desktop ist das seit ADR 0004 eine kritische Aktion; ob `sdd` es auch im Terminal und in CI ohne ADR verweigern soll, entscheidet ein späteres ADR.
 - **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.

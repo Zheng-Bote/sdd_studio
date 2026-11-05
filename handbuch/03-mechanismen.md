@@ -242,7 +242,7 @@ Für die unter `artifacts.constitution` konfigurierte Datei gilt:
 
 ---
 
-## ADR-Regeln (`SDD-010`, `SDD-011`)
+## ADR-Regeln (`SDD-010`, `SDD-011`, `SDD-012`)
 
 Die Verfassung hält den *aktuell gültigen Zustand*, das ADR die *unveränderliche Begründung*. Als **ADR** gilt jede Datei `NNNN-*.md` (vier Ziffern) unter `artifacts.adr`.
 
@@ -282,6 +282,31 @@ Die Verfassung hält den *aktuell gültigen Zustand*, das ADR die *unveränderli
 3. **Entschieden** ist ein ADR, dessen `status` nicht `proposed` ist; vorgeschlagene ADRs sind Entwürfe und werden weder gelockt noch geprüft.
 4. Für jedes entschiedene ADR gilt: Ist es nicht gelockt, entsteht ein `warn`; weicht sein Hash vom gelockten ab, ein `error`.
 5. `sdd baseline` lockt neue entschiedene ADRs, verändert aber nie einen vorhandenen Eintrag. Nur `sdd baseline --accept SDD-011` übernimmt geänderte Hashes — sichtbar als Änderung des Lockfiles im Review. Einträge gelöschter ADRs bleiben erhalten (Historie).
+
+---
+
+### SDD-012 — Abschwächende Änderung der Konfiguration verweist auf ein ADR {#sdd-012}
+
+- **Schweregrad:** `error` in `pre-implementation` und `pre-merge`; kein `default`, weil die Regel einen Diff braucht
+- **Profil:** ab `minimal`
+- **Baseline:** `forbidden`
+- **Pinned:** ja — läuft in ihren Gates auch neben einem `gates.<gate>.override`, der sie nicht nennt (siehe [SDD-072](#sdd-072-vertrag))
+- **Check:** `config_weakening_has_adr`
+
+**Begründung:** `sdd.config.yaml` entscheidet, was geprüft wird. Ein niedrigeres Profil, ein geänderter Override oder ein neues `exclude` schaltet Prüfungen ab — `profile: minimal` sogar SDD-011, SDD-050 und SDD-051, die die Baseline nicht unterdrücken darf. Wie bei der Verfassung (SDD-010) gehört zu einer solchen Änderung ein ADR, das sie begründet ([ADR 0005](../docs/adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md)). Im KI-Desktop ist jede Änderung der Konfiguration zusätzlich eine kritische Aktion ([ADR 0004](../docs/adr/0004-konfiguration-aendern-ist-kritisch.md)).
+
+#### SDD-012 Prüfvertrag {#sdd-012-vertrag}
+
+1. Die Regel greift nur, wenn `sdd.config.yaml` in `git diff --no-renames <base>...HEAD` vorkommt ([Merge-Basis](#feature-aufloesung)).
+2. **Keine Änderung im Sinne der Regel:** Die Datei fehlt am Vergleichsstand (erstmaliges Anlegen), fehlt im Arbeitsbaum, oder eine der beiden Fassungen lässt sich nicht als Konfiguration laden (die aktuelle meldet dann schon das Laden).
+3. **Abschwächend** ist, verglichen wird Vergleichsstand → Arbeitsbaum:
+   - `profile` sinkt in der Ordnung `minimal` < `standard` < `regulated`;
+   - `gates.<gate>.override` ist für ein Gate als Menge verschieden (jede Änderung, weil ein Override die Regelmenge ersetzt);
+   - `exclude` enthält ein Muster, das vorher fehlte;
+   - `thresholds.layers` oder `thresholds.feature_artifacts_required_when.touched_paths` verliert einen Eintrag;
+   - `thresholds.feature_artifacts_required_when.min_layers_touched` steigt.
+4. Nicht geprüft werden `tests.include`, `artifacts.*`, `base_ref`, `constitution_sections` und alle übrigen Felder; ihre Richtung ist nicht eindeutig (ADR 0005, Entscheidung 3).
+5. Gibt es mindestens eine Abschwächung, muss ein ADR, das ebenfalls im Diff vorkommt, `sdd.config.yaml` in seinem Frontmatter nennen — in `references` oder im Feld `adr`, wie bei SDD-010. Fehlt es, entsteht ein `error` an `sdd.config.yaml` mit allen erkannten Abschwächungen.
 
 ---
 
