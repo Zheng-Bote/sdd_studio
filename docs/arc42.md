@@ -52,19 +52,15 @@ SDD Studio setzt Spec-Driven Development durch: Ein Projekt hält dauerhafte Reg
 
 ## Fachlicher Kontext {#_business_context}
 
-```text
-                 +--------------------+
-  Entwickler --->|                    |---> Befunde, Bericht, nächster Schritt
-  Reviewer  --->|   SDD Studio       |---> Gerüste (Artefakte, Konfiguration)
-  CI        --->|   (sdd, sdd-desk)  |---> Exit-Code für das Gate
-  KI-Agent  --->|                    |
-                 +---------+----------+
-                           |
-          liest/schreibt   |   Artefakte, Verfassung, ADRs, Konfiguration,
-          (nur im Repo)    v   .sdd/baseline.json, .sdd/adr-lock.json
-                 +--------------------+
-                 |  Ziel-Repository   |
-                 +--------------------+
+```mermaid
+flowchart LR
+    Dev["Entwickler"] -->|Kommandos, Freigaben| SDD
+    Rev["Reviewer"] -->|Bericht, sdd explain| SDD
+    CI["CI"] -->|sdd gate| SDD
+    Agent["KI-Agent"] -->|MCP| SDD
+    SDD["SDD Studio<br/>sdd, sdd-desk"] -->|Befunde, nächster Schritt, Exit-Code| Dev
+    SDD -->|"liest; schreibt nur über Plan/Apply"| Repo[("Ziel-Repository<br/>Verfassung, ADRs, Artefakte,<br/>sdd.config.yaml, .sdd/")]
+    SDD -.->|"nur sdd-desk, nach Bestätigung"| LLM["Sprachmodell<br/>des gewählten Anbieters"]
 ```
 
 | Partner | Eingabe | Ausgabe |
@@ -100,19 +96,29 @@ SDD Studio setzt Spec-Driven Development durch: Ein Projekt hält dauerhafte Reg
 
 ## Whitebox Gesamtsystem {#_whitebox_overall_system}
 
-```text
-+------------------------------------------------------------------------+
-| cmd/sdd (CLI)           cmd/sdd-desk (KI-Desktop, optional)            |
-|   |   \                     |            \                             |
-|   |    \--> internal/ui      |             --> internal/desk            |
-|   |          (sdd ui)        |                  (Agent, Anbieter, HTTP) |
-|   |    \--> internal/mcp <---+---- stdio ----   |                       |
-|   v          (sdd mcp)                          v                       |
-| internal/sddcore  (Domäne, KI-frei)        apps/desk (Angular, Tauri)  |
-|   catalog · config · scan · rules · baseline · adrlock · report        |
-|   scaffold · guide · adopt · overview · engine · baselineplan          |
-+------------------------------------------------------------------------+
-         | eingebettet: catalog/catalog.yaml, handbuch/, templates/
+```mermaid
+flowchart TB
+    subgraph Programme
+        CLI["cmd/sdd<br/>CLI"]
+        DESK["cmd/sdd-desk<br/>KI-Desktop, optional"]
+    end
+    subgraph Ansichten
+        UI["internal/ui<br/>sdd ui"]
+        MCP["internal/mcp<br/>sdd mcp"]
+        DESKPKG["internal/desk<br/>Agent, Anbieter, HTTP"]
+        APP["apps/desk<br/>Angular, Tauri"]
+    end
+    CORE["internal/sddcore<br/>Domäne, KI-frei"]
+    ASSETS[("eingebettet:<br/>catalog, handbuch, templates")]
+    CLI --> CORE
+    CLI --> UI
+    CLI --> MCP
+    UI --> CORE
+    MCP --> CORE
+    DESK --> DESKPKG
+    DESKPKG -->|stdio| MCP
+    APP -->|HTTP 127.0.0.1| DESKPKG
+    CORE --> ASSETS
 ```
 
 Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, MCP, Desktop) nur eine Ansicht. `sdd-desk` importiert `sddcore` nicht direkt, sondern spricht `sdd mcp` an (Test `TestSddDoesNotImportDesk` sichert die Gegenrichtung).
@@ -164,12 +170,46 @@ Dazu geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-
 
 ## Gate in CI {#_runtime_scenario_1}
 
+```mermaid
+sequenceDiagram
+    participant CI
+    participant CLI as cmd/sdd
+    participant Core as sddcore
+    participant Git
+    CI->>CLI: sdd gate pre-merge
+    CLI->>Core: Konfiguration und Katalog laden
+    Core->>Git: Merge-Basis und Diff
+    Git-->>Core: geänderte Dateien
+    Core->>Core: Eff(pre-merge) bilden, Regeln prüfen, Baseline anwenden
+    Core-->>CLI: Befunde
+    CLI-->>CI: Bericht, Exit 0, 1 oder 2
+```
+
 1. CI ruft `sdd gate pre-merge` (über `action.yml`).
 2. `config` lädt `sdd.config.yaml`, `catalog` den Katalog; `scan` bestimmt die Merge-Basis und den Diff.
 3. `rules` bildet `Eff(pre-merge)` (Override oder `gate_default`, plus `pinned`) und führt jede Prüfung aus.
 4. `baseline` markiert bekannte Altbefunde; `report` gibt Befunde aus. Exit `1` bei `error`, `0` sonst, `2` bei Konfigurationsfehlern.
 
 ## Schreibvorgang im KI-Desktop {#_runtime_scenario_2}
+
+```mermaid
+sequenceDiagram
+    actor Mensch
+    participant Desk as sdd-desk
+    participant LLM as Sprachmodell
+    participant MCP as sdd mcp
+    Desk->>LLM: Gespräch und Werkzeuge
+    LLM-->>Desk: sdd_write mit apply
+    Desk->>MCP: Vorschau ohne apply
+    MCP-->>Desk: Diff
+    Desk->>Mensch: Freigabekarte mit Diff
+    Mensch-->>Desk: einmal oder für die Sitzung
+    Desk->>MCP: sdd_write mit apply
+    MCP->>MCP: Pfad, base_sha256 und Regeln prüfen, atomar schreiben
+    MCP-->>Desk: SHA-256 und Diff
+    Desk->>LLM: Werkzeugergebnis
+    LLM-->>Desk: sdd_read zum Gegenlesen, dann Antwort
+```
 
 1. Das Modell ruft z. B. `sdd_write` mit `apply` auf.
 2. `internal/desk` stuft den Aufruf ein (lesend / schreibend / kritisch). Ohne Freigabe holt es mit `apply: false` die Vorschau (Diff) und parkt den Aufruf als Freigabekarte.
@@ -179,11 +219,41 @@ Dazu geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-
 
 ## Abgleich mit der Verfassung (`sdd-conflicts`) {#_runtime_scenario_n}
 
+```mermaid
+sequenceDiagram
+    participant LLM as Sprachmodell
+    participant MCP as sdd mcp
+    LLM->>MCP: sdd_read Verfassung und Tech Spec
+    MCP-->>LLM: Text mit Zeilennummern
+    LLM->>MCP: sdd_conflicts_check mit Meldungen und Regelliste
+    MCP->>MCP: jedes Zitat gegen Datei und Zeile prüfen, Regeln abgleichen
+    MCP-->>LLM: belegt oder verworfen, fehlende Regeln, Tabelle
+    LLM->>LLM: nur belegte Meldungen antworten
+```
+
 Das Modell liest Verfassung und Tech Spec, übergibt seine Meldungen strukturiert an `sdd_conflicts_check`; das Werkzeug prüft jedes Zitat gegen Datei und Zeile und nennt fehlende Regeln. Die Antwort zeigt nur belegte Meldungen. Das Ergebnis ist ein Hinweis, kein Befund.
 
 # Verteilungssicht {#section-deployment-view}
 
 ## Infrastruktur Ebene 1 {#_infrastructure_level_1}
+
+```mermaid
+flowchart LR
+    subgraph Rechner["Entwicklerrechner"]
+        APPN["sdd-desk-app<br/>Tauri"] -->|Sidecar| DESKN["sdd-desk"]
+        DESKN -->|stdio| SDDN["sdd mcp"]
+        CLIN["sdd<br/>CLI, sdd ui"]
+        ENV[("config/llm.env<br/>0600")]
+        DESKN --- ENV
+    end
+    subgraph Runner["CI-Runner"]
+        ACT["GitHub Action<br/>baut sdd"] --> GATE["sdd gate"]
+    end
+    DESKN -.->|HTTPS, nach Bestätigung| PROV["Anbieter<br/>Ollama, Claude, Gemini …"]
+    SDDN --> REPO[("Repository")]
+    CLIN --> REPO
+    GATE --> REPO2[("Checkout")]
+```
 
 | Einheit | Inhalt | Ort |
 |---|---|---|
