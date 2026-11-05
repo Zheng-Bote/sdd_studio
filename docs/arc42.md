@@ -4,7 +4,7 @@ status: active
 
 # Architekturdokumentation — SDD Studio (arc42)
 
-Stand: 2026-11-05, nach den Änderungen für 0.6.0 (Regelkatalog `1.2.0`, 23 Regeln). Gliederung nach [arc42](https://arc42.org) Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende). Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
+Stand: 2026-11-05, nach den Änderungen für 0.6.0 (Regelkatalog `1.2.0`, 23 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
 
 # Einführung und Ziele {#section-introduction-and-goals}
 
