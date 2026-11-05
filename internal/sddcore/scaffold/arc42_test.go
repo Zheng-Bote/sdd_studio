@@ -108,3 +108,33 @@ func TestArc42Documented(t *testing.T) {
 		}
 	}
 }
+
+// arc42-docs AC-7: context, building block, runtime and deployment view each hold a Mermaid skeleton of the expected
+// diagram type; the prompt sdd-arc42 is tested in internal/mcp.
+func TestArc42Mermaid(t *testing.T) {
+	data, err := os.ReadFile("../../../templates/arc42.md.tmpl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for anchor, kind := range map[string]string{
+		"{#_business_context}":        "flowchart",
+		"{#_whitebox_overall_system}": "flowchart",
+		"{#section-runtime-view}":     "sequenceDiagram",
+		"{#_infrastructure_level_1}":  "flowchart",
+	} {
+		i := strings.Index(text, anchor)
+		if i < 0 {
+			t.Fatalf("anchor %s missing", anchor)
+		}
+		rest := text[i:]
+		next := strings.Index(rest[len(anchor):], "\n#")
+		if next < 0 {
+			next = len(rest) - len(anchor)
+		}
+		section := rest[:len(anchor)+next]
+		if !strings.Contains(section, "```mermaid\n"+kind) {
+			t.Errorf("section %s lacks a %s skeleton", anchor, kind)
+		}
+	}
+}

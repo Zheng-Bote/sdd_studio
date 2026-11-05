@@ -46,7 +46,7 @@ sdd new --type arc42
 | `doc` | `<artifacts.docs[0]>/<slug>.md` | `status: active` |
 | `arc42` | `artifacts.architecture` (Standard `docs/arc42.md`) | `status: active`, `release` |
 
-- **`arc42`** legt die Architekturdokumentation aus dem mitgelieferten deutschen arc42-Template an (zwölf Abschnitte mit den Ankern des Originals), ohne `--title`; Projektname ist der Ordnername. Das Template steht unter CC BY-SA 4.0 (Gliederung © Hruschka, Starke und Mitwirkende, arc42.org; [ADR 0006](../docs/adr/0006-arc42-template-unter-cc-by-sa-einbetten.md)); Lizenzkopf und Zeile zur Gliederung bleiben in der Datei stehen. `release` nennt den Stand, den die Doku beschreibt.
+- **`arc42`** legt die Architekturdokumentation aus dem mitgelieferten deutschen arc42-Template an (zwölf Abschnitte mit den Ankern des Originals), ohne `--title`; Projektname ist der Ordnername. Das Template steht unter CC BY-SA 4.0 (Gliederung © Hruschka, Starke und Mitwirkende, arc42.org; [ADR 0006](../docs/adr/0006-arc42-template-unter-cc-by-sa-einbetten.md)); Lizenzkopf und Zeile zur Gliederung bleiben in der Datei stehen. `release` nennt den Stand, den die Doku beschreibt. Kontextabgrenzung, Bausteinsicht, Laufzeitsicht und Verteilungssicht enthalten Mermaid-Gerüste (`flowchart`, `sequenceDiagram`), die `sdd-arc42` durch die Bausteine des Projekts ersetzt.
 
 - Ohne `--type` legt `--feature` PRD und Tech Spec an — genau das Paar, das `SDD-020`/`SDD-030` verlangen.
 - Trägt im Zielverzeichnis bereits eine Datei `feature: <slug>`, wird für diesen Typ nichts angelegt, auch wenn der Dateiname abweicht.

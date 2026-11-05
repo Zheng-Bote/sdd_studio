@@ -10,7 +10,7 @@ Geändert: deutsche Übersetzung der Gliederung, Hilfetexte gekürzt (SDD Studio
 
 # Architekturdokumentation — {{.Project}}
 
-Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); deutsche Fassung der Gliederung. `release:` im Kopf nennt den Stand, den diese Seite beschreibt.
+Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); deutsche Fassung der Gliederung. `release:` im Kopf nennt den Stand, den diese Seite beschreibt. Diagramme in [Mermaid](https://mermaid.js.org); die Gerüste unten durch die Bausteine des Projekts ersetzen.
 
 # Einführung und Ziele {#section-introduction-and-goals}
 
@@ -38,6 +38,12 @@ Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hrusch
 
 <Kommunikationspartner des Systems und was mit ihnen ausgetauscht wird.>
 
+```mermaid
+flowchart LR
+    Nutzer["Nutzer"] -->|Eingabe| System["{{.Project}}"]
+    System -->|Ausgabe| Nachbar["Nachbarsystem"]
+```
+
 ## Technischer Kontext {#_technical_context}
 
 <Kanäle, Protokolle und Schnittstellen nach außen.>
@@ -52,6 +58,12 @@ Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hrusch
 
 <Zerlegung in Bausteine, ihre Verantwortung und Schnittstellen.>
 
+```mermaid
+flowchart TB
+    A["Baustein A"] --> B["Baustein B"]
+    A --> C["Baustein C"]
+```
+
 ## Ebene 2 {#_level_2}
 
 <Innere Struktur ausgewählter Bausteine.>
@@ -64,11 +76,30 @@ Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hrusch
 
 <Wichtige Abläufe: wie die Bausteine zur Laufzeit zusammenwirken.>
 
+```mermaid
+sequenceDiagram
+    actor Nutzer
+    participant A as Baustein A
+    participant B as Baustein B
+    Nutzer->>A: Anfrage
+    A->>B: Aufruf
+    B-->>A: Ergebnis
+    A-->>Nutzer: Antwort
+```
+
 # Verteilungssicht {#section-deployment-view}
 
 ## Infrastruktur Ebene 1 {#_infrastructure_level_1}
 
 <Wo und wie das System betrieben wird.>
+
+```mermaid
+flowchart LR
+    subgraph Knoten["Knoten"]
+        Prog["{{.Project}}"]
+    end
+    Prog --> Speicher[("Speicher")]
+```
 
 ## Infrastruktur Ebene 2 {#_infrastructure_level_2}
 
