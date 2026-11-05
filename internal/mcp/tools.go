@@ -347,7 +347,7 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 	case "sdd_archive":
 		return s.toolArchive(raw)
 
-	case "sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply":
+	case "sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply", "sdd_config":
 		return s.runCritical(name, raw)
 
 	default:

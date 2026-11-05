@@ -212,6 +212,9 @@ func (s *Server) toolWrite(raw json.RawMessage) (*toolResult, error) {
 	if class == classContext {
 		return nil, fmt.Errorf("nicht beschreibbar: %s ist eine Kontextdatei (nur lesbar)", rel)
 	}
+	if class == classConfig {
+		return nil, fmt.Errorf("nicht beschreibbar mit sdd_write: %s ändert nur sdd_config (kritisch, ADR 0004)", rel)
+	}
 	old, exists, err := readExisting(s.Root, rel)
 	if err != nil {
 		return nil, err

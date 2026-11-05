@@ -70,7 +70,24 @@ export interface Pending {
     reaccepted?: string[];
     /** sdd_adopt_apply: the adopt report (Markdown). */
     report?: string;
+    /** sdd_config: findings that disappear or appear with the new configuration, per check run (ADR 0004). */
+    findings_delta?: FindingsDelta[];
+    /** sdd_config: check runs that already fail with the current configuration and were not compared. */
+    unchecked?: { gate: string; error: string }[];
   };
+}
+
+export interface FindingRef {
+  rule_id: string;
+  path: string;
+  line?: number;
+  message?: string;
+}
+
+export interface FindingsDelta {
+  gate: string;
+  dropped: FindingRef[];
+  added: FindingRef[];
 }
 
 export interface BaselineEntry {

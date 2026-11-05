@@ -2,6 +2,8 @@ package desk
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"go/parser"
@@ -343,7 +345,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	for _, tl := range a.Tools {
 		names = append(names, tl.Name)
 	}
-	if len(names) != 18 || names[0] != "sdd_next" {
+	if len(names) != 19 || names[0] != "sdd_next" {
 		t.Fatalf("tools must be exactly those of sdd mcp: %v", names)
 	}
 	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "x"}}, AllowedTools: []string{"shell_exec"}})
@@ -787,5 +789,57 @@ func TestHandbookApprovalScope(t *testing.T) {
 		if !strings.Contains(string(data), want) {
 			t.Errorf("handbook lacks %q", want)
 		}
+	}
+}
+
+// desk-config-critical AC-6: sdd_config with apply is critical: it waits for a single confirmation with summary and
+// diff even if sdd_config is in both session lists, and only the approval of exactly this call writes.
+func TestConfigIsCritical(t *testing.T) {
+	root := sddProject(t)
+	ctx := context.Background()
+	cfgPath := filepath.Join(root, "sdd.config.yaml")
+	old, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(old)
+	changed := strings.Replace(string(old), "exclude:\n", "exclude:\n  - docs/notes/**\n", 1)
+	args, _ := json.Marshal(map[string]any{"content": changed, "base_sha256": hex.EncodeToString(sum[:]), "apply": true})
+	base := []Message{{Role: "user", Content: "Nimm docs/notes aus."}}
+
+	a := newAgent(t, root, &scripted{replies: []Message{call("c1", "sdd_config", string(args))}})
+	res, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: base,
+		AllowedTools: []string{"sdd_config"}, AllowedWrites: []string{"sdd_config"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || !res.Pending[0].Critical || !strings.Contains(res.Pending[0].Summary, "exclude") ||
+		!strings.Contains(string(res.Pending[0].Preview), "docs/notes/**") {
+		t.Fatalf("sdd_config must wait for a single confirmation: %+v", res.Pending)
+	}
+	if data, _ := os.ReadFile(cfgPath); string(data) != string(old) {
+		t.Fatal("configuration changed before the confirmation")
+	}
+	if _, err := a.Turn(ctx, TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: res.Messages, ApprovedCalls: []string{"c1"}}); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(cfgPath); string(data) != changed {
+		t.Fatalf("confirmed call did not write: %s", data)
+	}
+}
+
+// desk-config-critical AC-8: the handbook lists sdd_config among the critical actions and counts nineteen tools.
+func TestHandbookConfigTool(t *testing.T) {
+	data, err := os.ReadFile("../../handbuch/04-agenten.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"neunzehn Werkzeuge", "sdd_config", "ADR 0004"} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("handbook lacks %q", want)
+		}
+	}
+	if strings.Contains(string(data), "achtzehn Werkzeuge") {
+		t.Error("handbook still counts eighteen tools")
 	}
 }

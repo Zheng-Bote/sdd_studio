@@ -85,12 +85,10 @@ func TestNewWithContent(t *testing.T) {
 func TestWritePathClasses(t *testing.T) {
 	root := project(t)
 	s := newServer(root, true)
-	cfgText := readFileT(t, root, "sdd.config.yaml")
 	allowed := map[string]map[string]any{
 		"docs/prd/neu.md":     {"content": strings.ReplaceAll(searchPRD, "search", "neu")},
 		"docs/notes/notiz.md": {"content": "---\nstatus: active\n---\n\n# Notiz\n"},
 		"api/search_test.go":  {"content": "// search AC-1: Titel\n"},
-		"sdd.config.yaml":     {"content": cfgText + "\n", "base_sha256": shaOf(cfgText)},
 	}
 	for rel, a := range allowed {
 		a["path"] = rel
@@ -167,14 +165,6 @@ func TestWriteReplace(t *testing.T) {
 		t.Errorf("content %q, mode %v", got, info.Mode().Perm())
 	}
 
-	cfgText := readFileT(t, root, "sdd.config.yaml")
-	bad := strings.Replace(cfgText, "profile: standard", "profile: bogus", 1)
-	if r := call(t, s, "sdd_write", map[string]any{"path": "sdd.config.yaml", "content": bad, "base_sha256": shaOf(cfgText), "apply": true}); r["isError"] != true || !strings.Contains(errText(r), "bogus") {
-		t.Errorf("invalid configuration must be refused: %v", r)
-	}
-	if readFileT(t, root, "sdd.config.yaml") != cfgText {
-		t.Errorf("configuration changed")
-	}
 }
 
 // desk-write-content AC-4: sdd_write never decides an ADR, neither in a new file nor by changing the status.

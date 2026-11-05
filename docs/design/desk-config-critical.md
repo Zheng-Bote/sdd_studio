@@ -42,7 +42,7 @@ Für jeden Prüflauf `g ∈ {"" (Lint), pre-implementation, pre-merge, pre-relea
 - `alt := sddcore.RunCheckWithConfig({RepoRoot, Gate: g}, cfgAlt)`
 - `neu := sddcore.RunCheckWithConfig({RepoRoot, Gate: g}, cfgNeu)`
 
-Beide Läufe wenden die Baseline an, so wie CI sie sieht. Ein Befund wird über `(rule_id, path, line, ordinal)` identifiziert; die Konfiguration ändert keine Dateien, die Zeilen bleiben also gleich. `dropped` sind die Befunde in `alt` ohne Gegenstück in `neu`, `added` umgekehrt. Ergebnis je Lauf: `{gate, dropped: [Finding], added: [Finding]}`. Läufe ohne Differenz entfallen aus der Liste. Scheitert ein Lauf mit der neuen Konfiguration (z. B. ein ungültiges Gate in `override`), gilt die Vorschau als fehlgeschlagen, und `apply` schreibt nichts.
+Beide Läufe wenden die Baseline an, so wie CI sie sieht. Ein Befund wird über `(rule_id, path, line, ordinal)` identifiziert; die Konfiguration ändert keine Dateien, die Zeilen bleiben also gleich. `dropped` sind die Befunde in `alt` ohne Gegenstück in `neu`, `added` umgekehrt. Ergebnis je Lauf: `{gate, dropped: [Finding], added: [Finding]}`. Läufe ohne Differenz entfallen aus der Liste. Scheitert ein Lauf schon mit der alten Konfiguration (z. B. ein Gate, das Git braucht, in einem Ordner ohne Repository), steht er mit dem Fehler unter `unchecked` und wird nicht verglichen. Scheitert er nur mit der neuen Konfiguration, gilt die Vorschau als fehlgeschlagen, und `apply` schreibt nichts.
 
 ### Zusammenfassung (AC-2, AC-3)
 

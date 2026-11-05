@@ -62,6 +62,28 @@ import { Decision, Pending, PlannedOp } from '../core/types';
               }
             </ul>
           }
+          @if (pv.findings_delta?.length || pv.unchecked?.length) {
+            <div class="space-y-1 text-xs" aria-label="Wirkung auf die Befunde">
+              <p class="font-medium">Wirkung auf die Befunde</p>
+              @for (d of pv.findings_delta ?? []; track d.gate) {
+                <p class="text-muted-foreground">{{ d.gate }}</p>
+                <ul class="space-y-0.5">
+                  @for (f of d.dropped; track $index) {
+                    <li><span class="text-destructive">− fällt weg</span> {{ f.rule_id }} {{ f.path }}{{ f.line ? ':' + f.line : '' }}</li>
+                  }
+                  @for (f of d.added; track $index) {
+                    <li><span class="text-muted-foreground">+ kommt hinzu</span> {{ f.rule_id }} {{ f.path }}{{ f.line ? ':' + f.line : '' }}</li>
+                  }
+                </ul>
+              }
+              @if (pv.findings_delta && !pv.findings_delta.length) {
+                <p>Keine Befunde fallen weg oder kommen hinzu. Das heißt nicht, dass nichts abgeschwächt wird: Prüfen Sie den Diff.</p>
+              }
+              @for (u of pv.unchecked ?? []; track u.gate) {
+                <p class="text-muted-foreground">{{ u.gate }}: nicht verglichen ({{ u.error }})</p>
+              }
+            </div>
+          }
           @if (pv.report) {
             <pre class="max-h-64 overflow-auto rounded-md border p-3 text-xs" aria-label="Bericht">{{ pv.report }}</pre>
           }

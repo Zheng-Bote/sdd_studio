@@ -93,7 +93,7 @@ var (
 var (
 	readTools     = []string{"sdd_next", "sdd_lint", "sdd_gate", "sdd_report", "sdd_explain", "sdd_check_intent", "sdd_context", "sdd_trace", "sdd_read", "sdd_validate_draft", "sdd_stack"}
 	writeTools    = []string{"sdd_new", "sdd_write", "sdd_init", "sdd_archive"}
-	criticalTools = []string{"sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply"}
+	criticalTools = []string{"sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply", "sdd_config"}
 )
 
 // Approval tiers of a call (ADR 0003).

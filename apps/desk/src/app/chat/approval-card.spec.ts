@@ -69,6 +69,29 @@ describe('ApprovalCard', () => {
   });
 
   // desk-critical-tools AC-5: a critical action is marked, names its effect on the button and has no session approval.
+  // desk-config-critical AC-6: a configuration change shows the findings it drops and adds, confirmed singly.
+  it('shows the effect of a configuration change on the findings', () => {
+    const { el, buttons } = render({
+      call_id: 'k2',
+      tool: 'sdd_config',
+      arguments: { apply: true },
+      writes: true,
+      critical: true,
+      summary: 'sdd.config.yaml ändern: exclude (−1 / +0 Befunde)',
+      preview: {
+        ops: [{ path: 'sdd.config.yaml', action: 'update', diff: '+  - docs/prd/neu.md\n' }],
+        findings_delta: [{ gate: 'lint', dropped: [{ rule_id: 'SDD-022', path: 'docs/prd/neu.md', line: 12 }], added: [] }],
+        unchecked: [{ gate: 'pre-merge', error: 'kein Git-Repository' }],
+      },
+    });
+    const effect = el.querySelector('[aria-label="Wirkung auf die Befunde"]')?.textContent ?? '';
+    expect(effect).toContain('fällt weg');
+    expect(effect).toContain('SDD-022 docs/prd/neu.md:12');
+    expect(effect).toContain('pre-merge: nicht verglichen');
+    expect(el.textContent).toContain('kritisch');
+    expect(buttons).toEqual(['sdd.config.yaml ändern: exclude (−1 / +0 Befunde)', 'Ablehnen']);
+  });
+
   it('asks for a single confirmation of a critical action', () => {
     const { el, buttons, decisions } = render({
       call_id: 'k1',
