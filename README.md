@@ -8,6 +8,8 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 `sdd` selbst ist **KI-frei und offline** ([ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), löst ADR 0002 ab): Kern, CLI, `sdd ui` und `sdd mcp` enthalten keinen LLM-Code und bauen keine Netzwerkverbindung nach außen auf.
 
+Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
+
 ## Stand
 
 Letzte Version: **0.5.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`. Der KI-Desktop `sdd-desk` führt jetzt durch den ganzen Prozess: Projekt übernehmen oder neu anlegen (`sdd init --git`), Agenten-Dateien, Verfassung aus den Quellen des Projekts, PRD mit Inhalt, Tests in der Projektsprache, Archiv (`sdd archive`). Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.5.0`.
