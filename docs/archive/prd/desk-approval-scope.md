@@ -1,11 +1,12 @@
 ---
 feature: desk-approval-scope
-status: active
+status: archived
 archive-after:
 touches:
   - internal/desk/**
   - apps/desk/src/**
   - handbuch/**
+release: v0.6.0
 ---
 
 # PRD — Sitzungsfreigabe gilt nur für die Stufe, die der Mensch gesehen hat

@@ -1,6 +1,6 @@
 ---
 feature: arc42-docs
-status: active
+status: archived
 archive-after:
 touches:
   - templates/**
@@ -15,6 +15,7 @@ touches:
   - docs/sdd_konzept.md
   - NOTICE
   - CHANGELOG.md
+release: v0.6.0
 ---
 
 # PRD — Architekturdokumentation nach arc42 für Projekte

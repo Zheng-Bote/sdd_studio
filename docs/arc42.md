@@ -1,10 +1,11 @@
 ---
 status: active
+release: v0.6.0
 ---
 
 # Architekturdokumentation — SDD Studio (arc42)
 
-Stand: 2026-11-05, nach den Änderungen für 0.6.0 (Regelkatalog `1.2.0`, 23 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
+Stand: Release v0.6.0 (Regelkatalog `1.2.0`, 23 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
 
 # Einführung und Ziele {#section-introduction-and-goals}
 
@@ -15,7 +16,7 @@ SDD Studio setzt Spec-Driven Development durch: Ein Projekt hält dauerhafte Reg
 - **Prüfen:** `sdd lint` und `sdd gate pre-implementation | pre-merge | pre-release` gegen den Regelkatalog (`catalog/catalog.yaml`), lokal und in CI (`action.yml`).
 - **Bestand heben:** `sdd adopt` übernimmt ein gewachsenes Projekt auf einem eigenen Branch; Altbefunde landen in einer gate-gebundenen, nur schrumpfenden Baseline (Ratchet).
 - **Führen:** `sdd next` nennt den nächsten Prozessschritt je Feature (Idee → PRD → Tech Spec → Plan → Tests → Umsetzung → Gate → Merge → Release → Archiv).
-- **Anlegen und abschließen:** `sdd init`, `sdd new`, `sdd archive`.
+- **Anlegen und abschließen:** `sdd init`, `sdd new` (auch die Architekturdoku nach arc42: `sdd new --type arc42`), `sdd archive`.
 - **Assistieren (optional):** `sdd mcp` stellt die Funktionen Agenten bereit; der getrennte KI-Desktop `sdd-desk` führt mit einem Sprachmodell durch den Prozess.
 
 ## Qualitätsziele {#_quality_goals}
@@ -131,7 +132,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 | `internal/mcp` | `sdd mcp`: 20 Werkzeuge (mit `--allow-critical`), geführte Prompts, Ressourcen; Pfadschutz und Freigabeschalter. |
 | `internal/desk`, `cmd/sdd-desk` | Agentenschleife, Anbieter-Adapter, Freigabestufen, lokale HTTP-API; startet `sdd mcp --allow-write --allow-critical`. |
 | `apps/desk` | Angular-Oberfläche (Gespräch, Freigabekarten, Prozessstand) und Tauri-Hülle mit `sdd-desk` als Sidecar. |
-| `catalog/`, `handbuch/`, `templates/` | Regelkatalog, Handbuch mit Prüfverträgen, Artefakt-Templates — eingebettet in das Binary. |
+| `catalog/`, `handbuch/`, `templates/` | Regelkatalog, Handbuch mit Prüfverträgen, Artefakt-Templates — eingebettet in das Binary. `templates/arc42.md.tmpl` steht als einzige Datei unter CC BY-SA 4.0 (ADR 0006). |
 
 ### Schnittstellen {#_name_interface_1}
 
@@ -152,7 +153,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 | `baseline`, `adrlock`, `baselineplan` | Baseline anwenden und pflegen; ADR-Lockfile; Plan für `sdd baseline`. |
 | `report` | Befunde, Berichtsformat v1. |
 | `scaffold` | Pläne für `init`, `new`, `archive`, ADR-Entscheid, Agenten-Dateien; Apply mit Pfad- und Symlink-Schutz. |
-| `guide` | `sdd next`, `sdd archive` (Testverweise, kein Entwurf). |
+| `guide` | `sdd next` (mit Projektschritten Verfassung, Übernahme, Architekturdoku), `sdd archive` (Testverweise, kein Entwurf). |
 | `adopt` | Bestandsaufnahme, Reifegrad, Übernahme auf eigenem Branch. |
 | `overview` | `sdd report`: Reifegrad, Gates, Schuldenstand. |
 
@@ -164,7 +165,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 | schreibend (`--allow-write`) | `sdd_new`, `sdd_write` (Artefakte, Testdateien), `sdd_init`, `sdd_archive` |
 | kritisch (`--allow-critical`) | `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config` |
 
-Dazu geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-tests`, `sdd-conflicts`, `sdd-review`).
+Dazu geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`).
 
 # Laufzeitsicht {#section-runtime-view}
 
@@ -295,6 +296,8 @@ SDD Studio wird mit sich selbst entwickelt: jedes Feature mit PRD und Tech Spec,
 | [0003](adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md) | Der Desktop darf alle `sdd`-Aktionen, freigegeben in drei Stufen. |
 | [0004](adr/0004-konfiguration-aendern-ist-kritisch.md) | Konfiguration ändern ist im Desktop kritisch (`sdd_config`). |
 | [0005](adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md) | Abschwächung der Konfiguration braucht ein ADR (SDD-012, `pinned`). |
+| [0006](adr/0006-arc42-template-unter-cc-by-sa-einbetten.md) | arc42-Template als eigenständige Datei unter CC BY-SA 4.0. |
+| [0007](adr/0007-qualitaetsanforderungen-im-prd-mit-kennung-qa.md) | Qualitätsanforderungen im PRD mit stabiler Kennung `QA-<n>`; optionale Abschnitte, keine neue Pflichtregel. |
 
 Weitere Richtungsentscheidungen ohne eigenes ADR stehen im [Konzept, Abschnitt 14](sdd_konzept.md).
 
@@ -335,6 +338,8 @@ Die Qualitätsziele aus Abschnitt 1 werden durch Selbstschutzregeln, Tests mit M
 | `Eff(g)` | Effektive Regelmenge eines Gates: Override oder `gate_default`, plus `pinned`-Regeln. |
 | Baseline | Gate-gebundene Liste bekannter Altbefunde in `.sdd/baseline.json`; nur schrumpfend (Ratchet). |
 | `pinned` | Katalogattribut: Regel läuft in ihren Gates trotz Override; verlangt `profile: minimal` und `baseline: forbidden`. |
+| `QA-<n>` | Kennung einer messbaren Qualitätsanforderung im PRD (ADR 0007); braucht keinen Testverweis. |
+| Architekturdoku | Diese Seite bzw. `artifacts.architecture` eines Projekts (Standard `docs/arc42.md`); `release:` nennt den beschriebenen Stand. |
 | `touches` | Erklärte Änderungsabsicht eines Features (Pfad-Globs); Grundlage für Gate 1 und SDD-024. |
 | Profil | `minimal` ⊂ `standard` ⊂ `regulated`: welche Regeln aktiv sind. |
 | Prüfvertrag | Deterministische Beschreibung, wann eine `error`-Regel greift (Handbuch). |

@@ -1,6 +1,6 @@
 ---
 feature: archive-not-draft
-status: active
+status: archived
 archive-after:
 touches:
   - cmd/sdd/**
@@ -9,11 +9,12 @@ touches:
   - handbuch/**
   - README.md
   - CHANGELOG.md
+release: v0.6.0
 ---
 
 # Tech Spec — Kein Archiv für ein Feature im Entwurf
 
-Setzt das PRD `docs/prd/archive-not-draft.md` um.
+Setzt das PRD `docs/archive/prd/archive-not-draft.md` um.
 
 ## Architektur
 

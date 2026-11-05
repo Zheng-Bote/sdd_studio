@@ -12,7 +12,7 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 
 ## Stand
 
-Letzte Version: **0.5.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`. Der KI-Desktop `sdd-desk` führt jetzt durch den ganzen Prozess: Projekt übernehmen oder neu anlegen (`sdd init --git`), Agenten-Dateien, Verfassung aus den Quellen des Projekts, PRD mit Inhalt, Tests in der Projektsprache, Archiv (`sdd archive`). Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.5.0`.
+Letzte Version: **0.5.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`. Der KI-Desktop `sdd-desk` führt jetzt durch den ganzen Prozess: Projekt übernehmen oder neu anlegen (`sdd init --git`), Agenten-Dateien, Verfassung aus den Quellen des Projekts, PRD mit Inhalt, Tests in der Projektsprache, Archiv (`sdd archive`). Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.6.0`.
 
 - **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
@@ -77,7 +77,7 @@ Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/featu
 Die [GitHub Action](action.yml) baut `sdd`, führt `sdd gate <gate>` aus und schreibt den Bericht in die Job-Zusammenfassung:
 
 ```yaml
-- uses: Zheng-Bote/sdd_studio@v0.5.0
+- uses: Zheng-Bote/sdd_studio@v0.6.0
   with:
     gate: pre-merge
 ```

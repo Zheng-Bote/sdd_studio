@@ -1,12 +1,13 @@
 ---
 feature: conflicts-quote-check
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
   - internal/desk/**
   - handbuch/**
   - docs/sdd_konzept.md
+release: v0.6.0
 ---
 
 # PRD — Zitate aus sdd-conflicts maschinell prüfen
