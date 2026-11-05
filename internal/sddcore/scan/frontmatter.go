@@ -13,6 +13,7 @@ type Frontmatter struct {
 	Status       string   `yaml:"status"`
 	ArchiveAfter string   `yaml:"archive-after"`
 	Touches      []string `yaml:"touches"`
+	Release      string   `yaml:"release"`
 }
 
 // ParseFrontmatter extracts a YAML frontmatter block delimited by `---` lines at the very start of the file.

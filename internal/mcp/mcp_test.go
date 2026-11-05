@@ -302,11 +302,11 @@ func TestPrompts(t *testing.T) {
 	for _, p := range res[0]["result"].(map[string]any)["prompts"].([]any) {
 		names = append(names, p.(map[string]any)["name"].(string))
 	}
-	if strings.Join(names, ",") != "sdd-idea,sdd-techspec,sdd-adr,sdd-plan,sdd-adopt,sdd-start,sdd-constitution,sdd-tests,sdd-conflicts,sdd-review" {
+	if strings.Join(names, ",") != "sdd-idea,sdd-requirements,sdd-techspec,sdd-adr,sdd-plan,sdd-adopt,sdd-start,sdd-constitution,sdd-arc42,sdd-tests,sdd-conflicts,sdd-review" {
 		t.Fatalf("prompts %v", names)
 	}
-	args := map[string]string{"sdd-idea": `{}`, "sdd-techspec": `{"feature":"billing"}`, "sdd-adr": `{"title":"x"}`, "sdd-plan": `{"feature":"billing"}`, "sdd-adopt": `{}`, "sdd-start": `{}`, "sdd-constitution": `{}`, "sdd-tests": `{"feature":"billing"}`, "sdd-conflicts": `{"feature":"billing"}`, "sdd-review": `{"feature":"billing"}`}
-	wantRule := map[string]string{"sdd-idea": "SDD-023", "sdd-techspec": "SDD-031", "sdd-adr": "SDD-011", "sdd-plan": "SDD-041", "sdd-adopt": "SDD-010", "sdd-start": "SDD-002a", "sdd-constitution": "SDD-003", "sdd-tests": "SDD-025", "sdd-conflicts": "SDD-010", "sdd-review": "SDD-022"}
+	args := map[string]string{"sdd-idea": `{}`, "sdd-requirements": `{"feature":"billing"}`, "sdd-techspec": `{"feature":"billing"}`, "sdd-adr": `{"title":"x"}`, "sdd-plan": `{"feature":"billing"}`, "sdd-adopt": `{}`, "sdd-start": `{}`, "sdd-constitution": `{}`, "sdd-arc42": `{}`, "sdd-tests": `{"feature":"billing"}`, "sdd-conflicts": `{"feature":"billing"}`, "sdd-review": `{"feature":"billing"}`}
+	wantRule := map[string]string{"sdd-idea": "SDD-023", "sdd-requirements": "SDD-021", "sdd-techspec": "SDD-031", "sdd-adr": "SDD-011", "sdd-plan": "SDD-041", "sdd-adopt": "SDD-010", "sdd-start": "SDD-002a", "sdd-constitution": "SDD-003", "sdd-arc42": "SDD-001", "sdd-tests": "SDD-025", "sdd-conflicts": "SDD-010", "sdd-review": "SDD-022"}
 	for _, name := range names {
 		r := exchange(t, s, `{"jsonrpc":"2.0","id":2,"method":"prompts/get","params":{"name":"`+name+`","arguments":`+args[name]+`}}`)
 		text := r[0]["result"].(map[string]any)["messages"].([]any)[0].(map[string]any)["content"].(map[string]any)["text"].(string)
@@ -445,6 +445,22 @@ func TestNoOutboundNetworkCode(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+// An unknown argument is still refused, but the error names the allowed fields and asks for a new call (live test with
+// qwen3:14b: sdd_read with "apply": false; the model handed the bare error to the user instead of retrying).
+func TestUnknownArgumentNamesAllowedFields(t *testing.T) {
+	s := newServer(project(t), false)
+	r := call(t, s, "sdd_read", map[string]any{"path": "constitution.md", "apply": false})
+	if r["isError"] != true {
+		t.Fatalf("unknown field accepted: %v", r)
+	}
+	msg := errText(r)
+	for _, want := range []string{`unknown field "apply"`, "erlaubt sind nur: path", "erneut auf"} {
+		if !strings.Contains(msg, want) {
+			t.Errorf("message %q lacks %q", msg, want)
 		}
 	}
 }

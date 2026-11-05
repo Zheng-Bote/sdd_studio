@@ -165,3 +165,36 @@ func TestArchiveThenLint(t *testing.T) {
 		t.Errorf("after archive: %v", n)
 	}
 }
+
+// archive-not-draft AC-1, AC-3: a feature whose PRD is still a draft is not archived, even with every criterion tested;
+// active, implemented and no status archive as before.
+func TestArchiveRefusesDraft(t *testing.T) {
+	root := billingProject(t)
+	write(t, root, "docs/prd/billing.md", strings.Replace(billingPRD, "status: active", "status: draft", 1))
+	_, err := guide.Archive(root, "billing", "v1.2.0")
+	if !errors.Is(err, scaffold.ErrInvalidInput) || !strings.Contains(err.Error(), "docs/prd/billing.md hat status: draft") {
+		t.Fatalf("draft: %v", err)
+	}
+	if gone(root, "docs/prd/billing.md") {
+		t.Fatal("draft PRD moved")
+	}
+	for _, statusLine := range []string{"status: active\n", "status: implemented\n", ""} { // "" = no status
+		write(t, root, "docs/prd/billing.md", strings.Replace(billingPRD, "status: active\n", statusLine, 1))
+		if _, err := guide.Archive(root, "billing", "v1.2.0"); err != nil {
+			t.Errorf("%q: %v", statusLine, err)
+		}
+	}
+}
+
+// archive-not-draft AC-4: handbook and README name the draft condition of sdd archive.
+func TestArchiveDocsNameDraft(t *testing.T) {
+	for _, f := range []string{"../../../handbuch/03-mechanismen.md", "../../../handbuch/04-agenten.md", "../../../README.md"} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), "`status: draft` trägt") {
+			t.Errorf("%s does not name the draft condition of sdd archive", f)
+		}
+	}
+}

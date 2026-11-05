@@ -34,6 +34,7 @@ Legt an: `sdd.config.yaml` (Profil, Standardpfade, leere Schwellen), `constituti
 ```text
 sdd new --feature <slug> [--type prd,design,plan] [--title <text>] [--touches <globs>] [--archive-after YYYY-MM-DD]
 sdd new --type adr|doc --title <text> [--slug <slug>]
+sdd new --type arc42
 ```
 
 | Typ | Ziel | Frontmatter |
@@ -43,6 +44,9 @@ sdd new --type adr|doc --title <text> [--slug <slug>]
 | `plan` | `<artifacts.plans>/<slug>.md` | `feature`, `status: draft`, `archive-after` |
 | `adr` | `<artifacts.adr>/<NNNN>-<slug>.md` | `status: proposed`, `date`, `supersedes`, `references` |
 | `doc` | `<artifacts.docs[0]>/<slug>.md` | `status: active` |
+| `arc42` | `artifacts.architecture` (Standard `docs/arc42.md`) | `status: active`, `release` |
+
+- **`arc42`** legt die Architekturdokumentation aus dem mitgelieferten deutschen arc42-Template an (zwölf Abschnitte mit den Ankern des Originals), ohne `--title`; Projektname ist der Ordnername. Das Template steht unter CC BY-SA 4.0 (Gliederung © Hruschka, Starke und Mitwirkende, arc42.org; [ADR 0006](../docs/adr/0006-arc42-template-unter-cc-by-sa-einbetten.md)); Lizenzkopf und Zeile zur Gliederung bleiben in der Datei stehen. `release` nennt den Stand, den die Doku beschreibt. Kontextabgrenzung, Bausteinsicht, Laufzeitsicht und Verteilungssicht enthalten Mermaid-Gerüste (`flowchart`, `sequenceDiagram`), die `sdd-arc42` durch die Bausteine des Projekts ersetzt.
 
 - Ohne `--type` legt `--feature` PRD und Tech Spec an — genau das Paar, das `SDD-020`/`SDD-030` verlangen.
 - Trägt im Zielverzeichnis bereits eine Datei `feature: <slug>`, wird für diesen Typ nichts angelegt, auch wenn der Dateiname abweicht.
@@ -50,6 +54,7 @@ sdd new --type adr|doc --title <text> [--slug <slug>]
 - Ein `archive-after` vor dem heutigen lokalen Datum lehnt `sdd new` ab: Das Artefakt wäre sofort überfällig (`SDD-050`). Der heutige Tag selbst ist erlaubt. Das gilt auch für `sdd ui` und das MCP-Werkzeug `sdd_new`. `sdd-desk` nennt dem Modell bei jedem Gesprächszug das heutige Datum.
 - Die ADR-Nummer ist die größte vierstellige Präfixnummer im ADR-Verzeichnis plus eins; der Slug wird aus dem Titel abgeleitet (Umlaute transliteriert).
 - Das PRD-Template enthält `AC-1` als Platzhalter: Es erfüllt `SDD-021`, verlangt nach `SDD-022` aber einen Test — bei mehreren PRDs mit Slug im Testkommentar (`// <slug> AC-1: …`).
+- **Optionale PRD-Abschnitte** für mittlere und größere Vorhaben ([ADR 0007](../docs/adr/0007-qualitaetsanforderungen-im-prd-mit-kennung-qa.md)), zwischen Nicht-Zielen und Akzeptanzkriterien: `## Qualitätsanforderungen` mit stabilen Kennungen `QA-<n>` (messbar: Merkmal, Zielwert und Maß, Bedingung; nie umnummeriert, entfallene als ~~QA-n~~), `## Randbedingungen`, `## Annahmen und Abhängigkeiten`. Keine Regel verlangt sie, und `QA-<n>` braucht keinen Testverweis; Grenzfälle und Fehlerverhalten werden zu Akzeptanzkriterien `AC-<n>`. Der geführte Ablauf `sdd-requirements` füllt sie.
 - Ohne `sdd.config.yaml` verwendet `sdd new` die Standardpfade von `sdd init` und weist darauf hin.
 
 ### `sdd adopt` {#sdd-adopt}
@@ -101,6 +106,8 @@ Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abge
 | Plan | *nicht nötig* ohne Plan; sonst kein `SDD-040`/`SDD-041` |
 | Tests | kein `SDD-022` für die Kennungen des PRDs |
 | Abschluss | nach dem Merge `status: implemented`; dann vor dem Release archivieren (`SDD-050`) |
+
+**Projektschritt „Architekturdoku“:** Liegt im Archiv mindestens ein Feature-Artefakt mit `release:`, zeigt `sdd next` „Zum Release: Architekturdoku anlegen“, solange `artifacts.architecture` fehlt, und „Architekturdoku nachführen“, solange ihr `release:` nicht das höchste archivierte Release nennt (`v1.10.0` > `v1.9.0`). Nachgeführt wird mit dem geführten Ablauf `sdd-arc42`. Der Schritt ist kein Befund und blockiert kein Gate.
 
 Der nächste Schritt ist der erste *offene*, sonst der erste *manuelle*, sonst der Abschluss. Zustände in der Textausgabe: `✓` erledigt, `✗` offen, `?` manuell, `–` nicht nötig, `·` später.
 
@@ -242,7 +249,7 @@ Für die unter `artifacts.constitution` konfigurierte Datei gilt:
 
 ---
 
-## ADR-Regeln (`SDD-010`, `SDD-011`)
+## ADR-Regeln (`SDD-010`, `SDD-011`, `SDD-012`)
 
 Die Verfassung hält den *aktuell gültigen Zustand*, das ADR die *unveränderliche Begründung*. Als **ADR** gilt jede Datei `NNNN-*.md` (vier Ziffern) unter `artifacts.adr`.
 
@@ -282,6 +289,31 @@ Die Verfassung hält den *aktuell gültigen Zustand*, das ADR die *unveränderli
 3. **Entschieden** ist ein ADR, dessen `status` nicht `proposed` ist; vorgeschlagene ADRs sind Entwürfe und werden weder gelockt noch geprüft.
 4. Für jedes entschiedene ADR gilt: Ist es nicht gelockt, entsteht ein `warn`; weicht sein Hash vom gelockten ab, ein `error`.
 5. `sdd baseline` lockt neue entschiedene ADRs, verändert aber nie einen vorhandenen Eintrag. Nur `sdd baseline --accept SDD-011` übernimmt geänderte Hashes — sichtbar als Änderung des Lockfiles im Review. Einträge gelöschter ADRs bleiben erhalten (Historie).
+
+---
+
+### SDD-012 — Abschwächende Änderung der Konfiguration verweist auf ein ADR {#sdd-012}
+
+- **Schweregrad:** `error` in `pre-implementation` und `pre-merge`; kein `default`, weil die Regel einen Diff braucht
+- **Profil:** ab `minimal`
+- **Baseline:** `forbidden`
+- **Pinned:** ja — läuft in ihren Gates auch neben einem `gates.<gate>.override`, der sie nicht nennt (siehe [SDD-072](#sdd-072-vertrag))
+- **Check:** `config_weakening_has_adr`
+
+**Begründung:** `sdd.config.yaml` entscheidet, was geprüft wird. Ein niedrigeres Profil, ein geänderter Override oder ein neues `exclude` schaltet Prüfungen ab — `profile: minimal` sogar SDD-011, SDD-050 und SDD-051, die die Baseline nicht unterdrücken darf. Wie bei der Verfassung (SDD-010) gehört zu einer solchen Änderung ein ADR, das sie begründet ([ADR 0005](../docs/adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md)). Im KI-Desktop ist jede Änderung der Konfiguration zusätzlich eine kritische Aktion ([ADR 0004](../docs/adr/0004-konfiguration-aendern-ist-kritisch.md)).
+
+#### SDD-012 Prüfvertrag {#sdd-012-vertrag}
+
+1. Die Regel greift nur, wenn `sdd.config.yaml` in `git diff --no-renames <base>...HEAD` vorkommt ([Merge-Basis](#feature-aufloesung)).
+2. **Keine Änderung im Sinne der Regel:** Die Datei fehlt am Vergleichsstand (erstmaliges Anlegen), fehlt im Arbeitsbaum, oder eine der beiden Fassungen lässt sich nicht als Konfiguration laden (die aktuelle meldet dann schon das Laden).
+3. **Abschwächend** ist, verglichen wird Vergleichsstand → Arbeitsbaum:
+   - `profile` sinkt in der Ordnung `minimal` < `standard` < `regulated`;
+   - `gates.<gate>.override` ist für ein Gate als Menge verschieden (jede Änderung, weil ein Override die Regelmenge ersetzt);
+   - `exclude` enthält ein Muster, das vorher fehlte;
+   - `thresholds.layers` oder `thresholds.feature_artifacts_required_when.touched_paths` verliert einen Eintrag;
+   - `thresholds.feature_artifacts_required_when.min_layers_touched` steigt.
+4. Nicht geprüft werden `tests.include`, `artifacts.*`, `base_ref`, `constitution_sections` und alle übrigen Felder; ihre Richtung ist nicht eindeutig (ADR 0005, Entscheidung 3).
+5. Gibt es mindestens eine Abschwächung, muss ein ADR, das ebenfalls im Diff vorkommt, `sdd.config.yaml` in seinem Frontmatter nennen — in `references` oder im Feld `adr`, wie bei SDD-010. Fehlt es, entsteht ein `error` an `sdd.config.yaml` mit allen erkannten Abschwächungen.
 
 ---
 
@@ -546,6 +578,7 @@ sdd archive --feature <slug> [--release <version>] [--dry-run]
 - **Was verschoben wird:** jede Datei des Features unter `artifacts.prd`, `artifacts.design` und `artifacts.plans`, die noch nicht im Archiv liegt. Zum Feature gehört sie über `feature:`, ohne Feld über den Dateinamen. Ziel ist `<artifacts.archive>/<Typordner>/<Rest des Pfades>`, z. B. `docs/prd/x.md` → `docs/archive/prd/x.md`; bei einem Datei-Glob ist der Typordner der letzte Ordner des statischen Präfixes.
 - **Frontmatter:** Danach steht `status: archived`, mit `--release` auch `release: <version>`. Der übrige Inhalt bleibt byteweise gleich. Die Quelle wird erst entfernt, wenn das Ziel geschrieben ist. Git bleibt unberührt.
 - **Abbruch** mit Exit-Code `2`, ohne etwas zu verschieben, wenn
+  - ein PRD des Features außerhalb des Archivs noch `status: draft` trägt (ein Entwurf ist nicht fertig; archiviert wird nach Umsetzung und Merge, vor dem Release),
   - ein Akzeptanzkriterium des Features keinen Testverweis hat (gezählt wie bei `SDD-022`; ein Feature ohne Tests ist nicht fertig),
   - eine Zieldatei schon existiert,
   - das Feature keine Datei außerhalb des Archivs hat,
@@ -681,7 +714,7 @@ Für jede Regel im Katalog (`catalog/catalog.yaml`) muss gelten:
 #### SDD-072 Prüfvertrag {#sdd-072-vertrag}
 
 Für jedes Gate $g \in \{\text{pre-implementation}, \text{pre-merge}, \text{pre-release}\}$ wird die effektive Regelmenge $\text{Eff}(g)$ bestimmt:
-1. Ist in `sdd.config.yaml` für das Gate $g$ ein nicht-leeres `override` konfiguriert, gilt $\text{Eff}(g) = \text{override}(g)$.
+1. Ist in `sdd.config.yaml` für das Gate $g$ ein nicht-leeres `override` konfiguriert, gilt $\text{Eff}(g) = \text{override}(g) \cup \text{pinned}(g)$. Dabei ist $\text{pinned}(g)$ die Menge der Katalogregeln mit `pinned: true`, deren `gate_default` das Gate $g$ enthält ([ADR 0005](../docs/adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md)): Ein Override kann sie nicht abwählen. Eine `pinned`-Regel muss `profile: minimal` und `baseline: forbidden` tragen, sonst lehnt `sdd` den Katalog ab.
 2. Andernfalls gilt $\text{Eff}(g) = \text{gate\_default}(g)$ aus `catalog/catalog.yaml`.
 3. Jede im gewählten Projektprofil (`minimal` $\subset$ `standard` $\subset$ `regulated`) aktive Regel muss in der Vereinigungsmenge $\bigcup_g \text{Eff}(g)$ enthalten sein und in mindestens einem dieser Gates einen effektiven Schweregrad besitzen.
 

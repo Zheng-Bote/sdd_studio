@@ -78,7 +78,7 @@ func runNew(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("new", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	feature := fs.String("feature", "", "Feature-Slug für prd, design und plan")
-	types := fs.String("type", "", "Artefakttypen, kommagetrennt: prd, design, plan, adr, doc (Standard mit --feature: prd,design)")
+	types := fs.String("type", "", "Artefakttypen, kommagetrennt: prd, design, plan, adr, doc, arc42 (Standard mit --feature: prd,design)")
 	title := fs.String("title", "", "Titel des Artefakts")
 	slug := fs.String("slug", "", "Slug für adr und doc (Standard: aus dem Titel abgeleitet)")
 	touches := fs.String("touches", "", "Erklärte Änderungsabsicht als kommagetrennte Pfad-Globs")

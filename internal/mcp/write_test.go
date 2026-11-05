@@ -302,3 +302,30 @@ func TestRelativeRoot(t *testing.T) {
 		t.Errorf("file outside the repository changed: %q", got)
 	}
 }
+
+// arc42-docs AC-3: sdd_new with types [arc42] creates the architecture documentation, also with content; sdd_read
+// reads it and sdd_write changes it.
+func TestNewToolArc42(t *testing.T) {
+	root := project(t)
+	s := newServer(root, true)
+	res := structured(t, call(t, s, "sdd_new", map[string]any{"types": []string{"arc42"}, "apply": true}))
+	if r := res["results"].([]any)[0].(map[string]any); res["applied"] != true || r["path"] != "docs/arc42.md" || r["status"] != "created" {
+		t.Fatalf("sdd_new arc42: %v", res)
+	}
+	read := structured(t, readTool(t, s, "docs/arc42.md"))
+	old := readFileT(t, root, "docs/arc42.md")
+	updated := strings.Replace(old, "release:\n", "release: v1.0.0\n", 1)
+	if r := call(t, s, "sdd_write", map[string]any{"path": "docs/arc42.md", "content": updated, "base_sha256": read["sha256"], "apply": true}); r["isError"] == true {
+		t.Fatalf("sdd_write arc42: %s", errText(r))
+	}
+	if !strings.Contains(readFileT(t, root, "docs/arc42.md"), "release: v1.0.0") {
+		t.Error("release not written")
+	}
+
+	other := project(t)
+	content := "---\nstatus: active\nrelease: v2.0.0\n---\n\n# Architekturdokumentation — x\n"
+	r := call(t, newServer(other, true), "sdd_new", map[string]any{"types": []string{"arc42"}, "content": content, "apply": true})
+	if r["isError"] == true || readFileT(t, other, "docs/arc42.md") != content {
+		t.Errorf("sdd_new arc42 with content: %v", r)
+	}
+}

@@ -1,4 +1,4 @@
-version: "1.1.0"
+version: "1.2.0"
 rules:
   - id: SDD-001
     title: Verfassung vorhanden
@@ -190,6 +190,24 @@ rules:
       Ein nachträglich umgeschriebenes ADR fälscht die Begründung der Verfassung.
       Abweichungen werden über das Lockfile quittiert, nicht über die Baseline.
     handbook: handbuch/03-mechanismen.md#sdd-011
+
+  - id: SDD-012
+    title: Abschwächende Änderung der Konfiguration verweist auf ein ADR
+    severity:
+      by_gate:
+        pre-implementation: error
+        pre-merge: error
+    profile: minimal
+    pinned: true
+    check: config_weakening_has_adr
+    gate_default: [pre-implementation, pre-merge]
+    baseline: forbidden
+    contract: handbuch/03-mechanismen.md#sdd-012-vertrag
+    rationale: >
+      Die Konfiguration entscheidet, was geprüft wird. Ein niedrigeres Profil, ein
+      geänderter Override oder ein neues exclude schaltet Prüfungen ab, auch solche,
+      die die Baseline nicht unterdrücken darf; ohne ADR verliert das sein Warum.
+    handbook: handbuch/03-mechanismen.md#sdd-012
 
   - id: SDD-024
     title: Der Diff weicht nicht von der erklärten Änderungsabsicht ab

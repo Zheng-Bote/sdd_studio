@@ -246,18 +246,26 @@ func (s *Server) toolConflictsCheck(raw json.RawMessage) (*toolResult, error) {
 
 // conflictSources are the files a spec-side quote may come from: the Tech Specs of the feature and every ADR.
 func (s *Server) conflictSources(cfg *config.Config, feature string) ([]string, error) {
-	var out []string
+	var out, known []string
 	designs, err := scan.ListArtifacts(s.Root, cfg.Artifacts.Design, cfg.Exclude)
 	if err != nil {
 		return nil, err
 	}
 	for _, d := range designs {
-		if d.Frontmatter.Feature == feature {
+		if f := d.Frontmatter.Feature; f == feature {
 			out = append(out, d.Path)
+		} else if f != "" && !slices.Contains(known, f) {
+			known = append(known, f)
 		}
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("keine Tech Spec mit feature: %s", feature)
+		// Name the features that have a Tech Spec, so a model can correct the slug itself (counter-test with
+		// qwen3:14b: it passed "feature-expiry-check" for "expiry-check").
+		if len(known) == 0 {
+			return nil, fmt.Errorf("keine Tech Spec mit feature: %s — es gibt noch keine Tech Spec", feature)
+		}
+		slices.Sort(known)
+		return nil, fmt.Errorf("keine Tech Spec mit feature: %s — Tech Specs gibt es für: %s. Rufe sdd_conflicts_check mit einem dieser Slugs erneut auf", feature, strings.Join(known, ", "))
 	}
 	adrs, err := scan.ListArtifacts(s.Root, cfg.Artifacts.ADR, cfg.Exclude)
 	if err != nil {

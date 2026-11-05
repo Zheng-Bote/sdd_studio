@@ -37,6 +37,12 @@ func (s *Server) artifactPaths() ([]string, *config.Config, error) {
 			out = append(out, c)
 		}
 	}
+	if c, err := scan.CleanRel(cfg.Artifacts.ArchitecturePath()); err == nil && !seen[c] {
+		if _, err := os.Stat(filepath.Join(s.Root, filepath.FromSlash(c))); err == nil {
+			seen[c] = true
+			out = append(out, c)
+		}
+	}
 	a := cfg.Artifacts
 	for _, spec := range []string{a.ADR, a.PRD, a.Design, a.Plans, a.Archive} {
 		if strings.TrimSpace(spec) == "" {

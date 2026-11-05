@@ -22,6 +22,7 @@ const (
 	TypePlan   = "plan"
 	TypeADR    = "adr"
 	TypeDoc    = "doc"
+	TypeArc42  = "arc42" // architecture documentation <docs[0]>/arc42.md from the arc42 template (ADR 0006)
 )
 
 // ErrInvalidInput marks user input errors of `sdd new` (exit code 2).
@@ -53,7 +54,7 @@ func NewPlan(root string, cfg *config.Config, opts NewOptions) (Plan, error) {
 	types := opts.Types
 	if len(types) == 0 {
 		if opts.Feature == "" {
-			return Plan{}, fmt.Errorf("%w: --feature <slug> oder --type adr|doc erforderlich", ErrInvalidInput)
+			return Plan{}, fmt.Errorf("%w: --feature <slug> oder --type adr|doc|arc42 erforderlich", ErrInvalidInput)
 		}
 		types = []string{TypePRD, TypeDesign}
 	}
@@ -62,14 +63,14 @@ func NewPlan(root string, cfg *config.Config, opts NewOptions) (Plan, error) {
 		switch t {
 		case TypePRD, TypeDesign, TypePlan:
 			featureTypes = append(featureTypes, t)
-		case TypeADR, TypeDoc:
+		case TypeADR, TypeDoc, TypeArc42:
 			otherTypes = append(otherTypes, t)
 		default:
-			return Plan{}, fmt.Errorf("%w: unbekannter Typ %q (erlaubt: prd, design, plan, adr, doc)", ErrInvalidInput, t)
+			return Plan{}, fmt.Errorf("%w: unbekannter Typ %q (erlaubt: prd, design, plan, adr, doc, arc42)", ErrInvalidInput, t)
 		}
 	}
 	if len(otherTypes) > 0 && (len(featureTypes) > 0 || len(otherTypes) > 1) {
-		return Plan{}, fmt.Errorf("%w: adr und doc nur einzeln und nicht zusammen mit Feature-Artefakten anlegen", ErrInvalidInput)
+		return Plan{}, fmt.Errorf("%w: adr, doc und arc42 nur einzeln und nicht zusammen mit Feature-Artefakten anlegen", ErrInvalidInput)
 	}
 	if len(otherTypes) == 1 {
 		return otherPlan(root, cfg, otherTypes[0], opts)
@@ -168,6 +169,9 @@ func featurePlan(root string, cfg *config.Config, types []string, opts NewOption
 }
 
 func otherPlan(root string, cfg *config.Config, typ string, opts NewOptions) (Plan, error) {
+	if typ == TypeArc42 {
+		return arc42Plan(root, cfg)
+	}
 	title := strings.TrimSpace(opts.Title)
 	if title == "" {
 		return Plan{}, fmt.Errorf("%w: --title ist für %s erforderlich", ErrInvalidInput, typ)
@@ -203,6 +207,25 @@ func otherPlan(root string, cfg *config.Config, typ string, opts NewOptions) (Pl
 		target = path.Join(cfg.Artifacts.Docs[0], slug+".md")
 		content, err = render("doc.md.tmpl", struct{ Title string }{title})
 	}
+	if err != nil {
+		return Plan{}, err
+	}
+	plan := Plan{Ops: []Op{{Path: target, Content: content}}}
+	return plan, plan.Validate()
+}
+
+// arc42Plan creates artifacts.architecture (default docs/arc42.md) from the arc42 template; it needs no title, the
+// project name is the repository folder. An existing file is skipped like every create.
+func arc42Plan(root string, cfg *config.Config) (Plan, error) {
+	target, err := CleanRel(cfg.Artifacts.ArchitecturePath())
+	if err != nil {
+		return Plan{}, fmt.Errorf("%w: artifacts.architecture: %v", ErrInvalidInput, err)
+	}
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		return Plan{}, err
+	}
+	content, err := render("arc42.md.tmpl", struct{ Project string }{filepath.Base(abs)})
 	if err != nil {
 		return Plan{}, err
 	}

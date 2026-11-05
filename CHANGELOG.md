@@ -4,10 +4,14 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
-Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert-expiry-watcher, vom leeren Ordner bis zu den Tests je Kriterium) und [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md).
+Regelkatalog `1.2.0` mit 23 Regeln. Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert-expiry-watcher, vom leeren Ordner bis zu den Tests je Kriterium), [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md) und [ADR 0005](docs/adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md).
 
 ### Hinzugefügt
 
+- **Erweitertes Anforderungsmanagement** ([ADR 0007](docs/adr/0007-qualitaetsanforderungen-im-prd-mit-kennung-qa.md)): Der optionale geführte Ablauf `sdd-requirements` vertieft ein PRD für mittlere und größere Vorhaben — messbare Qualitätsanforderungen mit Kennung `QA-<n>` je Merkmal, Randbedingungen, Annahmen und Abhängigkeiten, Grenzfälle als neue Akzeptanzkriterien (auf Wunsch Gegeben/Wenn/Dann), Hinweise auf vage Formulierungen. `sdd-idea` und `sdd-start` bieten ihn an, `sdd-arc42` nutzt die `QA-<n>`. Keine neue Pflichtregel.
+- **Architekturdokumentation nach arc42** ([ADR 0006](docs/adr/0006-arc42-template-unter-cc-by-sa-einbetten.md)): `sdd new --type arc42` (und `sdd_new`) legt `docs/arc42.md` aus einem mitgelieferten deutschen arc42-Template mit Mermaid-Diagrammen an (CC BY-SA 4.0, siehe `NOTICE`); neues Konfigurationsfeld `artifacts.architecture`. `sdd next` erinnert zum Release daran, sie nachzuführen, der geführte Ablauf `sdd-arc42` füllt sie aus den Quellen des Projekts. SDD Studio selbst hat seine Doku in [`docs/arc42.md`](docs/arc42.md).
+- **`SDD-012` — Abschwächende Änderung der Konfiguration verweist auf ein ADR** (ADR 0005): In `pre-implementation` und `pre-merge` ein `error`, wenn `sdd.config.yaml` gegenüber der Merge-Basis ein niedrigeres Profil, einen geänderten Override, ein neues `exclude`-Muster oder gelockerte Schwellen bekommt und kein ADR im selben Diff die Datei nennt. Bestehende Konfigurationen sind nicht betroffen.
+- **Katalogattribut `pinned`:** Eine so markierte Regel läuft in den Gates ihrer `gate_default` auch neben einem `gates.<gate>.override`; sie muss `profile: minimal` und `baseline: forbidden` tragen. Bisher einzige: `SDD-012`.
 - **`sdd_config`:** kritisches Werkzeug (nur mit `--allow-critical`) für Änderungen an `sdd.config.yaml`. Die Vorschau zeigt den Diff und je Prüflauf (Lint und die drei Gates) die Befunde, die mit der neuen Konfiguration wegfallen oder hinzukommen; die Schaltfläche nennt die geänderten Schlüssel, einen Profilwechsel mit altem und neuem Wert und jede Änderung an `override`.
 - **`sdd_conflicts_check`:** lesendes Werkzeug, das das Ergebnis von `sdd-conflicts` maschinell prüft: Steht jedes Zitat wörtlich in der genannten Datei und Zeile, und fehlt eine Regel der Verfassung in der Regelliste? Es vergleicht nur Zeichenketten und bewertet nichts. `sdd-conflicts` ruft es vor der Antwort auf und zeigt nur belegte Meldungen.
 
@@ -15,6 +19,7 @@ Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert
 
 - **Konfiguration ändern ist im Desktop kritisch** ([ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md)): einzeln bestätigt, nie für die Sitzung. `sdd_write` lehnt `sdd.config.yaml` ab; andere MCP-Clients ohne `--allow-critical` können die Konfiguration nicht mehr ändern.
 - **Sitzungsfreigabe je Stufe:** Eine Freigabe für die Sitzung gilt nur für die Stufe der Karte, auf der sie erteilt wurde. Auf einer Vorschau („nur Vorschau“) erlaubt sie nur weitere Vorschauen, Schreiben wird erneut gefragt. Bisher gab sie auch spätere Schreibvorgänge frei, ohne dass der Inhalt je gezeigt worden war. API: `allowed_writes` neben `allowed_tools`.
+- **`sdd archive` und `sdd_archive` lehnen ein Feature ab, dessen PRD noch `status: draft` trägt.** Bisher genügte ein Testverweis je Kriterium, im Live-Test hätte so ein Entwurf mit lauter übersprungenen Gerüst-Tests archiviert werden können.
 - Konzept §9.6: `baseline: forbidden` schützt nur vor der Baseline; `profile: minimal` schaltet SDD-011, SDD-050 und SDD-051 ab.
 
 ### Behoben
@@ -22,6 +27,9 @@ Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert
 - **`sdd mcp` schreibt wieder in Unterverzeichnisse:** Weil `sdd` mit dem Wurzelverzeichnis `.` läuft, galt jede bestehende Datei unter z. B. `docs/prd/` als „außerhalb des Repository-Wurzelverzeichnisses (über symbolischen Link)“. `sdd_write` konnte deshalb kein PRD, ADR und keine weitere Testdatei im selben Ordner ändern, und `sdd_adr_accept` setzte das ADR auf `accepted`, meldete danach aber diesen Fehler. Der Schutz vor symbolischen Links aus dem Repository heraus bleibt unverändert.
 - `sdd next` zählt bei „Akzeptanzkriterien mit Kennung“ jede Kennung nur einmal; eine in offenen Punkten erneut genannte `AC-n` ergab bisher ein Kriterium zu viel.
 - Die Beschreibung von `sdd_write` bot nach der Einführung von `sdd_config` noch `sdd.config.yaml` an.
+- `sdd baseline --prune` schrieb `"entries": null`, wenn es den letzten Eintrag entfernte; jetzt steht dort `[]`.
+- Ein unbekanntes Argument eines MCP-Werkzeugs wird weiter abgelehnt; die Meldung nennt jetzt die erlaubten Felder und fordert einen neuen Aufruf an, statt nur das Feld zu nennen.
+- `sdd_conflicts_check` nennt bei einem unbekannten Feature-Slug die Slugs, für die es eine Tech Spec gibt.
 
 ## [0.5.0] — 2026-11-02
 

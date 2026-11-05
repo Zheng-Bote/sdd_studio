@@ -1,0 +1,136 @@
+---
+status: active
+release:
+---
+<!--
+Gliederung: arc42-Template 9.1, © Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende, https://arc42.org
+Lizenz: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0), https://creativecommons.org/licenses/by-sa/4.0/
+Geändert: deutsche Übersetzung der Gliederung, Hilfetexte gekürzt (SDD Studio, ADR 0006). Der Inhalt, den das Projekt einträgt, gehört dem Projekt.
+-->
+
+# Architekturdokumentation — {{.Project}}
+
+Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); deutsche Fassung der Gliederung. `release:` im Kopf nennt den Stand, den diese Seite beschreibt. Diagramme in [Mermaid](https://mermaid.js.org); die Gerüste unten durch die Bausteine des Projekts ersetzen.
+
+# Einführung und Ziele {#section-introduction-and-goals}
+
+## Aufgabenstellung {#_requirements_overview}
+
+<Was leistet das System, für wen? Kurz, mit Verweis auf PRDs und Verfassung.>
+
+## Qualitätsziele {#_quality_goals}
+
+<Die drei bis fünf wichtigsten Qualitätsziele, nach Priorität.>
+
+## Stakeholder {#_stakeholders}
+
+| Rolle | Erwartung |
+|---|---|
+| <Rolle> | <Erwartung an die Architektur> |
+
+# Randbedingungen {#section-architecture-constraints}
+
+<Technische, organisatorische und rechtliche Vorgaben, z. B. aus der Verfassung.>
+
+# Kontextabgrenzung {#section-context-and-scope}
+
+## Fachlicher Kontext {#_business_context}
+
+<Kommunikationspartner des Systems und was mit ihnen ausgetauscht wird.>
+
+```mermaid
+flowchart LR
+    Nutzer["Nutzer"] -->|Eingabe| System["{{.Project}}"]
+    System -->|Ausgabe| Nachbar["Nachbarsystem"]
+```
+
+## Technischer Kontext {#_technical_context}
+
+<Kanäle, Protokolle und Schnittstellen nach außen.>
+
+# Lösungsstrategie {#section-solution-strategy}
+
+<Grundlegende Entscheidungen und Ansätze, mit denen die Qualitätsziele erreicht werden.>
+
+# Bausteinsicht {#section-building-block-view}
+
+## Whitebox Gesamtsystem {#_whitebox_overall_system}
+
+<Zerlegung in Bausteine, ihre Verantwortung und Schnittstellen.>
+
+```mermaid
+flowchart TB
+    A["Baustein A"] --> B["Baustein B"]
+    A --> C["Baustein C"]
+```
+
+## Ebene 2 {#_level_2}
+
+<Innere Struktur ausgewählter Bausteine.>
+
+## Ebene 3 {#_level_3}
+
+<Bei Bedarf weitere Verfeinerung.>
+
+# Laufzeitsicht {#section-runtime-view}
+
+<Wichtige Abläufe: wie die Bausteine zur Laufzeit zusammenwirken.>
+
+```mermaid
+sequenceDiagram
+    actor Nutzer
+    participant A as Baustein A
+    participant B as Baustein B
+    Nutzer->>A: Anfrage
+    A->>B: Aufruf
+    B-->>A: Ergebnis
+    A-->>Nutzer: Antwort
+```
+
+# Verteilungssicht {#section-deployment-view}
+
+## Infrastruktur Ebene 1 {#_infrastructure_level_1}
+
+<Wo und wie das System betrieben wird.>
+
+```mermaid
+flowchart LR
+    subgraph Knoten["Knoten"]
+        Prog["{{.Project}}"]
+    end
+    Prog --> Speicher[("Speicher")]
+```
+
+## Infrastruktur Ebene 2 {#_infrastructure_level_2}
+
+<Bei Bedarf Details einzelner Infrastrukturelemente.>
+
+# Querschnittliche Konzepte {#section-concepts}
+
+<Regelungen und Lösungsideen, die in mehreren Bausteinen gelten.>
+
+# Architekturentscheidungen {#section-design-decisions}
+
+<Verweise auf die ADRs mit je einem Satz zur Entscheidung.>
+
+# Qualitätsanforderungen {#section-quality-scenarios}
+
+## Übersicht der Qualitätsanforderungen {#_quality_requirements_overview}
+
+<Qualitätsanforderungen über die Ziele aus Abschnitt 1 hinaus.>
+
+## Qualitätsszenarien {#_quality_scenarios}
+
+| Ziel | Szenario | Erwartete Reaktion |
+|---|---|---|
+| <Qualitätsziel> | <Auslöser und Umgebung> | <messbare Reaktion> |
+
+# Risiken und technische Schulden {#section-technical-risks}
+
+<Bekannte Risiken und Schulden, nach Priorität.>
+
+# Glossar {#section-glossary}
+
+| Begriff | Definition |
+|---|---|
+| <Begriff> | <Definition> |

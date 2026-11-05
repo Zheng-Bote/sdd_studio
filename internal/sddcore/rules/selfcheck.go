@@ -30,6 +30,7 @@ func registerBuiltins(r *Registry) {
 	r.Register("diff_within_intent", checkSDD024)
 	r.Register("adr_immutable", checkSDD011)
 	r.Register("constitution_change_has_adr", checkSDD010)
+	r.Register("config_weakening_has_adr", checkSDD012)
 	r.Register("no_links_to_archive", checkSDD051)
 	r.Register("tasks_reference_acs", checkSDD041)
 	r.Register("design_references_acs", checkSDD031)

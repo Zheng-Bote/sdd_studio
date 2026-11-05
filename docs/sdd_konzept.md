@@ -432,6 +432,7 @@ artifacts:
   docs:
     - docs/notes
     - docs/research
+  architecture: docs/arc42.md   # Architekturdoku nach arc42 (sdd new --type arc42), Standard docs/arc42.md
 
 tests:
   # Prüfbereich für SDD-021/SDD-022 (hier im Beispiel ein Go-Projekt).
@@ -482,7 +483,7 @@ exclude:
 
 Damit sind alle Pfade und Schwellen deklarativ konfigurierbar. Das Programm erzwingt keine bestimmte Ordnerstruktur (und kollidiert nicht mit vorhandenen Frameworks wie GitHub Spec Kit, MADR oder arc42), sondern prüft die konfigurierte Zuordnung.
 
-**Gate-Zugehörigkeit hat genau eine Quelle.** Maßgeblich ist die effektive Menge `Eff(g)`: der `override` des Gates, falls gesetzt, sonst `gate_default` aus dem Katalog — nie eine Vereinigung beider. `sdd lint` meldet über SDD-072 jede aktive Regel, die in keinem `Eff(g)` vorkommt; sonst ist eine Regel unsichtbar und läuft nie.
+**Gate-Zugehörigkeit hat genau eine Quelle.** Maßgeblich ist die effektive Menge `Eff(g)`: der `override` des Gates, falls gesetzt, sonst `gate_default` aus dem Katalog — nie eine Vereinigung beider. Einzige Ausnahme sind Regeln mit `pinned: true` ([ADR 0005](adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md)): Sie gehören in den Gates ihrer `gate_default` immer dazu, auch neben einem `override`, und tragen `profile: minimal` und `baseline: forbidden`. So lässt sich eine Regel, die Abschwächungen der Konfiguration prüft, nicht durch genau diese Abschwächung abschalten. `sdd lint` meldet über SDD-072 jede aktive Regel, die in keinem `Eff(g)` vorkommt; sonst ist eine Regel unsichtbar und läuft nie.
 
 **Ohne `sdd.config.yaml`** bricht jeder Befehl mit Exit-Code `2` und der Meldung „keine Projektkonfiguration gefunden; `sdd adopt` oder `sdd init` ausführen" ab. Es gibt keine stillschweigenden Defaults — ein Prüfer, der ohne Konfiguration rät, prüft das falsche Projekt. Ausnahmen: `sdd init`, `sdd adopt` und `sdd new` legen die Datei selbst an bzw. funktionieren mit einem Vorschlag.
 
@@ -553,6 +554,7 @@ Zwei Punkte am Schema, die nicht verhandelbar sind:
   - **SDD-002b** (`.sdd`-Verfassung im strikten Modus): erfüllt die formale `.sdd`-Grammatik (`Spec: Name`, bekannte Section-Labels, 2-Space-Einrückung)
 - **SDD-003** Verfassung enthält keine Feature-Inhalte (User Stories, Sprintplanung, Tasklisten) — *warn*, heuristisch
 - **SDD-010** Änderung einer Verfassungsregel verweist auf ein ADR — *error* — `baseline: allowed`
+- **SDD-012** Abschwächende Änderung der Konfiguration (niedrigeres Profil, geänderter Override, neues `exclude`, gelockerte Schwellen) verweist auf ein ADR im selben Diff — *error* in `pre-implementation` und `pre-merge` — `baseline: forbidden`, `pinned` ([ADR 0005](adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md))
 - **SDD-011** ADRs sind unveränderlich; Ablösung über `supersedes` — *error* — `baseline: forbidden` (quittiert wird über das ADR-Lockfile, nicht über die Baseline)
 - **SDD-020** PRD vorhanden, wenn die Größenschwelle greift — *error* — `baseline: allowed`
 - **SDD-021** Jedes Akzeptanzkriterium hat eine stabile ID (`AC-n`) — *error* — `baseline: allowed`
@@ -730,7 +732,7 @@ Diese Liste steht **nur hier** und im Handbuch; andere Abschnitte verweisen dara
 
 **Assistierter Abgleich statt Regel (`SDD-060`):** Ob eine Tech Spec der Verfassung widerspricht, ist eine Frage der Bedeutung und nicht deterministisch entscheidbar. Eine Katalogregel müsste `sdd` selbst prüfen (`SDD-071`), und `sdd` ist KI-frei; ein Befund muss reproduzierbar sein, eine Modellantwort ist es nicht. Deshalb ist `SDD-060` keine Regel, sondern der geführte Ablauf `sdd-conflicts` in `sdd-desk`: Das Modell liest Verfassung, Tech Spec und verlinkte ADRs über das lesende Werkzeug `sdd_read` und meldet nur Widersprüche, die es auf beiden Seiten wörtlich mit Datei und Zeile zitieren kann. Die Zitate prüft `sdd` selbst: Das lesende Werkzeug `sdd_conflicts_check` vergleicht jedes Zitat mit seiner Datei und Zeile und nennt Regeln der Verfassung, die das Modell nicht durchgegangen ist — ein deterministischer Zeichenkettenvergleich, keine Bewertung. Das Ergebnis ist ein Hinweis, kein Befund — es erscheint in keinem Bericht und keiner Baseline; ob die Tech Spec angepasst oder die Verfassung über ein ADR geändert wird, entscheidet der Mensch.
 
-**Wichtig für das Ratchet:** Eine KI entscheidet nie über Baseline-Einträge. Sie kann sie vorschlagen; ausgeführt werden sie nur durch die einzelne Bestätigung des Menschen ([ADR 0003](adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)). Sonst wäre die einzige Bremse im System maschinell verhandelbar. Regeln mit `baseline: forbidden` lassen sich über die Baseline nicht unterdrücken. Die Konfiguration kann sie dagegen abschalten (`profile: minimal` nimmt SDD-011, SDD-050 und SDD-051 aus der Prüfung); deshalb ist jede Änderung an `sdd.config.yaml` im Desktop kritisch ([ADR 0004](adr/0004-konfiguration-aendern-ist-kritisch.md)).
+**Wichtig für das Ratchet:** Eine KI entscheidet nie über Baseline-Einträge. Sie kann sie vorschlagen; ausgeführt werden sie nur durch die einzelne Bestätigung des Menschen ([ADR 0003](adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)). Sonst wäre die einzige Bremse im System maschinell verhandelbar. Regeln mit `baseline: forbidden` lassen sich über die Baseline nicht unterdrücken. Die Konfiguration kann sie dagegen abschalten (`profile: minimal` nimmt SDD-011, SDD-050 und SDD-051 aus der Prüfung); deshalb ist jede Änderung an `sdd.config.yaml` im Desktop kritisch ([ADR 0004](adr/0004-konfiguration-aendern-ist-kritisch.md)), und außerhalb des Desktops verlangt `SDD-012` für eine solche Abschwächung ein ADR ([ADR 0005](adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md)).
 
 ---
 

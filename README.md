@@ -8,6 +8,8 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 `sdd` selbst ist **KI-frei und offline** ([ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), löst ADR 0002 ab): Kern, CLI, `sdd ui` und `sdd mcp` enthalten keinen LLM-Code und bauen keine Netzwerkverbindung nach außen auf.
 
+Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
+
 ## Stand
 
 Letzte Version: **0.5.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`. Der KI-Desktop `sdd-desk` führt jetzt durch den ganzen Prozess: Projekt übernehmen oder neu anlegen (`sdd init --git`), Agenten-Dateien, Verfassung aus den Quellen des Projekts, PRD mit Inhalt, Tests in der Projektsprache, Archiv (`sdd archive`). Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.5.0`.
@@ -22,7 +24,7 @@ Letzte Version: **0.5.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`. 
 | Bereich | Regeln |
 |---|---|
 | Verfassung | `SDD-001` vorhanden, `SDD-002a` Pflichtabschnitte, `SDD-002b` `.sdd`-Grammatik, `SDD-003` keine Feature-Inhalte (heuristisch) |
-| ADR | `SDD-010` ADR bei Verfassungsänderung, `SDD-011` unveränderliche ADRs (`.sdd/adr-lock.json`) |
+| ADR | `SDD-010` ADR bei Verfassungsänderung, `SDD-011` unveränderliche ADRs (`.sdd/adr-lock.json`), `SDD-012` ADR bei abschwächender Änderung der Konfiguration (Profil, Override, `exclude`, Schwellen; nicht abwählbar) |
 | Feature | `SDD-020` PRD und `SDD-030` Tech Spec ab Größenschwelle; Feature-Auflösung `--feature` → Frontmatter im Diff → Branch, fail-closed |
 | PRD & Akzeptanzkriterien | `SDD-021` stabile Kennung `AC-<n>`, `SDD-023` Nicht-Ziele genannt, `SDD-022` in Tests referenziert (mit Feature-Slug, sobald es mehr als ein Feature gibt), `SDD-025` Kennung in Testdeklaration oder -rumpf, `SDD-031` Tech Spec nennt die umgesetzten AC-Kennungen |
 | Umfang & Plan | `SDD-024` Diff weicht nicht von der erklärten Absicht (`touches`) ab, `SDD-040` Plan vor der ersten Task, `SDD-041` jede Task nennt ein Akzeptanzkriterium |
@@ -59,8 +61,8 @@ make uninstall       # alles wieder entfernen
 | `sdd gate <pre-implementation\|pre-merge\|pre-release> [--json] [--feature <slug>[,…]] [--paths <globs>]` | Gate prüfen, Exit-Code `0`/`1`/`2` |
 | `sdd baseline [--gate <gate>] [--prune] [--accept <regel-id>]` | Bestand einfrieren, quittieren (`--accept SDD-011` schreibt das ADR-Lockfile) |
 | `sdd init [--profile minimal\|standard\|regulated] [--dry-run] [--no-ci] [--git]` | Neues Projekt: Konfiguration, Verfassung, Artefaktordner, CI-Workflow, Agenten-Dateien (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`); mit `--git` ohne vorhandenes Repository auch `git init` und ein erster Commit |
-| `sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` | Feature-Artefakte aus Templates; `new --type adr\|doc --title …` |
-| `sdd archive --feature <slug> [--release <version>] [--dry-run]` | Feature nach dem Release ins Archiv verschieben (`status: archived`); nur wenn jedes Akzeptanzkriterium einen Testverweis hat |
+| `sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` | Feature-Artefakte aus Templates; `new --type adr\|doc --title …`; `new --type arc42` legt die Architekturdoku `docs/arc42.md` nach arc42 an |
+| `sdd archive --feature <slug> [--release <version>] [--dry-run]` | Feature nach dem Release ins Archiv verschieben (`status: archived`); nur wenn kein PRD mehr `status: draft` trägt und jedes Akzeptanzkriterium einen Testverweis hat |
 | `sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` | Bestandsprojekt übernehmen: Probelauf-Bericht; mit `--apply` auf neuem Branch, ein Commit je Schritt ([ADR 0001](docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md)) |
 | `sdd report [--format markdown\|json] [--since <ref>]` | Reifegrad, Befunde, Gates, Schuldenstand mit Trend |
 | `sdd next [--feature <slug>]` | nächster Prozessschritt je Feature |
@@ -150,7 +152,7 @@ bin/sdd-desk --project . --open
 
 `sdd-desk` gibt Adresse und URL mit Sitzungstoken aus; ohne `--open` diese URL im Browser öffnen. Beenden mit Strg+C.
 
-In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**, **Verfassung erarbeiten**, **Tests je Kriterium** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Ist das Projekt noch nicht mit sdd erfasst, schlägt ein Hinweis über dem Gespräch **Bestehendes Projekt übernehmen** bzw. **Neues Projekt anlegen** vor. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
+In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**, **Anforderungen vertiefen** für mittlere und größere Vorhaben, **Verfassung erarbeiten**, **Tests je Kriterium** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Ist das Projekt noch nicht mit sdd erfasst, schlägt ein Hinweis über dem Gespräch **Bestehendes Projekt übernehmen** bzw. **Neues Projekt anlegen** vor. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
 
 ### Was der Desktop darf
 
@@ -173,7 +175,5 @@ go run ./cmd/sdd lint
 
 ## Nächste Schritte
 
-- **Praxistest mit weiteren Modellen:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher); kleine lokale Modelle halten Form- und Zitierregeln weniger zuverlässig ein. Ob `sdd_conflicts_check` deren Zitate im Alltag auffängt, zeigt ein Lauf mit z. B. `qwen3:14b`.
-- **Profilwechsel nach unten in `sdd` selbst sperren?** `profile: minimal` schaltet SDD-011, SDD-050 und SDD-051 ab, obwohl die Baseline sie nicht unterdrücken darf. Im Desktop ist das seit ADR 0004 eine kritische Aktion; ob `sdd` es auch im Terminal und in CI ohne ADR verweigern soll, entscheidet ein späteres ADR.
-- **Archivieren erst nach dem Release:** `sdd archive` prüft heute nur, ob jedes Kriterium einen Testverweis hat; ein Feature mit übersprungenen Gerüst-Tests ließe sich vor der Umsetzung archivieren. Im Live-Test hat das Modell es verhindert, nicht das Werkzeug.
+- **Kleine lokale Modelle:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher). Im Gegentest mit `qwen3:14b` erfand das Modell bei `sdd-conflicts` Pfade, Zeilen und Zitate und fand die eingebauten Widersprüche nicht; `sdd_conflicts_check` hätte jede dieser Meldungen verworfen, und den versuchten Schreibvorgang hielt die Freigabekarte auf. Für `sdd-conflicts` taugt ein Modell dieser Größe nicht; welche Mindestgröße reicht, ist offen.
 - **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.

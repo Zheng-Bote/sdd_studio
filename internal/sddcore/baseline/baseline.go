@@ -56,9 +56,13 @@ func Load(repoRoot string) (*File, bool, error) {
 	return &bf, true, nil
 }
 
-// Save writes .sdd/baseline.json deterministically sorted.
+// Save writes .sdd/baseline.json deterministically sorted. No entries are written as [], never as null (sdd baseline
+// --prune that removes the last entry used to write null).
 func Save(repoRoot string, bf *File) error {
 	bf.Version = 1
+	if bf.Entries == nil {
+		bf.Entries = []Entry{}
+	}
 	sortEntries(bf.Entries)
 	p := filepath.Join(repoRoot, filepath.FromSlash(DefaultBaselineRelPath))
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {

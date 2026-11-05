@@ -222,3 +222,74 @@ func TestTestsPrompt(t *testing.T) {
 		last = i
 	}
 }
+
+// arc42-docs AC-5, AC-7: sdd-arc42 reads the sources, creates the document if missing, fills it only from sources with a
+// reference each, keeps the license header, sets release and saves with sdd_write.
+func TestArc42Prompt(t *testing.T) {
+	text := promptText(t, newServer(project(t), false), "sdd-arc42", `{"release":"v1.2.0"}`)
+	last := -1
+	for _, step := range []string{"v1.2.0", "sdd_next", "sdd_read", "sdd_new (types: [arc42])", "je Aussage die Quelle", "offen:", "Lizenzkopf", "Mermaid", "sequenceDiagram", "release", "sdd_write"} {
+		i := strings.Index(text, step)
+		if i <= last {
+			t.Errorf("step %q missing or out of order", step)
+		}
+		last = i
+	}
+}
+
+// requirements-depth AC-1, AC-2, AC-3, AC-4, AC-5: sdd-requirements reads the PRD, goes through the quality characteristics one by one
+// (QA-<n>, measurable), constraints and assumptions, edge cases as new ACs, vague wording, and saves after validating.
+func TestRequirementsPrompt(t *testing.T) {
+	s := newServer(project(t), false)
+	if r := exchange(t, s, `{"jsonrpc":"2.0","id":1,"method":"prompts/get","params":{"name":"sdd-requirements","arguments":{}}}`); r[0]["error"] == nil {
+		t.Error("sdd-requirements without feature accepted")
+	}
+	text := promptText(t, s, "sdd-requirements", `{"feature":"billing"}`)
+	last := -1
+	for _, step := range []string{"billing", "sdd_read", "Leistung und Effizienz", "Zuverlässigkeit", "Sicherheit", "Wartbarkeit",
+		"Benutzbarkeit", "Kompatibilität", "Übertragbarkeit und Betrieb", "Zielwert", "QA-<n>", "nie umnummerieren",
+		"## Randbedingungen", "## Annahmen und Abhängigkeiten", "Grenzfälle", "Zeitüberschreitung", "AC-<n>", "Gegeben/Wenn/Dann",
+		"Vage Wörter", "„schnell“", "Zustimmung", "sdd_validate_draft", "sdd_write"} {
+		i := strings.Index(text, step)
+		if i <= last {
+			t.Errorf("step %q missing or out of order", step)
+		}
+		last = i
+	}
+	if !strings.Contains(text, "keine Prioritäten, keine Schätzungen") {
+		t.Error("sdd-requirements must exclude priorities and estimates")
+	}
+}
+
+// requirements-depth AC-6: sdd-idea and sdd-start offer sdd-requirements; sdd-arc42 takes quality goals from QA-<n>.
+func TestRequirementsOffered(t *testing.T) {
+	s := newServer(project(t), false)
+	for name, args := range map[string]string{"sdd-idea": `{}`, "sdd-start": `{}`} {
+		if text := promptText(t, s, name, args); !strings.Contains(text, "sdd-requirements") {
+			t.Errorf("%s does not offer sdd-requirements", name)
+		}
+	}
+	if text := promptText(t, s, "sdd-arc42", `{}`); !strings.Contains(text, "QA-<n>") {
+		t.Error("sdd-arc42 does not use QA-<n>")
+	}
+}
+
+// requirements-depth AC-7: handbook, README and CHANGELOG describe the flow, the optional sections and QA-<n>.
+func TestRequirementsDocumented(t *testing.T) {
+	for f, wants := range map[string][]string{
+		"../../handbuch/03-mechanismen.md": {"## Qualitätsanforderungen", "QA-<n>", "## Randbedingungen", "## Annahmen und Abhängigkeiten", "sdd-requirements"},
+		"../../handbuch/04-agenten.md":     {"sdd-requirements", "QA-<n>"},
+		"../../README.md":                  {"Anforderungen vertiefen"},
+		"../../CHANGELOG.md":               {"sdd-requirements", "QA-<n>"},
+	} {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, w := range wants {
+			if !strings.Contains(string(data), w) {
+				t.Errorf("%s lacks %q", f, w)
+			}
+		}
+	}
+}

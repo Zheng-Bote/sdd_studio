@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
@@ -76,7 +77,7 @@ func baseTools() []tool {
 			InputSchema: obj(map[string]any{"path": str("Zielpfad relativ zum Repository"), "content": str("vollständiger Dateiinhalt")}, "path", "content"), Annotations: readOnly},
 		{Name: "sdd_new", Title: "Artefakt anlegen", Description: "Wie `sdd new`: ohne apply nur Vorschau mit Inhalt; apply legt neue Dateien an (nur wenn der Server mit --allow-write läuft), nie überschreibend. Mit content (genau ein Typ) wird dieser geprüfte Entwurf statt des Templates angelegt; bei einem Regel-Fehler wird nichts geschrieben.",
 			InputSchema: obj(map[string]any{
-				"types": strs("prd, design, plan, adr, doc; leer = prd + design"), "feature": str("Feature-Slug"), "title": str("Titel"),
+				"types": strs("prd, design, plan, adr, doc, arc42 (Architekturdoku, ohne title); leer = prd + design"), "feature": str("Feature-Slug"), "title": str("Titel"),
 				"content": str("vollständiger Inhalt statt des Templates (nur mit genau einem Typ)"),
 				"slug":    str("Slug für adr/doc"), "touches": strs("erklärte Änderungsabsicht"), "archive_after": str("YYYY-MM-DD"),
 				"apply": map[string]any{"type": "boolean", "description": "Dateien wirklich anlegen"},
@@ -94,7 +95,7 @@ func baseTools() []tool {
 				"git":     map[string]any{"type": "boolean", "description": "ohne Repository: git init und erster Commit"},
 				"apply":   map[string]any{"type": "boolean", "description": "wirklich anlegen"},
 			}), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
-		{Name: "sdd_archive", Title: "Feature archivieren", Description: "Wie `sdd archive`: verschiebt PRD, Tech Spec und Plan eines Features nach artifacts.archive und setzt status: archived (optional release). Nur wenn jedes Akzeptanzkriterium einen Testverweis hat; nach dem Release, nicht vor der Umsetzung. Ohne apply nur Vorschau; apply nur mit --allow-write.",
+		{Name: "sdd_archive", Title: "Feature archivieren", Description: "Wie `sdd archive`: verschiebt PRD, Tech Spec und Plan eines Features nach artifacts.archive und setzt status: archived (optional release). Nur wenn kein PRD des Features mehr status: draft trägt und jedes Akzeptanzkriterium einen Testverweis hat; nach dem Release, nicht vor der Umsetzung. Ohne apply nur Vorschau; apply nur mit --allow-write.",
 			InputSchema: obj(map[string]any{
 				"feature": str("Feature-Slug"), "release": str("Version für release: im Frontmatter (optional)"),
 				"apply": map[string]any{"type": "boolean", "description": "wirklich verschieben"},
@@ -139,9 +140,30 @@ func args[T any](raw json.RawMessage) (T, error) {
 	dec := json.NewDecoder(strings.NewReader(string(raw)))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&v); err != nil {
+		if strings.Contains(err.Error(), "unknown field") {
+			// Name what is allowed and ask for a new call: a model that only sees "unknown field" tends to hand the
+			// error to the user instead of correcting its own call (live test with qwen3:14b, 2026-11-05).
+			return v, fmt.Errorf("ungültige Argumente: %w — erlaubt sind nur: %s. Rufe das Werkzeug ohne das unbekannte Feld erneut auf", err, strings.Join(jsonFields(v), ", "))
+		}
 		return v, fmt.Errorf("ungültige Argumente: %w", err)
 	}
 	return v, nil
+}
+
+// jsonFields lists the JSON names of the fields of struct v.
+func jsonFields(v any) []string {
+	t := reflect.TypeOf(v)
+	if t == nil || t.Kind() != reflect.Struct {
+		return nil
+	}
+	var names []string
+	for i := 0; i < t.NumField(); i++ {
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		if name != "" && name != "-" {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 func validGate(g string) bool {

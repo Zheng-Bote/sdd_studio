@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -88,7 +89,8 @@ func (r *Registry) Get(name string) (CheckFunc, bool) {
 }
 
 // EffectiveRulesForGate computes Eff(g) according to section 8.3 and 9.5 (SDD-072):
-// If gates.<gate>.override is non-empty in sdd.config.yaml, Eff(g) = override(g).
+// If gates.<gate>.override is non-empty in sdd.config.yaml, Eff(g) = override(g) plus every pinned rule whose
+// gate_default contains g (ADR 0005: the configuration cannot switch a pinned rule off).
 // Otherwise Eff(g) = gate_default(g) from the catalog (filtered by profile).
 func EffectiveRulesForGate(cfg *config.Config, cat *catalog.Catalog, gate string) map[string]bool {
 	eff := make(map[string]bool)
@@ -96,6 +98,11 @@ func EffectiveRulesForGate(cfg *config.Config, cat *catalog.Catalog, gate string
 	if len(override) > 0 {
 		for _, id := range override {
 			eff[id] = true
+		}
+		for _, r := range cat.Rules {
+			if r.Pinned && slices.Contains(r.GateDefault, gate) {
+				eff[r.ID] = true
+			}
 		}
 		return eff
 	}
