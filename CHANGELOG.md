@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung [Semantic Versioning](https://semver.org/lang/de/). Der Regelkatalog trägt eine eigene Version (`catalog/catalog.yaml`).
 
+## [Unreleased]
+
+### Behoben
+
+- **`sdd mcp` schreibt wieder in Unterverzeichnisse:** Weil `sdd` mit dem Wurzelverzeichnis `.` läuft, galt jede bestehende Datei unter z. B. `docs/prd/` als „außerhalb des Repository-Wurzelverzeichnisses (über symbolischen Link)“. `sdd_write` konnte deshalb kein PRD, ADR und keine weitere Testdatei im selben Ordner ändern, und `sdd_adr_accept` setzte das ADR auf `accepted`, meldete danach aber diesen Fehler. Der Schutz vor symbolischen Links aus dem Repository heraus bleibt unverändert.
+
 ## [0.5.0] — 2026-11-02
 
 Regelkatalog unverändert `1.1.0` mit 22 Regeln, Berichtsformat unverändert `schema_version: 1`. Grundlage ist [ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), das ADR 0002 ablöst: Der KI-Desktop darf alles, was `sdd` kann, freigegeben in drei Stufen (lesend, schreibend, kritisch).

@@ -99,7 +99,13 @@ func readExisting(root, rel string) (data []byte, exists bool, err error) {
 }
 
 // insideRoot rejects rel if its nearest existing parent directory resolves (through symbolic links) outside root.
+// root may be relative (sdd runs with "."); it is made absolute first, because EvalSymlinks keeps a relative path
+// relative and "docs/prd" would never lie under ".".
 func insideRoot(root, rel string) error {
+	root, err := filepath.Abs(root)
+	if err != nil {
+		return err
+	}
 	realRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		return err

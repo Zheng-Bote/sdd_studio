@@ -112,7 +112,9 @@ func TestADRAcceptTool(t *testing.T) {
 	if op := prev["ops"].([]any)[0].(map[string]any); prev["critical"] != true || !strings.Contains(op["diff"].(string), "-status: proposed\n+status: accepted") {
 		t.Fatalf("preview: %v", prev)
 	}
-	call(t, s, "sdd_adr_accept", map[string]any{"path": rel, "apply": true})
+	if r := call(t, s, "sdd_adr_accept", map[string]any{"path": rel, "apply": true}); r["isError"] == true {
+		t.Fatalf("apply: %s", errText(r))
+	}
 	if got := readFileT(t, root, rel); got != strings.Replace(proposed, "status: proposed", "status: accepted", 1) {
 		t.Errorf("content %q", got)
 	}
