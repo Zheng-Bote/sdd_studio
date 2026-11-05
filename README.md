@@ -152,7 +152,7 @@ bin/sdd-desk --project . --open
 
 `sdd-desk` gibt Adresse und URL mit Sitzungstoken aus; ohne `--open` diese URL im Browser öffnen. Beenden mit Strg+C.
 
-In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**, **Verfassung erarbeiten**, **Tests je Kriterium** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Ist das Projekt noch nicht mit sdd erfasst, schlägt ein Hinweis über dem Gespräch **Bestehendes Projekt übernehmen** bzw. **Neues Projekt anlegen** vor. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
+In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**, **Anforderungen vertiefen** für mittlere und größere Vorhaben, **Verfassung erarbeiten**, **Tests je Kriterium** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Ist das Projekt noch nicht mit sdd erfasst, schlägt ein Hinweis über dem Gespräch **Bestehendes Projekt übernehmen** bzw. **Neues Projekt anlegen** vor. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
 
 ### Was der Desktop darf
 

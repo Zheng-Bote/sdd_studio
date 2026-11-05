@@ -54,6 +54,7 @@ sdd new --type arc42
 - Ein `archive-after` vor dem heutigen lokalen Datum lehnt `sdd new` ab: Das Artefakt wäre sofort überfällig (`SDD-050`). Der heutige Tag selbst ist erlaubt. Das gilt auch für `sdd ui` und das MCP-Werkzeug `sdd_new`. `sdd-desk` nennt dem Modell bei jedem Gesprächszug das heutige Datum.
 - Die ADR-Nummer ist die größte vierstellige Präfixnummer im ADR-Verzeichnis plus eins; der Slug wird aus dem Titel abgeleitet (Umlaute transliteriert).
 - Das PRD-Template enthält `AC-1` als Platzhalter: Es erfüllt `SDD-021`, verlangt nach `SDD-022` aber einen Test — bei mehreren PRDs mit Slug im Testkommentar (`// <slug> AC-1: …`).
+- **Optionale PRD-Abschnitte** für mittlere und größere Vorhaben ([ADR 0007](../docs/adr/0007-qualitaetsanforderungen-im-prd-mit-kennung-qa.md)), zwischen Nicht-Zielen und Akzeptanzkriterien: `## Qualitätsanforderungen` mit stabilen Kennungen `QA-<n>` (messbar: Merkmal, Zielwert und Maß, Bedingung; nie umnummeriert, entfallene als ~~QA-n~~), `## Randbedingungen`, `## Annahmen und Abhängigkeiten`. Keine Regel verlangt sie, und `QA-<n>` braucht keinen Testverweis; Grenzfälle und Fehlerverhalten werden zu Akzeptanzkriterien `AC-<n>`. Der geführte Ablauf `sdd-requirements` füllt sie.
 - Ohne `sdd.config.yaml` verwendet `sdd new` die Standardpfade von `sdd init` und weist darauf hin.
 
 ### `sdd adopt` {#sdd-adopt}

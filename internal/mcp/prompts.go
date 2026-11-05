@@ -55,7 +55,22 @@ func promptList() []prompt {
 					"4. Kläre die Technik, bevor es um Dateien geht: Rufe sdd_stack auf. Hat das Projekt schon eine Sprache, nenne sie und lass sie bestätigen. Ist es leer, schlage eine Sprache bzw. Form vor (z. B. Shell-Skript, Go, Rust, C++ oder nur Markdown), begründe sie mit Art des Programms, Zielplattform und Umfang, und frage. Bei einem neuen Projekt biete an, die Wahl als ADR festzuhalten (Prompt sdd-adr).\n" +
 					"5. Formuliere mit mir Akzeptanzkriterien, die ein Test prüfen kann, jedes mit Kennung AC-1, AC-2, … (nie umnummerieren).\n" +
 					"6. Schlage einen Feature-Slug vor (" + slugHint(a["feature"]) + ") und frage, welche Pfade die Umsetzung voraussichtlich berührt (touches) — in den Konventionen der gewählten Sprache (Quell- und Testpfade wie aus sdd_stack), nie mit Platzhalter-Endungen. Prüfe sie mit sdd_check_intent: Greift die Größenschwelle, braucht es auch eine Tech Spec.\n" +
-					"7. Formuliere das PRD mit den Abschnitten Problem, Ziel, Nutzer, Umfang, Nicht-Ziele, Akzeptanzkriterien aus den Antworten, prüfe es mit sdd_validate_draft und lege es mit sdd_new an (types: [prd], content: der geprüfte Entwurf).\n"
+					"7. Formuliere das PRD mit den Abschnitten Problem, Ziel, Nutzer, Umfang, Nicht-Ziele, Akzeptanzkriterien aus den Antworten, prüfe es mit sdd_validate_draft und lege es mit sdd_new an (types: [prd], content: der geprüfte Entwurf).\n" +
+					"8. Ist das Vorhaben mittelgroß oder größer (mehrere Komponenten, Qualitätsanforderungen wie Leistung oder Verfügbarkeit, mehrere Beteiligte), biete den vertieften Ablauf sdd-requirements an: Qualitätsanforderungen (QA-<n>), Randbedingungen, Annahmen, Grenzfälle.\n"
+			}},
+		{Name: "sdd-requirements", Title: "Anforderungen vertiefen", Description: "Vertieft das PRD eines Features für mittlere und größere Vorhaben: messbare Qualitätsanforderungen (QA-<n>), Randbedingungen, Annahmen, Grenzfälle und vage Formulierungen.",
+			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
+			rules:     []string{"SDD-021", "SDD-023"},
+			body: func(a map[string]string) string {
+				f := a["feature"]
+				return "Vertiefe mit mir das PRD des Features " + f + " (ADR 0007). Optional und nur, was für dieses Vorhaben zählt; keine Prioritäten, keine Schätzungen.\n\n" +
+					"Vorgehen:\n" +
+					"1. Lies das PRD mit sdd_read (kennst du den Pfad nicht: sdd_read ohne path). Fasse kurz zusammen, was schon da ist.\n" +
+					"2. Qualitätsanforderungen: Gehe die Merkmale einzeln durch — Leistung und Effizienz, Zuverlässigkeit und Verfügbarkeit, Sicherheit, Wartbarkeit, Benutzbarkeit, Kompatibilität, Übertragbarkeit und Betrieb. Frage je Merkmal, ob es hier zählt. Wenn ja, erfrage Maß, Zielwert und Bedingung und formuliere „- **QA-<n>** <Merkmal>: <Zielwert und Maß> unter <Bedingung>“ im Abschnitt „## Qualitätsanforderungen“ (nächste freie Nummer, nie umnummerieren, entfallene als ~~QA-n~~). Zählt ein Merkmal nicht, überspringe es.\n" +
+					"3. Randbedingungen (Technik, Recht, Organisation, Betrieb) im Abschnitt „## Randbedingungen“; Annahmen und Abhängigkeiten (was als gegeben gilt, wovon das Feature abhängt) im Abschnitt „## Annahmen und Abhängigkeiten“.\n" +
+					"4. Grenzfälle und Fehlerverhalten: leere und ungültige Eingabe, nicht erreichbar, fehlende Rechte, Zeitüberschreitung, gleichzeitiger Zugriff, Wiederholung nach Abbruch. Jeden testbaren Fall formulierst du als neues Akzeptanzkriterium AC-<n> (nächste freie Nummer; bestehende Kennungen nie umnummerieren), auf meinen Wunsch im Schema Gegeben/Wenn/Dann.\n" +
+					"5. Vage Wörter: Prüfe Akzeptanzkriterien und Qualitätsanforderungen auf „schnell“, „einfach“, „benutzerfreundlich“, „intuitiv“, „flexibel“, „sollte“, „möglichst“, „ggf.“, „usw.“, „etc.“. Schlage je Fund eine messbare Fassung vor; übernimm sie erst nach meiner Zustimmung.\n" +
+					"6. Die neuen Abschnitte stehen nach den Nicht-Zielen und vor den Akzeptanzkriterien und entstehen nur, wenn es Inhalt gibt. Prüfe den Entwurf mit sdd_validate_draft und speichere mit sdd_write (base_sha256 aus sdd_read).\n"
 			}},
 		{Name: "sdd-techspec", Title: "Tech Spec zum PRD", Description: "Führt vom PRD zur Tech Spec, die jedes Akzeptanzkriterium einer Umsetzung zuordnet.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
@@ -112,7 +127,7 @@ func promptList() []prompt {
 					"1. sdd_init mit git: true — zuerst die Vorschau zeigen, nach meiner Bestätigung mit apply. Fehlt eine Git-Identität, nenne mir die Befehle.\n" +
 					"2. Kläre die Technik: sdd_stack; schlage eine Sprache bzw. Form mit Begründung vor (Art des Programms, Zielplattform, Umfang) und frage. Biete an, die Wahl als ADR festzuhalten (Ablauf sdd-adr), das die Verfassung in references nennt.\n" +
 					"3. Erarbeite mit mir die Verfassung (Ablauf sdd-constitution).\n" +
-					"4. Dann das erste Feature (Ablauf sdd-idea).\n"
+					"4. Dann das erste Feature (Ablauf sdd-idea). Ist das Vorhaben mittelgroß oder größer, biete danach den vertieften Ablauf sdd-requirements an.\n"
 			}},
 		{Name: "sdd-constitution", Title: "Verfassung erarbeiten", Description: "Erarbeitet die Verfassung aus den Quellen des Projekts (README, Agenten-Dateien, Technik): Regel für Regel mit Fundstelle, entschieden vom Menschen.",
 			Arguments: []promptArg{},
@@ -141,7 +156,7 @@ func promptList() []prompt {
 					"1. sdd_next: Wo liegt die Doku (artifacts.architecture, Standard docs/arc42.md), auf welchem Stand ist sie? sdd_read ohne path: Welche Quellen gibt es?\n" +
 					"2. Lies mit sdd_read die Verfassung, die ADRs, die Tech Specs (aktiv und im Archiv), README.md und AGENTS.md; dazu sdd_stack. Lies nur Pfade aus der Liste.\n" +
 					"3. Fehlt die Doku, lege sie mit sdd_new (types: [arc42]) an: zuerst ohne apply, dann mit apply nach Bestätigung. Lies sie danach mit sdd_read.\n" +
-					"4. Fülle Abschnitt für Abschnitt nur mit dem, was die Quellen belegen, und nenne je Aussage die Quelle (Datei:Zeile oder ADR). Was die Quellen nicht hergeben, bleibt als „offen: …“ stehen — frage mich danach, statt es zu erfinden. Den Lizenzkopf (HTML-Kommentar) und die Zeile zur Gliederung lässt du unverändert.\n" +
+					"4. Fülle Abschnitt für Abschnitt nur mit dem, was die Quellen belegen, und nenne je Aussage die Quelle (Datei:Zeile oder ADR). Qualitätsziele (Abschnitt 1) und Qualitätsszenarien (Abschnitt 10) nimmst du aus den Qualitätsanforderungen QA-<n> der PRDs, mit Kennung als Quelle. Was die Quellen nicht hergeben, bleibt als „offen: …“ stehen — frage mich danach, statt es zu erfinden. Den Lizenzkopf (HTML-Kommentar) und die Zeile zur Gliederung lässt du unverändert.\n" +
 					"5. Setze im Frontmatter release auf das Release. Prüfe mit sdd_validate_draft und speichere mit sdd_write (base_sha256 aus sdd_read).\n\n"
 			}},
 		{Name: "sdd-tests", Title: "Tests je Kriterium", Description: "Legt für jedes Akzeptanzkriterium eines Features einen Test in der Sprache des Projekts an, mit Testverweis-Zeile.",
