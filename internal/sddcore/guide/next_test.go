@@ -311,3 +311,33 @@ func TestNextCountsDistinctACs(t *testing.T) {
 		}
 	}
 }
+
+// arc42-docs AC-4: the architecture step opens when a feature was archived with a release and docs/arc42.md is
+// missing or names an older release; it disappears when the release matches or nothing was archived with a release.
+func TestNextArchitectureStep(t *testing.T) {
+	root := project(t)
+	step := func() *guide.Step {
+		t.Helper()
+		g, err := guide.Next(root, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return g.Architecture
+	}
+	if s := step(); s != nil {
+		t.Fatalf("no archived release: %+v", s)
+	}
+	write(t, root, "docs/archive/prd/a.md", "---\nfeature: a\nstatus: archived\nrelease: v1.9.0\n---\n# A\n")
+	write(t, root, "docs/archive/prd/b.md", "---\nfeature: b\nstatus: archived\nrelease: v1.10.0\n---\n# B\n")
+	if s := step(); s == nil || s.Title != "Architekturdoku anlegen" || !strings.Contains(s.Detail, "v1.10.0") {
+		t.Fatalf("missing doc: %+v", s)
+	}
+	write(t, root, "docs/arc42.md", "---\nstatus: active\nrelease: v1.9.0\n---\n# Architektur\n")
+	if s := step(); s == nil || s.Title != "Architekturdoku nachführen" || !strings.Contains(s.Detail, "steht auf v1.9.0") {
+		t.Fatalf("older release: %+v", s)
+	}
+	write(t, root, "docs/arc42.md", "---\nstatus: active\nrelease: v1.10.0\n---\n# Architektur\n")
+	if s := step(); s != nil {
+		t.Fatalf("current doc: %+v", s)
+	}
+}

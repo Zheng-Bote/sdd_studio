@@ -60,6 +60,9 @@ func classify(cfg *config.Config, rel string) (pathClass, error) {
 	if c, err := scan.CleanRel(a.Constitution); err == nil && c == rel {
 		return classArtifact, nil
 	}
+	if c, err := scan.CleanRel(a.ArchitecturePath()); err == nil && c == rel {
+		return classArtifact, nil
+	}
 	if strings.EqualFold(path.Ext(rel), ".md") {
 		for _, spec := range append([]string{a.ADR, a.PRD, a.Design, a.Plans, a.Archive}, a.Docs...) {
 			if strings.TrimSpace(spec) != "" && scan.InSpec(rel, spec) {

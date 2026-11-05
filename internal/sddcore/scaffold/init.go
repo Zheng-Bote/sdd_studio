@@ -29,6 +29,7 @@ func DefaultArtifacts() config.ArtifactsConfig {
 		Plans:        "docs/plans",
 		Archive:      "docs/archive",
 		Docs:         []string{"docs/notes"},
+		Architecture: config.DefaultArchitecture,
 	}
 }
 

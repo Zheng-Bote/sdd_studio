@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
@@ -54,6 +55,8 @@ type Guide struct {
 	// Adoption is set while the branch of `sdd adopt --apply` is checked out and not yet merged; it comes right after
 	// Constitution.
 	Adoption *Step `json:"adoption,omitempty"`
+	// Architecture is set when the architecture documentation lags behind the highest archived release (ADR 0006).
+	Architecture *Step `json:"architecture,omitempty"`
 }
 
 // adoptRegex reads branch and base branch from the adopt report.
@@ -159,6 +162,9 @@ func Next(root, feature string) (*Guide, error) {
 		g.Adoption = &Step{ID: "adoption", Title: "Übernahme abschließen", State: StateOpen,
 			Detail:  fmt.Sprintf("Die Übernahme auf %s ist noch nicht in %s. Änderungen (Verfassung, Agenten-Dateien) auf %s committen, prüfen (git diff %s...%s) und in %s mergen — erst danach das erste PRD.", b, from, b, from, b, from),
 			Command: fmt.Sprintf("git diff %s...%s", from, b)}
+	}
+	if g.Architecture, err = architectureStep(root, cfg); err != nil {
+		return nil, err
 	}
 	if len(slugs) == 0 {
 		g.Start = &Step{ID: "idea", Title: "Idee als PRD festhalten", State: StateOpen,
@@ -434,4 +440,71 @@ func noTestFiles(findings []report.Finding) *report.Finding {
 		}
 	}
 	return nil
+}
+
+// architectureStep is open when a feature was archived with a release and the architecture documentation is missing
+// or names an older release in its frontmatter (arc42-docs). Without an archived release there is no step.
+func architectureStep(root string, cfg *config.Config) (*Step, error) {
+	if strings.TrimSpace(cfg.Artifacts.Archive) == "" {
+		return nil, nil
+	}
+	archived, err := scan.ListArtifacts(root, cfg.Artifacts.Archive, cfg.Exclude)
+	if err != nil {
+		return nil, err
+	}
+	latest := ""
+	for _, a := range archived {
+		if r := strings.TrimSpace(a.Frontmatter.Release); a.Frontmatter.Feature != "" && r != "" && (latest == "" || compareVersions(r, latest) > 0) {
+			latest = r
+		}
+	}
+	if latest == "" {
+		return nil, nil
+	}
+	rel := cfg.Artifacts.ArchitecturePath()
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil {
+		return &Step{ID: "architecture", Title: "Architekturdoku anlegen", State: StateOpen,
+			Detail:  fmt.Sprintf("%s fehlt. Release %s ist abgeschlossen; die Architekturdokumentation nach arc42 beschreibt den fertigen Stand.", rel, latest),
+			Command: "sdd new --type arc42, dann Prompt sdd-arc42 (sdd-desk oder sdd mcp)"}, nil
+	}
+	fm, _ := scan.ParseFrontmatter(data)
+	if strings.TrimSpace(fm.Release) == latest {
+		return nil, nil
+	}
+	have := strings.TrimSpace(fm.Release)
+	if have == "" {
+		have = "keinem Release"
+	}
+	return &Step{ID: "architecture", Title: "Architekturdoku nachführen", State: StateOpen,
+		Detail:  fmt.Sprintf("%s steht auf %s, abgeschlossen ist %s. Nachführen und release: %s setzen.", rel, have, latest, latest),
+		Command: "Prompt sdd-arc42 (sdd-desk oder sdd mcp)"}, nil
+}
+
+// compareVersions orders release names like v1.2.10 > v1.2.9: a leading v is ignored, dot-separated parts compare
+// numerically where both are numbers, otherwise as text.
+func compareVersions(a, b string) int {
+	pa := strings.Split(strings.TrimPrefix(a, "v"), ".")
+	pb := strings.Split(strings.TrimPrefix(b, "v"), ".")
+	for i := 0; i < len(pa) || i < len(pb); i++ {
+		var x, y string
+		if i < len(pa) {
+			x = pa[i]
+		}
+		if i < len(pb) {
+			y = pb[i]
+		}
+		nx, ex := strconv.Atoi(x)
+		ny, ey := strconv.Atoi(y)
+		switch {
+		case ex == nil && ey == nil && nx != ny:
+			if nx < ny {
+				return -1
+			}
+			return 1
+		case (ex != nil || ey != nil) && x != y:
+			return strings.Compare(x, y)
+		}
+	}
+	return 0
 }

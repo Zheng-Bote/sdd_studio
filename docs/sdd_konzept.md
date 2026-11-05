@@ -432,6 +432,7 @@ artifacts:
   docs:
     - docs/notes
     - docs/research
+  architecture: docs/arc42.md   # Architekturdoku nach arc42 (sdd new --type arc42), Standard docs/arc42.md
 
 tests:
   # Prüfbereich für SDD-021/SDD-022 (hier im Beispiel ein Go-Projekt).

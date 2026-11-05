@@ -36,6 +36,19 @@ type ArtifactsConfig struct {
 	Plans        string   `yaml:"plans"`
 	Archive      string   `yaml:"archive"`
 	Docs         []string `yaml:"docs"`
+	// Architecture is the arc42 architecture documentation (ADR 0006); empty means DefaultArchitecture.
+	Architecture string `yaml:"architecture"`
+}
+
+// DefaultArchitecture is where `sdd new --type arc42` puts the architecture documentation unless configured.
+const DefaultArchitecture = "docs/arc42.md"
+
+// ArchitecturePath is the configured architecture documentation, or DefaultArchitecture.
+func (a ArtifactsConfig) ArchitecturePath() string {
+	if p := strings.TrimSpace(a.Architecture); p != "" {
+		return p
+	}
+	return DefaultArchitecture
 }
 
 type TestsConfig struct {

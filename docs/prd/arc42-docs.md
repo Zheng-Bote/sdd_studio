@@ -6,10 +6,13 @@ touches:
   - templates/**
   - internal/sddcore/scaffold/**
   - internal/sddcore/guide/**
+  - internal/sddcore/scan/**
+  - internal/sddcore/config/**
   - internal/mcp/**
   - cmd/sdd/**
   - handbuch/**
   - README.md
+  - docs/sdd_konzept.md
   - NOTICE
   - CHANGELOG.md
 ---

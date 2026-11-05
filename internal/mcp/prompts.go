@@ -128,6 +128,22 @@ func promptList() []prompt {
 					"5. Rufe sdd_gate mit gate pre-merge auf. Meldet es SDD-010, existierte die Verfassung schon am Vergleichsstand: Lege mit mir ein ADR an (Prompt sdd-adr), das sie in references nennt.\n" +
 					"6. Sage, dass die Verfassung committet werden muss. Kam sie aus einer Übernahme (sdd_next meldet „Übernahme abschließen“), nenne auch: Branch prüfen und mergen, erst danach das erste PRD.\n"
 			}},
+		{Name: "sdd-arc42", Title: "Architekturdoku nach arc42", Description: "Legt die Architekturdokumentation nach arc42 an oder führt sie zu einem Release nach — nur aus den Quellen des Projekts, mit Verweis je Aussage.",
+			Arguments: []promptArg{{"release", "Release, das die Doku beschreibt (z. B. v1.2.0); leer = höchstes archiviertes", false}},
+			rules:     []string{"SDD-001"},
+			body: func(a map[string]string) string {
+				rel := strings.TrimSpace(a["release"])
+				if rel == "" {
+					rel = "das höchste Release, das sdd_next nennt"
+				}
+				return "Lege mit mir die Architekturdokumentation nach arc42 an oder führe sie nach, für " + rel + ".\n\n" +
+					"Vorgehen:\n" +
+					"1. sdd_next: Wo liegt die Doku (artifacts.architecture, Standard docs/arc42.md), auf welchem Stand ist sie? sdd_read ohne path: Welche Quellen gibt es?\n" +
+					"2. Lies mit sdd_read die Verfassung, die ADRs, die Tech Specs (aktiv und im Archiv), README.md und AGENTS.md; dazu sdd_stack. Lies nur Pfade aus der Liste.\n" +
+					"3. Fehlt die Doku, lege sie mit sdd_new (types: [arc42]) an: zuerst ohne apply, dann mit apply nach Bestätigung. Lies sie danach mit sdd_read.\n" +
+					"4. Fülle Abschnitt für Abschnitt nur mit dem, was die Quellen belegen, und nenne je Aussage die Quelle (Datei:Zeile oder ADR). Was die Quellen nicht hergeben, bleibt als „offen: …“ stehen — frage mich danach, statt es zu erfinden. Den Lizenzkopf (HTML-Kommentar) und die Zeile zur Gliederung lässt du unverändert.\n" +
+					"5. Setze im Frontmatter release auf das Release. Prüfe mit sdd_validate_draft und speichere mit sdd_write (base_sha256 aus sdd_read).\n\n"
+			}},
 		{Name: "sdd-tests", Title: "Tests je Kriterium", Description: "Legt für jedes Akzeptanzkriterium eines Features einen Test in der Sprache des Projekts an, mit Testverweis-Zeile.",
 			Arguments: []promptArg{{"feature", "Feature-Slug", true}},
 			rules:     []string{"SDD-022", "SDD-025"},

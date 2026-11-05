@@ -222,3 +222,17 @@ func TestTestsPrompt(t *testing.T) {
 		last = i
 	}
 }
+
+// arc42-docs AC-5: sdd-arc42 reads the sources, creates the document if missing, fills it only from sources with a
+// reference each, keeps the license header, sets release and saves with sdd_write.
+func TestArc42Prompt(t *testing.T) {
+	text := promptText(t, newServer(project(t), false), "sdd-arc42", `{"release":"v1.2.0"}`)
+	last := -1
+	for _, step := range []string{"v1.2.0", "sdd_next", "sdd_read", "sdd_new (types: [arc42])", "je Aussage die Quelle", "offen:", "Lizenzkopf", "release", "sdd_write"} {
+		i := strings.Index(text, step)
+		if i <= last {
+			t.Errorf("step %q missing or out of order", step)
+		}
+		last = i
+	}
+}

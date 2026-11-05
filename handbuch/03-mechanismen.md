@@ -34,6 +34,7 @@ Legt an: `sdd.config.yaml` (Profil, Standardpfade, leere Schwellen), `constituti
 ```text
 sdd new --feature <slug> [--type prd,design,plan] [--title <text>] [--touches <globs>] [--archive-after YYYY-MM-DD]
 sdd new --type adr|doc --title <text> [--slug <slug>]
+sdd new --type arc42
 ```
 
 | Typ | Ziel | Frontmatter |
@@ -43,6 +44,9 @@ sdd new --type adr|doc --title <text> [--slug <slug>]
 | `plan` | `<artifacts.plans>/<slug>.md` | `feature`, `status: draft`, `archive-after` |
 | `adr` | `<artifacts.adr>/<NNNN>-<slug>.md` | `status: proposed`, `date`, `supersedes`, `references` |
 | `doc` | `<artifacts.docs[0]>/<slug>.md` | `status: active` |
+| `arc42` | `artifacts.architecture` (Standard `docs/arc42.md`) | `status: active`, `release` |
+
+- **`arc42`** legt die Architekturdokumentation aus dem mitgelieferten deutschen arc42-Template an (zwölf Abschnitte mit den Ankern des Originals), ohne `--title`; Projektname ist der Ordnername. Das Template steht unter CC BY-SA 4.0 (Gliederung © Hruschka, Starke und Mitwirkende, arc42.org; [ADR 0006](../docs/adr/0006-arc42-template-unter-cc-by-sa-einbetten.md)); Lizenzkopf und Zeile zur Gliederung bleiben in der Datei stehen. `release` nennt den Stand, den die Doku beschreibt.
 
 - Ohne `--type` legt `--feature` PRD und Tech Spec an — genau das Paar, das `SDD-020`/`SDD-030` verlangen.
 - Trägt im Zielverzeichnis bereits eine Datei `feature: <slug>`, wird für diesen Typ nichts angelegt, auch wenn der Dateiname abweicht.
@@ -101,6 +105,8 @@ Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abge
 | Plan | *nicht nötig* ohne Plan; sonst kein `SDD-040`/`SDD-041` |
 | Tests | kein `SDD-022` für die Kennungen des PRDs |
 | Abschluss | nach dem Merge `status: implemented`; dann vor dem Release archivieren (`SDD-050`) |
+
+**Projektschritt „Architekturdoku“:** Liegt im Archiv mindestens ein Feature-Artefakt mit `release:`, zeigt `sdd next` „Zum Release: Architekturdoku anlegen“, solange `artifacts.architecture` fehlt, und „Architekturdoku nachführen“, solange ihr `release:` nicht das höchste archivierte Release nennt (`v1.10.0` > `v1.9.0`). Nachgeführt wird mit dem geführten Ablauf `sdd-arc42`. Der Schritt ist kein Befund und blockiert kein Gate.
 
 Der nächste Schritt ist der erste *offene*, sonst der erste *manuelle*, sonst der Abschluss. Zustände in der Textausgabe: `✓` erledigt, `✗` offen, `?` manuell, `–` nicht nötig, `·` später.
 

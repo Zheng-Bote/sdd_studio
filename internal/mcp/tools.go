@@ -77,7 +77,7 @@ func baseTools() []tool {
 			InputSchema: obj(map[string]any{"path": str("Zielpfad relativ zum Repository"), "content": str("vollständiger Dateiinhalt")}, "path", "content"), Annotations: readOnly},
 		{Name: "sdd_new", Title: "Artefakt anlegen", Description: "Wie `sdd new`: ohne apply nur Vorschau mit Inhalt; apply legt neue Dateien an (nur wenn der Server mit --allow-write läuft), nie überschreibend. Mit content (genau ein Typ) wird dieser geprüfte Entwurf statt des Templates angelegt; bei einem Regel-Fehler wird nichts geschrieben.",
 			InputSchema: obj(map[string]any{
-				"types": strs("prd, design, plan, adr, doc; leer = prd + design"), "feature": str("Feature-Slug"), "title": str("Titel"),
+				"types": strs("prd, design, plan, adr, doc, arc42 (Architekturdoku, ohne title); leer = prd + design"), "feature": str("Feature-Slug"), "title": str("Titel"),
 				"content": str("vollständiger Inhalt statt des Templates (nur mit genau einem Typ)"),
 				"slug":    str("Slug für adr/doc"), "touches": strs("erklärte Änderungsabsicht"), "archive_after": str("YYYY-MM-DD"),
 				"apply": map[string]any{"type": "boolean", "description": "Dateien wirklich anlegen"},
