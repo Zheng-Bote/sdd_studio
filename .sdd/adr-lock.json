@@ -3,6 +3,7 @@
   "entries": {
     "docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md": "88b319e77006bbccf91e6277534d75148d490ef07b75d3c2eef699f0f50073c9",
     "docs/adr/0002-optionaler-ki-desktop-getrennt-vom-ki-freien-sdd.md": "536b4f0667dff6eaebd957018965211a2ce927a985a0b2560ce9a03bb9fcf16b",
-    "docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md": "e980ca5c35625f8fdd09bd6220c4f5b533ebd00dace7abb2b05dfb99545a06c6"
+    "docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md": "e980ca5c35625f8fdd09bd6220c4f5b533ebd00dace7abb2b05dfb99545a06c6",
+    "docs/adr/0004-konfiguration-aendern-ist-kritisch.md": "a4125b0997d8d38955b116e382d24ede555bf24c9fc2a1c3c4bf82bf52482c4e"
   }
 }
