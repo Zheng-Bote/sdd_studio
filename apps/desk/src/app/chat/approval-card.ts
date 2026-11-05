@@ -31,6 +31,10 @@ import { Decision, Pending, PlannedOp } from '../core/types';
             <span hlmBadge variant="destructive">schreibt Dateien</span>
             Erst nach Ihrer Freigabe. Für die Sitzung freigegeben, schreibt dieses Werkzeug ohne weitere Rückfrage; was es
             geschrieben hat, steht danach im Gespräch.
+          } @else if (pending().preview_only) {
+            <span hlmBadge variant="secondary">nur Vorschau</span>
+            Das Modell will sehen, was geschrieben würde; geschrieben wird dabei nichts. Für die Sitzung freigegeben, gilt das
+            nur für Vorschauen dieses Werkzeugs, Schreiben wird erneut gefragt.
           } @else {
             <span hlmBadge variant="secondary">nur lesend</span>
           }

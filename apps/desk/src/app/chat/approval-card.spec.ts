@@ -31,6 +31,15 @@ describe('ApprovalCard', () => {
     expect(buttons).toEqual(['Einmal erlauben', 'Für diese Sitzung erlauben', 'Ablehnen']);
   });
 
+  // desk-approval-scope AC-4: a preview of a write tool is marked and says that a session approval covers previews only.
+  it('marks a preview of a write tool as preview only', () => {
+    const { el, buttons } = render({ call_id: 'v1', tool: 'sdd_new', arguments: { feature: 'billing' }, writes: false, preview_only: true });
+    expect(el.textContent).toContain('nur Vorschau');
+    expect(el.textContent).toContain('Schreiben wird erneut gefragt');
+    expect(el.textContent).not.toContain('nur lesend');
+    expect(buttons).toEqual(['Einmal erlauben', 'Für diese Sitzung erlauben', 'Ablehnen']);
+  });
+
   // desk-write-content AC-7: an update of sdd_write shows its diff, labelled as a change.
   it('shows the diff of an update', () => {
     const { el } = render({

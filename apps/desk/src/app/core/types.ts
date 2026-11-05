@@ -55,6 +55,8 @@ export interface Pending {
   writes: boolean;
   /** A critical action (ADR 0003): runs only after this single confirmation, never per session. */
   critical?: boolean;
+  /** A write or critical tool called without apply: shows what would happen, writes nothing (desk-approval-scope). */
+  preview_only?: boolean;
   /** The effect in one line; names the action on the confirmation button. */
   summary?: string;
   preview?: {
@@ -82,7 +84,10 @@ export interface TurnRequest {
   provider: string;
   model: string;
   messages: Message[];
+  /** Allowed for the session: reading and previews. */
   allowed_tools: string[];
+  /** Allowed for the session: writes, granted only on a card that showed the write (desk-approval-scope). */
+  allowed_writes: string[];
   approved_calls: string[];
   denied_calls: string[];
   disclosure_ack: boolean;

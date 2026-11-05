@@ -43,7 +43,8 @@ type TurnRequest struct {
 	Provider      string    `json:"provider"`
 	Model         string    `json:"model"`
 	Messages      []Message `json:"messages"`
-	AllowedTools  []string  `json:"allowed_tools"`  // allowed for the session (read-only calls)
+	AllowedTools  []string  `json:"allowed_tools"`  // allowed for the session: reading and previews
+	AllowedWrites []string  `json:"allowed_writes"` // allowed for the session: writes, granted on a card that showed one
 	ApprovedCalls []string  `json:"approved_calls"` // call ids allowed once
 	DeniedCalls   []string  `json:"denied_calls"`   // call ids refused
 	DisclosureAck bool      `json:"disclosure_ack"` // the user confirmed that content leaves the device
@@ -56,9 +57,11 @@ type Pending struct {
 	Arguments json.RawMessage `json:"arguments"`
 	Writes    bool            `json:"writes"`
 	// Critical marks a critical action (ADR 0003): it runs only after a single confirmation, never per session.
-	Critical bool            `json:"critical,omitempty"`
-	Summary  string          `json:"summary,omitempty"` // the effect in one line, from the preview
-	Preview  json.RawMessage `json:"preview,omitempty"` // for writes: the plan that would be applied
+	Critical bool `json:"critical,omitempty"`
+	// PreviewOnly marks a write or critical tool called without apply: it shows what would happen and writes nothing.
+	PreviewOnly bool            `json:"preview_only,omitempty"`
+	Summary     string          `json:"summary,omitempty"` // the effect in one line, from the preview
+	Preview     json.RawMessage `json:"preview,omitempty"` // for writes: the plan that would be applied
 }
 
 // TurnResponse returns the extended conversation and the calls that need a decision.
@@ -252,10 +255,12 @@ func (a *Agent) run(ctx context.Context, req TurnRequest, emit func(Event)) (*Tu
 	}
 }
 
-// decide runs, refuses or parks one tool call. Unknown tools are never run. A read or write call runs if it was
-// approved once or its tool is allowed for the session (ADR 0003); a session-allowed write reports what it wrote in its
-// result. A critical call runs only when exactly this call was approved; after the user refused one, further calls of
-// that tool are refused until the user writes again. A parked write or critical call carries its preview.
+// decide runs, refuses or parks one tool call. Unknown tools are never run. A call runs if it was approved once or its
+// tool is allowed for the session at its tier (ADR 0003, desk-approval-scope): a read call or preview with
+// allowed_tools or allowed_writes, a write only with allowed_writes, which the UI grants only on a card that showed the
+// write; a session-allowed write reports what it wrote in its result. A critical call runs only when exactly this call
+// was approved; after the user refused one, further calls of that tool are refused until the user writes again. A
+// parked write or critical call carries its preview.
 func (a *Agent) decide(tc ToolCall, req TurnRequest, msgs []Message) (string, *Pending, error) {
 	if !a.toolKnown(tc.Name) {
 		return "Abgelehnt: " + tc.Name + " ist kein Werkzeug von sdd mcp.", nil, nil
@@ -267,9 +272,16 @@ func (a *Agent) decide(tc ToolCall, req TurnRequest, msgs []Message) (string, *P
 	if t == tierCritical && !slices.Contains(req.ApprovedCalls, tc.ID) && deniedSinceUser(msgs, tc.Name) {
 		return "Abgelehnt: Der Nutzer hat diese kritische Aktion in diesem Zug bereits abgelehnt. Frage erst nach einer neuen Nachricht des Nutzers erneut.", nil, nil
 	}
-	approved := slices.Contains(req.ApprovedCalls, tc.ID) || (t != tierCritical && slices.Contains(req.AllowedTools, tc.Name))
+	approved := slices.Contains(req.ApprovedCalls, tc.ID)
+	switch t {
+	case tierRead:
+		approved = approved || slices.Contains(req.AllowedTools, tc.Name) || slices.Contains(req.AllowedWrites, tc.Name)
+	case tierWrite:
+		approved = approved || slices.Contains(req.AllowedWrites, tc.Name)
+	}
 	if !approved {
-		p := &Pending{CallID: tc.ID, Tool: tc.Name, Arguments: argsObject(tc.Arguments), Writes: t != tierRead, Critical: t == tierCritical}
+		p := &Pending{CallID: tc.ID, Tool: tc.Name, Arguments: argsObject(tc.Arguments), Writes: t != tierRead, Critical: t == tierCritical,
+			PreviewOnly: t == tierRead && (slices.Contains(writeTools, tc.Name) || slices.Contains(criticalTools, tc.Name))}
 		if t != tierRead {
 			preview, err := a.preview(tc)
 			if err != nil {

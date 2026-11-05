@@ -4,8 +4,9 @@ import { Decision, Message, Meta, ModelTest, Pending, Provider } from './types';
 
 /**
  * State of one conversation. The backend is stateless: every turn sends the conversation and the user's decisions.
- * A tool allowed for the session runs without asking again — reading and writing alike (ADR 0003); an unapproved
- * write waits with its preview.
+ * A tool allowed for the session runs without asking again at the tier of the card it was allowed on (ADR 0003,
+ * desk-approval-scope): allowed on a read or preview card, it reads and previews; allowed on a write card, it also
+ * writes. An unapproved write waits with its preview.
  */
 @Service()
 export class ChatSession {
@@ -18,6 +19,7 @@ export class ChatSession {
   readonly pending = signal<Pending[]>([]);
   readonly decisions = signal<Record<string, Decision>>({});
   readonly allowedTools = signal<string[]>([]);
+  readonly allowedWrites = signal<string[]>([]);
   readonly acknowledged = signal<string[]>([]);
   readonly busy = signal(false);
   readonly error = signal('');
@@ -130,7 +132,8 @@ export class ChatSession {
     } else {
       this.approvedCalls.push(callId);
       if (decision === 'session') {
-        this.allowedTools.update((t) => (t.includes(call.tool) ? t : [...t, call.tool]));
+        const list = call.writes ? this.allowedWrites : this.allowedTools;
+        list.update((t) => (t.includes(call.tool) ? t : [...t, call.tool]));
       }
     }
     if (this.pending().every((p) => this.decisions()[p.call_id])) {
@@ -159,6 +162,7 @@ export class ChatSession {
           model: this.model(),
           messages: this.messages(),
           allowed_tools: this.allowedTools(),
+          allowed_writes: this.allowedWrites(),
           approved_calls: this.approvedCalls,
           denied_calls: this.deniedCalls,
           disclosure_ack: this.acknowledged().includes(this.providerId()),

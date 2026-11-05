@@ -85,6 +85,7 @@ describe('ChatSession', () => {
   });
 
   // desk-write-content AC-7: a write tool can be allowed for the session like any other tool.
+  // desk-approval-scope AC-3: allowed on a write card, it enters allowed_writes.
   it('allows a write tool for the session', async () => {
     const { session, requests } = setup([
       { messages: [], pending: [pendingWrite] },
@@ -94,7 +95,22 @@ describe('ChatSession', () => {
     await session.send('anlegen');
     await session.decide('w1', 'session');
     expect(requests[1].approved_calls).toEqual(['w1']);
+    expect(requests[1].allowed_writes).toEqual(['sdd_new']);
+    expect(requests[1].allowed_tools).toEqual([]);
+  });
+
+  // desk-approval-scope AC-3: allowed on a preview card, a write tool enters allowed_tools only, never allowed_writes.
+  it('allows only previews when the session approval is given on a preview', async () => {
+    const pendingPreview = { call_id: 'v1', tool: 'sdd_new', arguments: { feature: 'x' }, writes: false, preview_only: true };
+    const { session, requests } = setup([
+      { messages: [], pending: [pendingPreview] },
+      { messages: [], pending: [] },
+    ]);
+    await session.load();
+    await session.send('Vorlage zeigen');
+    await session.decide('v1', 'session');
     expect(requests[1].allowed_tools).toEqual(['sdd_new']);
+    expect(requests[1].allowed_writes).toEqual([]);
   });
 
   // desk-critical-tools AC-5: a critical action never enters the session permissions, even if asked to.
@@ -109,6 +125,7 @@ describe('ChatSession', () => {
     await session.decide('k1', 'session');
     expect(requests[1].approved_calls).toEqual(['k1']);
     expect(requests[1].allowed_tools).toEqual([]);
+    expect(requests[1].allowed_writes).toEqual([]);
   });
 
   it('withdraws the acknowledgement when the backend demands the disclosure again', async () => {
