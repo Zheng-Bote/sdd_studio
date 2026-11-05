@@ -19,8 +19,8 @@ Dieser Teil richtet sich an LLM-Agenten (Claude Code, Claude Desktop, der KI-Des
 Mit `--allow-write` dürfen `sdd_new`, `sdd_write`, `sdd_init` und `sdd_archive` schreiben; ohne liefern sie nur die Vorschau. `--allow-critical` bietet zusätzlich die kritischen Werkzeuge an (siehe [Grenzen](#agenten-grenzen)) und schließt `--allow-write` ein.
 
 - **`sdd_new`** legt neue Artefakte an, aus dem Template oder mit `content` (genau ein Typ) aus dem geprüften Entwurf. Bestehende Dateien überspringt es.
-- **`sdd_write`** legt an oder ersetzt, aber nur die Verfassung, Markdown-Artefakte (`adr`, `prd`, `design`, `plans`, `archive`, `docs`), `sdd.config.yaml` und Testdateien (`tests.include`, leer = Fallback-Liste). `.git/`, `.sdd/`, `exclude`-Treffer und symbolische Links nach außen sind ausgeschlossen. Eine bestehende Datei ersetzt es nur mit `base_sha256` aus `sdd_read`, atomar und mit gleichen Dateirechten.
-- **Prüfung vor dem Schreiben:** Artefakte prüfen beide Werkzeuge vorher wie `sdd_validate_draft`; ein `error`-Befund, ein `archive-after` vor heute oder ein ADR mit `status: accepted` verhindern das Schreiben. Ein ADR entscheidet der Mensch ([ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)). `sdd.config.yaml` muss sich laden lassen.
+- **`sdd_write`** legt an oder ersetzt, aber nur die Verfassung, Markdown-Artefakte (`adr`, `prd`, `design`, `plans`, `archive`, `docs`) und Testdateien (`tests.include`, leer = Fallback-Liste). `.git/`, `.sdd/`, `exclude`-Treffer und symbolische Links nach außen sind ausgeschlossen. Eine bestehende Datei ersetzt es nur mit `base_sha256` aus `sdd_read`, atomar und mit gleichen Dateirechten.
+- **Prüfung vor dem Schreiben:** Artefakte prüfen beide Werkzeuge vorher wie `sdd_validate_draft`; ein `error`-Befund, ein `archive-after` vor heute oder ein ADR mit `status: accepted` verhindern das Schreiben. Ein ADR entscheidet der Mensch ([ADR 0003](../docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)). `sdd.config.yaml` ändert nur das kritische Werkzeug `sdd_config` ([ADR 0004](../docs/adr/0004-konfiguration-aendern-ist-kritisch.md)); der neue Inhalt muss sich laden lassen.
 - **Ergebnis:** Die Vorschau zeigt Inhalt oder Unified Diff, das Ergebnis Status, SHA-256, Zeilenzahl und Diff dessen, was wirklich geschrieben wurde.
 
 ---
@@ -52,7 +52,9 @@ Bei einem Konflikt zwischen gleich bindenden Regeln: **nicht entscheiden, sonder
 | zum Lesen | `sdd_read` | Artefakt, `sdd.config.yaml`, Testdatei oder Kontextdatei (`README.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.gemini/GEMINI.md` …, nur lesbar) mit Zeilennummern und SHA-256 |
 | zum Projektstart | `sdd_init` | wie `sdd init [--git]`: Vorschau, dann Anlegen nach Bestätigung (nur mit `--allow-write`) |
 | nach dem Release | `sdd_archive` | wie `sdd archive`: Feature ins Archiv verschieben, nur wenn jedes Kriterium getestet ist (nur mit `--allow-write`) |
-| zum Ändern | `sdd_write` | Artefakt, Testdatei oder `sdd.config.yaml` ändern bzw. anlegen; Diff vorab (nur mit `--allow-write`) |
+| zum Ändern | `sdd_write` | Artefakt oder Testdatei ändern bzw. anlegen; Diff vorab (nur mit `--allow-write`) |
+| Konfiguration ändern | `sdd_config` | kritisch: Diff und je Prüflauf wegfallende und hinzukommende Befunde vorab, einzeln bestätigt (nur mit `--allow-critical`) |
+| nach `sdd-conflicts` | `sdd_conflicts_check` | Zitate gegen Datei und Zeile prüfen, fehlende Regeln der Verfassung nennen; bewertet nichts |
 | nach der Änderung | `sdd_lint`, `sdd_gate` | Befunde, Gate bestanden? |
 | bei einem Befund | `sdd_explain` | Regel, Begründung, Prüfvertrag |
 | zum Abschluss | `sdd_trace` | Hat jedes Kriterium Tech-Spec-Stelle, Test und Task? |

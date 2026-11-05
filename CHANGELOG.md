@@ -4,10 +4,24 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert-expiry-watcher, vom leeren Ordner bis zu den Tests je Kriterium) und [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md).
+
+### Hinzugefügt
+
+- **`sdd_config`:** kritisches Werkzeug (nur mit `--allow-critical`) für Änderungen an `sdd.config.yaml`. Die Vorschau zeigt den Diff und je Prüflauf (Lint und die drei Gates) die Befunde, die mit der neuen Konfiguration wegfallen oder hinzukommen; die Schaltfläche nennt die geänderten Schlüssel, einen Profilwechsel mit altem und neuem Wert und jede Änderung an `override`.
+- **`sdd_conflicts_check`:** lesendes Werkzeug, das das Ergebnis von `sdd-conflicts` maschinell prüft: Steht jedes Zitat wörtlich in der genannten Datei und Zeile, und fehlt eine Regel der Verfassung in der Regelliste? Es vergleicht nur Zeichenketten und bewertet nichts. `sdd-conflicts` ruft es vor der Antwort auf und zeigt nur belegte Meldungen.
+
+### Geändert
+
+- **Konfiguration ändern ist im Desktop kritisch** ([ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md)): einzeln bestätigt, nie für die Sitzung. `sdd_write` lehnt `sdd.config.yaml` ab; andere MCP-Clients ohne `--allow-critical` können die Konfiguration nicht mehr ändern.
+- **Sitzungsfreigabe je Stufe:** Eine Freigabe für die Sitzung gilt nur für die Stufe der Karte, auf der sie erteilt wurde. Auf einer Vorschau („nur Vorschau“) erlaubt sie nur weitere Vorschauen, Schreiben wird erneut gefragt. Bisher gab sie auch spätere Schreibvorgänge frei, ohne dass der Inhalt je gezeigt worden war. API: `allowed_writes` neben `allowed_tools`.
+- Konzept §9.6: `baseline: forbidden` schützt nur vor der Baseline; `profile: minimal` schaltet SDD-011, SDD-050 und SDD-051 ab.
+
 ### Behoben
 
 - **`sdd mcp` schreibt wieder in Unterverzeichnisse:** Weil `sdd` mit dem Wurzelverzeichnis `.` läuft, galt jede bestehende Datei unter z. B. `docs/prd/` als „außerhalb des Repository-Wurzelverzeichnisses (über symbolischen Link)“. `sdd_write` konnte deshalb kein PRD, ADR und keine weitere Testdatei im selben Ordner ändern, und `sdd_adr_accept` setzte das ADR auf `accepted`, meldete danach aber diesen Fehler. Der Schutz vor symbolischen Links aus dem Repository heraus bleibt unverändert.
 - `sdd next` zählt bei „Akzeptanzkriterien mit Kennung“ jede Kennung nur einmal; eine in offenen Punkten erneut genannte `AC-n` ergab bisher ein Kriterium zu viel.
+- Die Beschreibung von `sdd_write` bot nach der Einführung von `sdd_config` noch `sdd.config.yaml` an.
 
 ## [0.5.0] — 2026-11-02
 
