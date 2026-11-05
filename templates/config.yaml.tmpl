@@ -19,6 +19,8 @@ artifacts:
 {{- range .Artifacts.Docs}}
     - {{printf "%q" .}}
 {{- end}}
+  # Architekturdokumentation nach arc42 (sdd new --type arc42), zu jedem Release nachführen.
+  architecture: {{printf "%q" .Artifacts.ArchitecturePath}}
 
 tests:
   # Leer = Fallback-Liste aus dem Handbuch (SDD-022), z. B. **/*_test.go, **/*.spec.ts.
