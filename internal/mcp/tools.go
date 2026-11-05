@@ -99,6 +99,7 @@ func baseTools() []tool {
 				"feature": str("Feature-Slug"), "release": str("Version für release: im Frontmatter (optional)"),
 				"apply": map[string]any{"type": "boolean", "description": "wirklich verschieben"},
 			}, "feature"), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": true, "idempotentHint": false, "openWorldHint": false}},
+		conflictsTool,
 	}
 }
 
@@ -190,6 +191,9 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 			return nil, err
 		}
 		return resultOf(info), nil
+
+	case "sdd_conflicts_check":
+		return s.toolConflictsCheck(raw)
 
 	case "sdd_read":
 		a, err := args[struct {

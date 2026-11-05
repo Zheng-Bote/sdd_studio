@@ -269,7 +269,7 @@ func TestNoForbiddenCapabilities(t *testing.T) {
 			t.Errorf("forbidden tool %s", name)
 		}
 	}
-	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 15 {
+	if n := len(res[0]["result"].(map[string]any)["tools"].([]any)); n != 16 { // 16th: sdd_conflicts_check, read-only (conflicts-quote-check)
 		t.Errorf("tool set changed (%d tools); review it against ADR 0003", n)
 	}
 	for _, r := range res[1]["result"].(map[string]any)["resources"].([]any) {
@@ -405,6 +405,7 @@ func TestConflictsPrompt(t *testing.T) {
 }
 
 // sdd-conflicts AC-4: SDD-060 is no catalog rule; concept and handbook describe it as an assisted check in sdd-desk.
+// conflicts-quote-check AC-7: both describe the machine check of the quotes, and the result stays no finding.
 func TestSDD060NotInCatalog(t *testing.T) {
 	cat, err := os.ReadFile("../../catalog/catalog.yaml")
 	if err != nil {
@@ -418,7 +419,8 @@ func TestSDD060NotInCatalog(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(string(data), "SDD-060") || !strings.Contains(string(data), "sdd-conflicts") || !strings.Contains(string(data), "kein Befund") {
+		if !strings.Contains(string(data), "SDD-060") || !strings.Contains(string(data), "sdd-conflicts") || !strings.Contains(string(data), "kein Befund") ||
+			!strings.Contains(string(data), "sdd_conflicts_check") {
 			t.Errorf("%s must describe SDD-060 as assisted check (sdd-conflicts, kein Befund)", f)
 		}
 	}

@@ -345,7 +345,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	for _, tl := range a.Tools {
 		names = append(names, tl.Name)
 	}
-	if len(names) != 19 || names[0] != "sdd_next" {
+	if len(names) != 20 || names[0] != "sdd_next" {
 		t.Fatalf("tools must be exactly those of sdd mcp: %v", names)
 	}
 	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "x"}}, AllowedTools: []string{"shell_exec"}})
@@ -828,18 +828,19 @@ func TestConfigIsCritical(t *testing.T) {
 	}
 }
 
-// desk-config-critical AC-8: the handbook lists sdd_config among the critical actions and counts nineteen tools.
+// desk-config-critical AC-8: the handbook lists sdd_config among the critical actions and counts the tools of sdd mcp
+// (nineteen then, twenty since conflicts-quote-check).
 func TestHandbookConfigTool(t *testing.T) {
 	data, err := os.ReadFile("../../handbuch/04-agenten.md")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"neunzehn Werkzeuge", "sdd_config", "ADR 0004"} {
+	for _, want := range []string{"zwanzig Werkzeuge", "sdd_config", "ADR 0004"} {
 		if !strings.Contains(string(data), want) {
 			t.Errorf("handbook lacks %q", want)
 		}
 	}
-	if strings.Contains(string(data), "achtzehn Werkzeuge") {
-		t.Error("handbook still counts eighteen tools")
+	if strings.Contains(string(data), "achtzehn Werkzeuge") || strings.Contains(string(data), "neunzehn Werkzeuge") {
+		t.Error("handbook counts a stale number of tools")
 	}
 }
