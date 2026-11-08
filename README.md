@@ -12,12 +12,12 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 
 ## Stand
 
-Letzte Version: **0.5.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.1.0`. Der KI-Desktop `sdd-desk` führt jetzt durch den ganzen Prozess: Projekt übernehmen oder neu anlegen (`sdd init --git`), Agenten-Dateien, Verfassung aus den Quellen des Projekts, PRD mit Inhalt, Tests in der Projektsprache, Archiv (`sdd archive`). Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.6.0`.
+Letzte Version: **0.6.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.2.0` mit 23 Regeln. Neu: `SDD-012` verlangt für eine abschwächende Änderung der Konfiguration ein ADR, im KI-Desktop ist jede Änderung an `sdd.config.yaml` eine kritische Aktion (`sdd_config`). Eine Freigabe für die Sitzung gilt nur noch für die Stufe der Karte, auf der sie erteilt wurde. `sdd-conflicts` lässt seine Zitate maschinell prüfen, `sdd-requirements` vertieft ein PRD für mittlere und größere Vorhaben, und `sdd new --type arc42` legt die Architekturdoku `docs/arc42.md` mit Mermaid-Diagrammen an. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.6.0`.
 
 - **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.5.0 liegen archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.6.0 liegen archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -86,13 +86,13 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 
 ### Agenten (MCP)
 
-`sdd mcp` stellt fünfzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_stack`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-tests`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
+`sdd mcp` stellt sechzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_stack`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`, `sdd_conflicts_check`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
 
 ```json
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }
 ```
 
-Baseline, Befunde quittieren, ADR-Lockfile, `sdd adopt --apply` und das Entscheiden eines ADR sind **kritisch**: Die Werkzeuge dafür (`sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`) gibt es nur mit `sdd mcp --allow-critical`, also nur für Clients, die jede Ausführung einzeln vom Menschen bestätigen lassen (wie `sdd-desk`). Ohne den Schalter hat ein Agent dafür kein Werkzeug ([ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md)).
+Baseline, Befunde quittieren, ADR-Lockfile, `sdd adopt --apply`, das Entscheiden eines ADR und Änderungen an `sdd.config.yaml` sind **kritisch**: Die Werkzeuge dafür (`sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`) gibt es nur mit `sdd mcp --allow-critical`, also nur für Clients, die jede Ausführung einzeln vom Menschen bestätigen lassen (wie `sdd-desk`). Ohne den Schalter hat ein Agent dafür kein Werkzeug ([ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md)).
 
 ## KI-Desktop `sdd-desk` (optional)
 

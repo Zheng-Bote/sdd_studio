@@ -324,7 +324,7 @@ git push -u origin feature/csv-export
 ### 6. Nach dem Merge und vor dem Release
 
 1. Nach dem Merge im PRD `status: implemented` setzen.
-2. Vor dem Release die Artefakte abgeschlossener Features archivieren (`SDD-050`): `sdd archive --feature <slug> --release <version>` verschiebt PRD, Tech Spec und Plan nach `docs/archive/` und setzt `status: archived` — nur wenn jedes Akzeptanzkriterium einen Testverweis hat. Archiviert wird verschoben, nicht gelöscht; Links auf die neue Lage anpassen.
+2. Vor dem Release die Artefakte abgeschlossener Features archivieren (`SDD-050`): `sdd archive --feature <slug> --release <version>` verschiebt PRD, Tech Spec und Plan nach `docs/archive/` und setzt `status: archived` — nur wenn jedes Akzeptanzkriterium einen Testverweis hat. Archiviert wird verschoben, nicht gelöscht; Links auf die neue Lage anpassen. Danach die Architekturdoku nachführen: `sdd new --type arc42` legt `docs/arc42.md` an, der Ablauf `sdd-arc42` füllt sie aus den Quellen, `release:` nennt die Version; `sdd next` erinnert daran.
 3. Auf dem Release-Branch prüfen:
    ```text
    sdd gate pre-release
