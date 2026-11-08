@@ -7,6 +7,7 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 ### Hinzugefügt
 
 - Die Seitenleiste von `sdd-desk` zeigt die Projektschritte aus `sdd next`: Verfassung ausfüllen, Übernahme abschließen, Architekturdoku anlegen bzw. nachführen.
+- `sdd next` nennt im Abschlussschritt ein PRD, das noch `status: draft` trägt, weil `sdd archive` Entwürfe ablehnt.
 
 ## [0.6.0] — 2026-11-08
 

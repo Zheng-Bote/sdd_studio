@@ -341,3 +341,43 @@ func TestNextArchitectureStep(t *testing.T) {
 		t.Fatalf("current doc: %+v", s)
 	}
 }
+
+// next-draft-hint AC-1, AC-2: the finish step names a draft PRD without changing its state; otherwise its text stays.
+func TestNextNamesDraftPRD(t *testing.T) {
+	root := project(t)
+	archiveStep := func() guide.Step {
+		t.Helper()
+		g, err := guide.Next(root, "billing")
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, s := range g.Features[0].Steps {
+			if s.ID == "archive" {
+				return s
+			}
+		}
+		t.Fatal("no archive step")
+		return guide.Step{}
+	}
+	body := "\n## Nicht-Ziele\n- nichts\n## Akzeptanzkriterien\n- AC-1 x\n"
+	write(t, root, "docs/prd/billing.md", "---\nfeature: billing\nstatus: draft\n---\n"+body)
+	s := archiveStep()
+	if !strings.Contains(s.Detail, "docs/prd/billing.md hat noch status: draft") || !strings.Contains(s.Detail, "sdd archive lehnt Entwürfe ab") || s.State != guide.StateLater {
+		t.Errorf("draft: %+v", s)
+	}
+	write(t, root, "docs/prd/billing.md", "---\nfeature: billing\nstatus: active\n---\n"+body)
+	if s := archiveStep(); strings.Contains(s.Detail, "draft") || s.State != guide.StateLater {
+		t.Errorf("active: %+v", s)
+	}
+}
+
+// next-draft-hint AC-3: the handbook describes the hint.
+func TestNextDraftHintDocumented(t *testing.T) {
+	data, err := os.ReadFile("../../../handbuch/03-mechanismen.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "Trägt ein PRD noch `status: draft`, nennt der Schritt es") {
+		t.Error("handbook does not describe the draft hint")
+	}
+}
