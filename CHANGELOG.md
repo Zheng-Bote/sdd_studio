@@ -6,6 +6,7 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ### Hinzugefügt
 
+- `sdd_trace` nennt in `quality` je Qualitätsanforderung `QA-<n>` die Tech Specs und Tests und markiert doppelte Kennungen.
 - **`sdd_commit`** ([ADR 0008](docs/adr/0008-commit-werkzeug-im-ki-desktop.md)): Kritisches Werkzeug, das im KI-Desktop einzeln genannte Artefakte, Testdateien, die Konfiguration und den Prüfzustand committet, nach einzelner Bestätigung und nie auf dem Standard-Branch.
 - Die Seitenleiste von `sdd-desk` zeigt die Projektschritte aus `sdd next`: Verfassung ausfüllen, Übernahme abschließen, Architekturdoku anlegen bzw. nachführen.
 - `sdd next` nennt im Abschlussschritt ein PRD, das noch `status: draft` trägt, weil `sdd archive` Entwürfe ablehnt.
