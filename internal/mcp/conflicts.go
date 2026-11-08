@@ -240,6 +240,17 @@ func (s *Server) toolConflictsCheck(raw json.RawMessage) (*toolResult, error) {
 		res["rules_note"] = "Regelliste nicht prüfbar: Die Verfassung ist nicht im Markdown-Format."
 	}
 	res["missing_rules"], res["unknown_rules"] = missing, unknown
+	// An empty call must not read like a clean result: without the rules gone through nothing was checked
+	// (counter-test with qwen3:32b: called with no conflicts and no rules, without reading the files).
+	res["complete"] = len(missing) == 0
+	if len(missing) > 0 {
+		note := fmt.Sprintf("Prüfung unvollständig: %d Regeln der Verfassung fehlen in der Regelliste. Das Ergebnis sagt nichts darüber, ob es Widersprüche gibt.", len(missing))
+		if verified == 0 {
+			res["markdown"] = note
+		} else {
+			res["markdown"] = note + "\n\n" + res["markdown"].(string)
+		}
+	}
 	res["summary"] = map[string]int{"verified": verified, "rejected": len(conflicts) - verified, "missing_rules": len(missing)}
 	return resultOf(res), nil
 }
