@@ -39,7 +39,7 @@ export interface Meta {
 export interface PlannedOp {
   path: string;
   /** create/skip from sdd_new and sdd_init; create/update/unchanged from sdd_write; move from sdd_archive. */
-  action: 'create' | 'skip' | 'update' | 'unchanged' | 'move';
+  action: 'create' | 'skip' | 'update' | 'unchanged' | 'move' | 'delete';
   /** Source of a move. */
   from?: string;
   reason?: string;
@@ -68,6 +68,8 @@ export interface Pending {
     removed?: BaselineEntry[];
     locked?: string[];
     reaccepted?: string[];
+    /** sdd_commit: the commit message. */
+    message?: string;
     /** sdd_adopt_apply: the adopt report (Markdown). */
     report?: string;
     /** sdd_config: findings that disappear or appear with the new configuration, per check run (ADR 0004). */

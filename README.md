@@ -86,13 +86,13 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 
 ### Agenten (MCP)
 
-`sdd mcp` stellt sechzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_stack`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`, `sdd_conflicts_check`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
+`sdd mcp` stellt sechzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_stack`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`, `sdd_conflicts_check`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`, `sdd_commit`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
 
 ```json
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }
 ```
 
-Baseline, Befunde quittieren, ADR-Lockfile, `sdd adopt --apply`, das Entscheiden eines ADR und Änderungen an `sdd.config.yaml` sind **kritisch**: Die Werkzeuge dafür (`sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`) gibt es nur mit `sdd mcp --allow-critical`, also nur für Clients, die jede Ausführung einzeln vom Menschen bestätigen lassen (wie `sdd-desk`). Ohne den Schalter hat ein Agent dafür kein Werkzeug ([ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md)).
+Baseline, Befunde quittieren, ADR-Lockfile, `sdd adopt --apply`, das Entscheiden eines ADR, Änderungen an `sdd.config.yaml` und Commits sind **kritisch**: Die Werkzeuge dafür (`sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`, `sdd_commit`) gibt es nur mit `sdd mcp --allow-critical`, also nur für Clients, die jede Ausführung einzeln vom Menschen bestätigen lassen (wie `sdd-desk`). Ohne den Schalter hat ein Agent dafür kein Werkzeug ([ADR 0003](docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md), [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md)).
 
 ## KI-Desktop `sdd-desk` (optional)
 

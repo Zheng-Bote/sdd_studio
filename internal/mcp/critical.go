@@ -36,6 +36,7 @@ var criticalTools = []tool{
 			"apply":   map[string]any{"type": "boolean", "description": "wirklich anwenden"},
 		}), Annotations: criticalHints},
 	configTool,
+	commitTool,
 }
 
 var criticalHints = map[string]any{"readOnlyHint": false, "destructiveHint": true, "idempotentHint": false, "openWorldHint": false}
@@ -51,6 +52,8 @@ func (s *Server) runCritical(name string, raw json.RawMessage) (*toolResult, err
 		return s.toolADRAccept(raw)
 	case "sdd_config":
 		return s.toolConfig(raw)
+	case "sdd_commit":
+		return s.toolCommit(raw)
 	default:
 		return s.toolAdoptApply(raw)
 	}
