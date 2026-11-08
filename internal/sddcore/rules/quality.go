@@ -9,7 +9,6 @@ import (
 var (
 	qaIDRegex        = regexp.MustCompile(`\bQA-[1-9][0-9]*\b`)
 	qaTombstoneRegex = regexp.MustCompile(`~~[^~]*\bQA-[0-9]+\b[^~]*~~`)
-	listItemRegex    = regexp.MustCompile(`^\s*(?:[-*+]|[0-9]+[.)])\s`)
 )
 
 // QATrace follows one quality requirement QA-<n> (ADR 0007). Nothing requires these references; they are information.
