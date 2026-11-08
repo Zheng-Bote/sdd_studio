@@ -304,7 +304,7 @@ Die Verfassung hält den *aktuell gültigen Zustand*, das ADR die *unveränderli
 
 #### SDD-012 Prüfvertrag {#sdd-012-vertrag}
 
-1. Die Regel greift nur, wenn `sdd.config.yaml` in `git diff --no-renames <base>...HEAD` vorkommt ([Merge-Basis](#feature-aufloesung)).
+1. Die Regel greift nur, wenn `sdd.config.yaml` in `git diff --no-renames <base>...HEAD` vorkommt ([Merge-Basis](#feature-aufloesung)). `exclude` wirkt hier nicht: Weder die Konfiguration noch das begründende ADR lassen sich durch ein Muster aus dem Diff nehmen, sonst könnte die zu prüfende Änderung sich selbst verbergen.
 2. **Keine Änderung im Sinne der Regel:** Die Datei fehlt am Vergleichsstand (erstmaliges Anlegen), fehlt im Arbeitsbaum, oder eine der beiden Fassungen lässt sich nicht als Konfiguration laden (die aktuelle meldet dann schon das Laden).
 3. **Abschwächend** ist, verglichen wird Vergleichsstand → Arbeitsbaum:
    - `profile` sinkt in der Ordnung `minimal` < `standard` < `regulated`;

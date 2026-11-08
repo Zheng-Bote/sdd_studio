@@ -34,6 +34,7 @@ type Context struct {
 	diffDone      bool
 	baseRef       string
 	diff          []string
+	rawDiff       []string // diff before exclude; SDD-012 must not be blinded by the exclude it checks
 	diffErr       error
 	artifactsDone bool
 	artifacts     []scan.Artifact
