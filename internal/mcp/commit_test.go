@@ -59,7 +59,9 @@ func TestCommitRefusesPaths(t *testing.T) {
 	if err := os.Symlink(outside, filepath.Join(root, "api/out")); err != nil {
 		t.Skipf("symlinks unsupported: %v", err)
 	}
-	for _, p := range []string{"src/main.go", "README.md", ".git/config", "../x.md", "/etc/passwd", "docs/prd/*.md", ":(glob)**/*_test.go", ":/docs/prd/billing.md", "api/out/x_test.go", "docs/prd/fehlt.md", "docs/design/billing.md"} {
+	write(t, root, ":(top)echt_test.go", "// liegt wirklich so im Repository\n") // otherwise only "does not exist" refuses it
+	write(t, root, "api/[a]_test.go", "// dito\n")
+	for _, p := range []string{":(top)echt_test.go", "api/[a]_test.go", "src/main.go", "README.md", ".git/config", "../x.md", "/etc/passwd", "docs/prd/*.md", ":(glob)**/*_test.go", ":/docs/prd/billing.md", "api/out/x_test.go", "docs/prd/fehlt.md", "docs/design/billing.md"} {
 		for _, apply := range []bool{false, true} {
 			if r := commitCall(t, root, []string{"docs/prd/billing.md", p}, "m", apply); r["isError"] != true {
 				t.Errorf("%s accepted (apply %v): %v", p, apply, r)
