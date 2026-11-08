@@ -1,12 +1,13 @@
 ---
 feature: desk-config-critical
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
   - internal/desk/**
   - apps/desk/src/**
   - handbuch/**
+release: v0.6.0
 ---
 
 # PRD — Konfiguration im KI-Desktop nur mit einzelner Bestätigung ändern

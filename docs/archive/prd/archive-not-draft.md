@@ -1,6 +1,6 @@
 ---
 feature: archive-not-draft
-status: active
+status: archived
 archive-after:
 touches:
   - cmd/sdd/**
@@ -9,6 +9,7 @@ touches:
   - handbuch/**
   - README.md
   - CHANGELOG.md
+release: v0.6.0
 ---
 
 # PRD — Kein Archiv für ein Feature im Entwurf

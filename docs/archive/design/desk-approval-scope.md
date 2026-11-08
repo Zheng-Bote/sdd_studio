@@ -1,16 +1,17 @@
 ---
 feature: desk-approval-scope
-status: active
+status: archived
 archive-after:
 touches:
   - internal/desk/**
   - apps/desk/src/**
   - handbuch/**
+release: v0.6.0
 ---
 
 # Tech Spec — Sitzungsfreigabe gilt nur für die Stufe, die der Mensch gesehen hat
 
-Setzt das PRD `docs/prd/desk-approval-scope.md` um, auf Grundlage von ADR 0003 (Entscheidung 6, Stufen „lesend“ und „schreibend“). Das ADR bleibt unverändert: Es verlangt schon heute, dass vor einer schreibenden Freigabe Vorschau bzw. Diff gezeigt werden. Diese Tech Spec schließt eine Lücke in der Umsetzung.
+Setzt das PRD `docs/archive/prd/desk-approval-scope.md` um, auf Grundlage von ADR 0003 (Entscheidung 6, Stufen „lesend“ und „schreibend“). Das ADR bleibt unverändert: Es verlangt schon heute, dass vor einer schreibenden Freigabe Vorschau bzw. Diff gezeigt werden. Diese Tech Spec schließt eine Lücke in der Umsetzung.
 
 ## Architektur
 

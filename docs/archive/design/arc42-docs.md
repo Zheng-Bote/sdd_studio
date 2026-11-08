@@ -1,6 +1,6 @@
 ---
 feature: arc42-docs
-status: active
+status: archived
 archive-after:
 touches:
   - templates/**
@@ -15,11 +15,12 @@ touches:
   - docs/sdd_konzept.md
   - NOTICE
   - CHANGELOG.md
+release: v0.6.0
 ---
 
 # Tech Spec — Architekturdokumentation nach arc42 für Projekte
 
-Setzt das PRD `docs/prd/arc42-docs.md` um, auf Grundlage von ADR 0006.
+Setzt das PRD `docs/archive/prd/arc42-docs.md` um, auf Grundlage von ADR 0006.
 
 ## Architektur
 

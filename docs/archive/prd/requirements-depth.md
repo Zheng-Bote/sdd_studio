@@ -1,12 +1,13 @@
 ---
 feature: requirements-depth
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
   - handbuch/**
   - README.md
   - CHANGELOG.md
+release: v0.6.0
 ---
 
 # PRD — Erweitertes Anforderungsmanagement von der Idee zum PRD

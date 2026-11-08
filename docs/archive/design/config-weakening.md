@@ -1,6 +1,6 @@
 ---
 feature: config-weakening
-status: active
+status: archived
 archive-after:
 touches:
   - catalog/**
@@ -10,11 +10,12 @@ touches:
   - docs/sdd_konzept.md
   - README.md
   - CHANGELOG.md
+release: v0.6.0
 ---
 
 # Tech Spec — Abschwächung der Konfiguration braucht ein ADR (SDD-012)
 
-Setzt das PRD `docs/prd/config-weakening.md` um, auf Grundlage von ADR 0005. Eine Regel je Commit: zuerst `pinned`, dann SDD-012, jeweils mit Handbuch, Vertrag und Tests.
+Setzt das PRD `docs/archive/prd/config-weakening.md` um, auf Grundlage von ADR 0005. Eine Regel je Commit: zuerst `pinned`, dann SDD-012, jeweils mit Handbuch, Vertrag und Tests.
 
 ## Architektur
 

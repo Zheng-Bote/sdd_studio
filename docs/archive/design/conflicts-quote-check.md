@@ -1,17 +1,18 @@
 ---
 feature: conflicts-quote-check
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
   - internal/desk/**
   - handbuch/**
   - docs/sdd_konzept.md
+release: v0.6.0
 ---
 
 # Tech Spec — Zitate aus sdd-conflicts maschinell prüfen
 
-Setzt das PRD `docs/prd/conflicts-quote-check.md` um. `sdd` bleibt KI-frei (ADR 0003, Entscheidung 1): Das Werkzeug vergleicht Zeichenketten, es bewertet nichts.
+Setzt das PRD `docs/archive/prd/conflicts-quote-check.md` um. `sdd` bleibt KI-frei (ADR 0003, Entscheidung 1): Das Werkzeug vergleicht Zeichenketten, es bewertet nichts.
 
 ## Architektur
 

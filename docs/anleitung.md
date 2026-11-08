@@ -225,7 +225,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: Zheng-Bote/sdd_studio@v0.5.0
+         - uses: Zheng-Bote/sdd_studio@v0.6.0
            with:
              gate: pre-merge
      pre-release:
@@ -235,7 +235,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: Zheng-Bote/sdd_studio@v0.5.0
+         - uses: Zheng-Bote/sdd_studio@v0.6.0
            with:
              gate: pre-release
    ```
@@ -324,7 +324,7 @@ git push -u origin feature/csv-export
 ### 6. Nach dem Merge und vor dem Release
 
 1. Nach dem Merge im PRD `status: implemented` setzen.
-2. Vor dem Release die Artefakte abgeschlossener Features archivieren (`SDD-050`): `sdd archive --feature <slug> --release <version>` verschiebt PRD, Tech Spec und Plan nach `docs/archive/` und setzt `status: archived` — nur wenn jedes Akzeptanzkriterium einen Testverweis hat. Archiviert wird verschoben, nicht gelöscht; Links auf die neue Lage anpassen.
+2. Vor dem Release die Artefakte abgeschlossener Features archivieren (`SDD-050`): `sdd archive --feature <slug> --release <version>` verschiebt PRD, Tech Spec und Plan nach `docs/archive/` und setzt `status: archived` — nur wenn jedes Akzeptanzkriterium einen Testverweis hat. Archiviert wird verschoben, nicht gelöscht; Links auf die neue Lage anpassen. Danach die Architekturdoku nachführen: `sdd new --type arc42` legt `docs/arc42.md` an, der Ablauf `sdd-arc42` füllt sie aus den Quellen, `release:` nennt die Version; `sdd next` erinnert daran.
 3. Auf dem Release-Branch prüfen:
    ```text
    sdd gate pre-release

@@ -1,17 +1,18 @@
 ---
 feature: requirements-depth
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
   - handbuch/**
   - README.md
   - CHANGELOG.md
+release: v0.6.0
 ---
 
 # Tech Spec — Erweitertes Anforderungsmanagement von der Idee zum PRD
 
-Setzt das PRD `docs/prd/requirements-depth.md` um, auf Grundlage von ADR 0007. Reine Prompt- und Doku-Änderung; der Prüfkern bleibt unverändert.
+Setzt das PRD `docs/archive/prd/requirements-depth.md` um, auf Grundlage von ADR 0007. Reine Prompt- und Doku-Änderung; der Prüfkern bleibt unverändert.
 
 ## Architektur
 

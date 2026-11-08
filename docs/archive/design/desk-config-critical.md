@@ -1,17 +1,18 @@
 ---
 feature: desk-config-critical
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
   - internal/desk/**
   - apps/desk/src/**
   - handbuch/**
+release: v0.6.0
 ---
 
 # Tech Spec — Konfiguration im KI-Desktop nur mit einzelner Bestätigung ändern
 
-Setzt das PRD `docs/prd/desk-config-critical.md` um, auf Grundlage von ADR 0004 und ADR 0003 (Entscheidungen 5 und 6).
+Setzt das PRD `docs/archive/prd/desk-config-critical.md` um, auf Grundlage von ADR 0004 und ADR 0003 (Entscheidungen 5 und 6).
 
 ## Architektur
 

@@ -1,6 +1,6 @@
 ---
 feature: config-weakening
-status: active
+status: archived
 archive-after:
 touches:
   - catalog/**
@@ -10,6 +10,7 @@ touches:
   - docs/sdd_konzept.md
   - README.md
   - CHANGELOG.md
+release: v0.6.0
 ---
 
 # PRD — Abschwächung der Konfiguration braucht ein ADR (SDD-012)
