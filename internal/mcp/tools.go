@@ -67,7 +67,7 @@ func baseTools() []tool {
 			InputSchema: obj(map[string]any{"paths": strs("Pfade oder Globs, die geändert werden sollen"), "feature": str("Feature-Slug")}, "paths"), Annotations: readOnly},
 		{Name: "sdd_context", Title: "Was gilt hier?", Description: "Artefakte, die für eine Datei gelten, nach Präzedenz: Verfassung, ADR, Tech Spec, PRD, Plan.",
 			InputSchema: obj(map[string]any{"path": str("Pfad relativ zum Repository")}, "path"), Annotations: readOnly},
-		{Name: "sdd_trace", Title: "Rückverfolgung", Description: "Je Akzeptanzkriterium eines Features: Tech Specs, Tests (Datei:Zeile) und Tasks.",
+		{Name: "sdd_trace", Title: "Rückverfolgung", Description: "Je Akzeptanzkriterium eines Features: Tech Specs, Tests (Datei:Zeile) und Tasks; dazu je Qualitätsanforderung QA-<n> Tech Specs und Tests (Hinweis, keine Pflicht).",
 			InputSchema: obj(map[string]any{"feature": str("Feature-Slug")}, "feature"), Annotations: readOnly},
 		{Name: "sdd_stack", Title: "Technik erkennen", Description: "Sprachen des Repositorys aus Dateiendungen und Marker-Dateien (go.mod, Cargo.toml, CMakeLists.txt, package.json …), nach Zahl der Quelldateien; je Sprache Testdatei-Muster, Kommentarsyntax und Beispiel für die Testverweis-Zeile; dazu das aktuelle tests.include. Liest keine Dateiinhalte.",
 			InputSchema: obj(map[string]any{}), Annotations: readOnly},
@@ -345,7 +345,11 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 		if err != nil {
 			return nil, err
 		}
-		return resultOf(map[string]any{"feature": a.Feature, "criteria": t}), nil
+		q, err := guide.TraceQuality(s.Root, a.Feature)
+		if err != nil {
+			return nil, err
+		}
+		return resultOf(map[string]any{"feature": a.Feature, "criteria": t, "quality": q}), nil
 
 	case "sdd_validate_draft":
 		a, err := args[struct {
@@ -373,7 +377,7 @@ func (s *Server) runTool(name string, raw json.RawMessage) (*toolResult, error) 
 	case "sdd_archive":
 		return s.toolArchive(raw)
 
-	case "sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply", "sdd_config":
+	case "sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply", "sdd_config", "sdd_commit":
 		return s.runCritical(name, raw)
 
 	default:

@@ -195,3 +195,22 @@ func TestConflictsPromptUsesCheck(t *testing.T) {
 		last = i
 	}
 }
+
+// An empty call is not a clean result: it says the check is incomplete (counter-test with qwen3:32b). With the full
+// rule list and no conflicts it is complete; verified conflicts stay in the table next to the note.
+func TestConflictsCheckIncomplete(t *testing.T) {
+	s := conflictsProject(t)
+	r := structured(t, call(t, s, "sdd_conflicts_check", map[string]any{"feature": "billing", "rules": []any{}}))
+	if r["complete"] != false || !strings.HasPrefix(r["markdown"].(string), "Prüfung unvollständig: 3 Regeln") || strings.Contains(r["markdown"].(string), "Keine belegte") {
+		t.Errorf("empty call: %v", r)
+	}
+	full := structured(t, call(t, s, "sdd_conflicts_check", map[string]any{"feature": "billing", "conflicts": []any{}, "rules": allRules}))
+	if full["complete"] != true || full["markdown"] != "Keine belegte Meldung." {
+		t.Errorf("full list: %v", full)
+	}
+	c := conflict(9, "keine externen Abhängigkeiten", "docs/design/billing.md", 9, "die Bibliothek github.com/x/yaml")
+	part := structured(t, call(t, s, "sdd_conflicts_check", map[string]any{"feature": "billing", "conflicts": []any{c}, "rules": []any{}}))
+	if md := part["markdown"].(string); !strings.HasPrefix(md, "Prüfung unvollständig") || !strings.Contains(md, "| Verfassung |") {
+		t.Errorf("partial: %s", md)
+	}
+}

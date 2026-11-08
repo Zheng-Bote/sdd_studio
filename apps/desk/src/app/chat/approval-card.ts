@@ -46,6 +46,9 @@ import { Decision, Pending, PlannedOp } from '../core/types';
           <pre class="mt-2 max-h-48 overflow-auto rounded-md bg-muted p-2 text-xs">{{ args() }}</pre>
         </details>
         @if (pending().preview; as pv) {
+          @if (pv.message) {
+            <p class="text-sm" aria-label="Commit-Nachricht">Nachricht: <code class="wrap-anywhere">{{ pv.message }}</code></p>
+          }
           @if (pv.added?.length || pv.removed?.length || pv.locked?.length || pv.reaccepted?.length) {
             <ul class="space-y-0.5 text-xs" aria-label="Änderungen an Baseline und Lockfile">
               @for (e of pv.added ?? []; track $index) {
@@ -131,6 +134,6 @@ export class ApprovalCard {
   protected readonly args = computed(() => JSON.stringify(this.pending().arguments, null, 2));
 
   protected actionLabel(action: PlannedOp['action']): string {
-    return { create: 'anlegen', update: 'ändern', unchanged: 'unverändert', skip: 'übersprungen', move: 'verschieben' }[action];
+    return { create: 'anlegen', update: 'ändern', unchanged: 'unverändert', skip: 'übersprungen', move: 'verschieben', delete: 'löschen' }[action];
   }
 }

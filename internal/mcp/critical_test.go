@@ -57,19 +57,19 @@ func TestCriticalToolsNeedFlag(t *testing.T) {
 	root := project(t)
 	plain := toolNames(t, newServer(root, true))
 	for _, n := range plain {
-		if n == "sdd_baseline" || n == "sdd_adr_accept" || n == "sdd_adopt_apply" || n == "sdd_config" {
+		if n == "sdd_baseline" || n == "sdd_adr_accept" || n == "sdd_adopt_apply" || n == "sdd_config" || n == "sdd_commit" {
 			t.Errorf("%s offered without --allow-critical", n)
 		}
 	}
-	for _, n := range []string{"sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply", "sdd_config"} {
+	for _, n := range []string{"sdd_baseline", "sdd_adr_accept", "sdd_adopt_apply", "sdd_config", "sdd_commit"} {
 		res := exchange(t, newServer(root, true), `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"`+n+`","arguments":{}}}`)
 		if res[0]["error"] == nil {
 			t.Errorf("%s callable without --allow-critical: %v", n, res)
 		}
 	}
 	all := exchange(t, criticalServer(root), `{"jsonrpc":"2.0","id":1,"method":"tools/list"}`)[0]["result"].(map[string]any)["tools"].([]any)
-	if len(all) != len(plain)+4 {
-		t.Fatalf("with --allow-critical: %d tools, want %d", len(all), len(plain)+4)
+	if len(all) != len(plain)+5 {
+		t.Fatalf("with --allow-critical: %d tools, want %d", len(all), len(plain)+5)
 	}
 	for _, tl := range all[len(plain):] {
 		if tl.(map[string]any)["annotations"].(map[string]any)["destructiveHint"] != true {

@@ -42,7 +42,7 @@ SDD Studio setzt Spec-Driven Development durch: Ein Projekt hält dauerhafte Reg
 
 # Randbedingungen {#section-architecture-constraints}
 
-- **Verfassung** ([`constitution.md`](../constitution.md)): headless zuerst, Schichten `cmd/` ↔ `internal/sddcore`, Dateien als einziger Zustand, offline, Pfadsicherheit, Git nur lesend mit zwei Ausnahmen (`adopt --apply`, `init --git`), keine Regel ohne Prüfvertrag und Handbuchabschnitt.
+- **Verfassung** ([`constitution.md`](../constitution.md)): headless zuerst, Schichten `cmd/` ↔ `internal/sddcore`, Dateien als einziger Zustand, offline, Pfadsicherheit, Git nur lesend mit drei Ausnahmen (`adopt --apply`, `init --git`, `sdd_commit`), keine Regel ohne Prüfvertrag und Handbuchabschnitt.
 - **Sprache:** Go für Kern, CLI, `sdd ui`, `sdd mcp` und `sdd-desk`; Angular für die Oberfläche des Desktops; Tauri 2 (Rust) nur als Hülle der Desktop-Anwendung.
 - **Sprachneutralität der Zielprojekte:** Prüfungen arbeiten auf Pfaden, Git-Diffs, Frontmatter und Textmustern, ohne Compiler oder AST.
 - **Git über die CLI**, keine eingebettete Implementierung.
@@ -129,7 +129,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 | `cmd/sdd` | Kommandos parsen, Ausgabe, Exit-Codes `0`/`1`/`2`. |
 | `internal/sddcore` | Gesamte Domänenlogik, ohne Netz und ohne LLM. |
 | `internal/ui` | `sdd ui`: eingebettete Weboberfläche, Schreiben nur über Plan/Apply. |
-| `internal/mcp` | `sdd mcp`: 20 Werkzeuge (mit `--allow-critical`), geführte Prompts, Ressourcen; Pfadschutz und Freigabeschalter. |
+| `internal/mcp` | `sdd mcp`: 21 Werkzeuge (mit `--allow-critical`), geführte Prompts, Ressourcen; Pfadschutz und Freigabeschalter. |
 | `internal/desk`, `cmd/sdd-desk` | Agentenschleife, Anbieter-Adapter, Freigabestufen, lokale HTTP-API; startet `sdd mcp --allow-write --allow-critical`. |
 | `apps/desk` | Angular-Oberfläche (Gespräch, Freigabekarten, Prozessstand) und Tauri-Hülle mit `sdd-desk` als Sidecar. |
 | `catalog/`, `handbuch/`, `templates/` | Regelkatalog, Handbuch mit Prüfverträgen, Artefakt-Templates — eingebettet in das Binary. `templates/arc42.md.tmpl` steht als einzige Datei unter CC BY-SA 4.0 (ADR 0006). |
@@ -163,7 +163,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 |---|---|
 | lesend | `sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_stack`, `sdd_read`, `sdd_validate_draft`, `sdd_conflicts_check` |
 | schreibend (`--allow-write`) | `sdd_new`, `sdd_write` (Artefakte, Testdateien), `sdd_init`, `sdd_archive` |
-| kritisch (`--allow-critical`) | `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config` |
+| kritisch (`--allow-critical`) | `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`, `sdd_commit` |
 
 Dazu geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`).
 
@@ -298,6 +298,7 @@ SDD Studio wird mit sich selbst entwickelt: jedes Feature mit PRD und Tech Spec,
 | [0005](adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md) | Abschwächung der Konfiguration braucht ein ADR (SDD-012, `pinned`). |
 | [0006](adr/0006-arc42-template-unter-cc-by-sa-einbetten.md) | arc42-Template als eigenständige Datei unter CC BY-SA 4.0. |
 | [0007](adr/0007-qualitaetsanforderungen-im-prd-mit-kennung-qa.md) | Qualitätsanforderungen im PRD mit stabiler Kennung `QA-<n>`; optionale Abschnitte, keine neue Pflichtregel. |
+| [0008](adr/0008-commit-werkzeug-im-ki-desktop.md) | Kritisches Werkzeug `sdd_commit` für genannte Dateien, nie auf dem Standard-Branch. |
 
 Weitere Richtungsentscheidungen ohne eigenes ADR stehen im [Konzept, Abschnitt 14](sdd_konzept.md).
 
@@ -323,7 +324,6 @@ Die Qualitätsziele aus Abschnitt 1 werden durch Selbstschutzregeln, Tests mit M
 - **Lücken in SDD-012:** `tests.include`, `artifacts.*`, `base_ref` und `constitution_sections` werden außerhalb des Desktops nicht auf Abschwächung geprüft (ADR 0005, Entscheidung 3).
 - **Kleine lokale Modelle** halten Form- und Zitierregeln weniger zuverlässig ein; `sdd_conflicts_check` fängt Zitate ab, die Bewertung bleibt beim Menschen.
 - **Übersprungene Tests** zählen für SDD-022 als Testverweis; ob ein Test wirklich läuft, prüft `sdd` sprachneutral nicht.
-- **Kein Commit-Werkzeug im Desktop:** Nach einem Ablauf committet der Mensch selbst.
 - **Plattformen:** Desktop-Anwendung außerhalb von Linux `.deb` ungetestet.
 - Weitere Risiken und Gegenmaßnahmen: [Konzept, Abschnitt 12](sdd_konzept.md).
 

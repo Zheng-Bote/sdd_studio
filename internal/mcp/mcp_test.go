@@ -464,3 +464,28 @@ func TestUnknownArgumentNamesAllowedFields(t *testing.T) {
 		}
 	}
 }
+
+// qa-trace AC-1, AC-4: sdd_trace returns quality as a list next to unchanged criteria; the handbook describes it.
+func TestTraceToolQuality(t *testing.T) {
+	root := project(t)
+	s := newServer(root, false)
+	before := structured(t, call(t, s, "sdd_trace", map[string]any{"feature": "billing"}))
+	if q, ok := before["quality"].([]any); !ok || len(q) != 0 {
+		t.Fatalf("quality must be an empty list: %v", before["quality"])
+	}
+	write(t, root, "docs/prd/billing.md", readFileT(t, root, "docs/prd/billing.md")+"\n## Qualitätsanforderungen\n\n- **QA-1** Leistung\n")
+	after := structured(t, call(t, s, "sdd_trace", map[string]any{"feature": "billing"}))
+	if q := after["quality"].([]any); len(q) != 1 || q[0].(map[string]any)["id"] != "QA-1" {
+		t.Errorf("quality: %v", q)
+	}
+	if fmt.Sprint(after["criteria"]) != fmt.Sprint(before["criteria"]) {
+		t.Errorf("criteria changed:\n%v\n%v", before["criteria"], after["criteria"])
+	}
+	data, err := os.ReadFile("../../handbuch/04-agenten.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "Dazu `quality`") {
+		t.Error("handbook does not describe quality")
+	}
+}

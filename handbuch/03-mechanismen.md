@@ -105,7 +105,7 @@ Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abge
 | ADR | *nicht nötig*, wenn `touches` die Verfassung nicht berührt; sonst erledigt, sobald ein Artefakt des Features auf ein ADR verlinkt, das die Verfassung in `references` nennt und `accepted` ist — bis dahin *manuell* (anlegen, verlinken, entscheiden; `SDD-010` prüft im Gate) |
 | Plan | *nicht nötig* ohne Plan; sonst kein `SDD-040`/`SDD-041` |
 | Tests | kein `SDD-022` für die Kennungen des PRDs |
-| Abschluss | nach dem Merge `status: implemented`; dann vor dem Release archivieren (`SDD-050`) |
+| Abschluss | nach dem Merge `status: implemented`; dann vor dem Release archivieren (`SDD-050`). Trägt ein PRD noch `status: draft`, nennt der Schritt es, weil `sdd archive` Entwürfe ablehnt |
 
 **Projektschritt „Architekturdoku“:** Liegt im Archiv mindestens ein Feature-Artefakt mit `release:`, zeigt `sdd next` „Zum Release: Architekturdoku anlegen“, solange `artifacts.architecture` fehlt, und „Architekturdoku nachführen“, solange ihr `release:` nicht das höchste archivierte Release nennt (`v1.10.0` > `v1.9.0`). Nachgeführt wird mit dem geführten Ablauf `sdd-arc42`. Der Schritt ist kein Befund und blockiert kein Gate.
 

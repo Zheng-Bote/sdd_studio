@@ -345,7 +345,7 @@ func TestAgentUsesOnlySddTools(t *testing.T) {
 	for _, tl := range a.Tools {
 		names = append(names, tl.Name)
 	}
-	if len(names) != 20 || names[0] != "sdd_next" {
+	if len(names) != 21 || names[0] != "sdd_next" {
 		t.Fatalf("tools must be exactly those of sdd mcp: %v", names)
 	}
 	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "x"}}, AllowedTools: []string{"shell_exec"}})
@@ -835,12 +835,36 @@ func TestHandbookConfigTool(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"zwanzig Werkzeuge", "sdd_config", "ADR 0004"} {
+	for _, want := range []string{"einundzwanzig Werkzeuge", "sdd_config", "ADR 0004"} {
 		if !strings.Contains(string(data), want) {
 			t.Errorf("handbook lacks %q", want)
 		}
 	}
-	if strings.Contains(string(data), "achtzehn Werkzeuge") || strings.Contains(string(data), "neunzehn Werkzeuge") {
+	if strings.Contains(string(data), "achtzehn Werkzeuge") || strings.Contains(string(data), "neunzehn Werkzeuge") || strings.Contains(string(data), " zwanzig Werkzeuge") {
 		t.Error("handbook counts a stale number of tools")
+	}
+}
+
+// desk-project-steps AC-3: the handbook names the project steps in the sidebar.
+func TestHandbookProjectSteps(t *testing.T) {
+	data, err := os.ReadFile("../../handbuch/04-agenten.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "Projektschritte aus `sdd next`") {
+		t.Error("handbook does not name the project steps in the sidebar")
+	}
+}
+
+// sdd-commit AC-6: sdd_commit with apply is critical even if allowed for the session; the preview names the action.
+func TestCommitIsCritical(t *testing.T) {
+	a := newAgent(t, sddProject(t), &scripted{replies: []Message{call("c1", "sdd_commit", `{"paths":["docs/x.md"],"message":"m","apply":true}`)}})
+	res, err := a.Turn(context.Background(), TurnRequest{Provider: LocalOllamaID, Model: "m", Messages: []Message{{Role: "user", Content: "commit"}},
+		AllowedTools: []string{"sdd_commit"}, AllowedWrites: []string{"sdd_commit"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pending) != 1 || !res.Pending[0].Critical {
+		t.Fatalf("sdd_commit must wait for a single confirmation: %+v", res.Pending)
 	}
 }

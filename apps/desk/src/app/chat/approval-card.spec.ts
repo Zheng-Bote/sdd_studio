@@ -92,6 +92,29 @@ describe('ApprovalCard', () => {
     expect(buttons).toEqual(['sdd.config.yaml ändern: exclude (−1 / +0 Befunde)', 'Ablehnen']);
   });
 
+  // sdd-commit AC-6: a commit shows its message, files and a deletion, confirmed singly.
+  it('shows message and files of a commit', () => {
+    const { el, buttons } = render({
+      call_id: 'c1',
+      tool: 'sdd_commit',
+      arguments: { apply: true },
+      writes: true,
+      critical: true,
+      summary: '2 Datei(en) auf feat/x committen',
+      preview: {
+        message: 'docs: Stand',
+        ops: [
+          { path: 'docs/prd/a.md', action: 'update', diff: '+x\n' },
+          { path: 'docs/plans/a.md', action: 'delete', diff: '-y\n' },
+        ],
+      },
+    });
+    expect(el.querySelector('[aria-label="Commit-Nachricht"]')?.textContent).toContain('docs: Stand');
+    expect(el.textContent).toContain('docs/plans/a.md');
+    expect(el.textContent).toContain('löschen');
+    expect(buttons).toEqual(['2 Datei(en) auf feat/x committen', 'Ablehnen']);
+  });
+
   it('asks for a single confirmation of a critical action', () => {
     const { el, buttons, decisions } = render({
       call_id: 'k1',

@@ -2,6 +2,16 @@
 
 Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung [Semantic Versioning](https://semver.org/lang/de/). Der Regelkatalog trägt eine eigene Version (`catalog/catalog.yaml`).
 
+## [Unreleased]
+
+### Hinzugefügt
+
+- `sdd_conflicts_check` meldet `complete` und „Prüfung unvollständig“, solange Regeln der Verfassung in der Liste fehlen.
+- `sdd_trace` nennt in `quality` je Qualitätsanforderung `QA-<n>` die Tech Specs und Tests und markiert doppelte Kennungen.
+- **`sdd_commit`** ([ADR 0008](docs/adr/0008-commit-werkzeug-im-ki-desktop.md)): Kritisches Werkzeug, das im KI-Desktop einzeln genannte Artefakte, Testdateien, die Konfiguration und den Prüfzustand committet, nach einzelner Bestätigung und nie auf dem Standard-Branch.
+- Die Seitenleiste von `sdd-desk` zeigt die Projektschritte aus `sdd next`: Verfassung ausfüllen, Übernahme abschließen, Architekturdoku anlegen bzw. nachführen.
+- `sdd next` nennt im Abschlussschritt ein PRD, das noch `status: draft` trägt, weil `sdd archive` Entwürfe ablehnt.
+
 ## [0.6.0] — 2026-11-08
 
 Regelkatalog `1.2.0` mit 23 Regeln. Grundlage ist ein Live-Test des KI-Desktops mit Claude Sonnet 5.5 (Szenario cert-expiry-watcher, vom leeren Ordner bis zu den Tests je Kriterium), [ADR 0004](docs/adr/0004-konfiguration-aendern-ist-kritisch.md) und [ADR 0005](docs/adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md).

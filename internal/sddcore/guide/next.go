@@ -410,13 +410,23 @@ func featureGuide(root string, cfg *config.Config, slug string, set *artifactSet
 			implemented = true
 		}
 	}
+	draftHint := ""
+	var drafts []string
+	for _, p := range set.prds {
+		if p.Frontmatter.Status == "draft" {
+			drafts = append(drafts, p.Path)
+		}
+	}
+	if len(drafts) > 0 {
+		draftHint = strings.Join(drafts, ", ") + " hat noch status: draft; sdd archive lehnt Entwürfe ab, Status nach der Umsetzung setzen. "
+	}
 	if implemented {
 		add(Step{ID: "archive", Title: "Archivieren vor dem Release", State: StateOpen,
-			Detail:  "status: implemented — vor dem nächsten Tag nach " + cfg.Artifacts.Archive + " verschieben und status: archived setzen (SDD-050)",
+			Detail:  draftHint + "status: implemented — vor dem nächsten Tag nach " + cfg.Artifacts.Archive + " verschieben und status: archived setzen (SDD-050)",
 			Command: "sdd gate pre-release"})
 	} else {
 		add(Step{ID: "archive", Title: "Abschließen und archivieren", State: StateLater,
-			Detail: "nach dem Merge status: implemented setzen; vor dem Release archivieren (SDD-050)"})
+			Detail: draftHint + "nach dem Merge status: implemented setzen; vor dem Release archivieren (SDD-050)"})
 	}
 
 	for _, state := range []string{StateOpen, StateManual} {

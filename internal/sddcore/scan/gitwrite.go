@@ -63,6 +63,15 @@ func (g CLIGit) CreateBranch(name string) error {
 	return err
 }
 
+// HeadBranch is the checked-out branch, empty on a detached HEAD. Unlike CurrentBranch it ignores CI variables.
+func (g CLIGit) HeadBranch() string {
+	out, err := g.run("symbolic-ref", "--quiet", "--short", "HEAD")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
+}
+
 func (g CLIGit) Commit(message string, paths []string) (string, error) {
 	if len(paths) == 0 {
 		return "", fmt.Errorf("%w: Commit ohne Pfade", ErrGit)

@@ -7,6 +7,7 @@
     "docs/adr/0004-konfiguration-aendern-ist-kritisch.md": "a4125b0997d8d38955b116e382d24ede555bf24c9fc2a1c3c4bf82bf52482c4e",
     "docs/adr/0005-abschwaechung-der-konfiguration-braucht-ein-adr.md": "542caba895928812acc44a5e4aeb4ec13be316ef915dee170d91a430108fb35a",
     "docs/adr/0006-arc42-template-unter-cc-by-sa-einbetten.md": "8e8f56442ac44b7c1fd80ffcdfc2d76438dca17b62fc2941abff5dd3b993e1e4",
-    "docs/adr/0007-qualitaetsanforderungen-im-prd-mit-kennung-qa.md": "7fa2864db56543f469ec377b4e28b85752f0a2b2b90bfd0f8c7f717e5cc52995"
+    "docs/adr/0007-qualitaetsanforderungen-im-prd-mit-kennung-qa.md": "7fa2864db56543f469ec377b4e28b85752f0a2b2b90bfd0f8c7f717e5cc52995",
+    "docs/adr/0008-commit-werkzeug-im-ki-desktop.md": "71e0b66915e528531b88c975ecf9ded764de0c473b5d0e64ac1aa76dc0809e18"
   }
 }

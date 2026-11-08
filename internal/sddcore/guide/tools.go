@@ -282,6 +282,18 @@ func Trace(root, feature string) ([]rules.ACTrace, error) {
 	return rules.Trace(&rules.Context{RepoRoot: root, Config: cfg}, feature)
 }
 
+// TraceQuality follows the feature's quality requirements QA-<n> to Tech Specs and tests.
+func TraceQuality(root, feature string) ([]rules.QATrace, error) {
+	if !scan.IsSlug(feature) {
+		return nil, fmt.Errorf("ungültiger Feature-Slug %q", feature)
+	}
+	cfg, err := config.Load(root)
+	if err != nil {
+		return nil, err
+	}
+	return rules.TraceQuality(&rules.Context{RepoRoot: root, Config: cfg}, feature)
+}
+
 // ---------- ValidateDraft ----------
 
 // DraftCheck is the result of checking a not yet written artifact.
