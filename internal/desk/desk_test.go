@@ -844,3 +844,14 @@ func TestHandbookConfigTool(t *testing.T) {
 		t.Error("handbook counts a stale number of tools")
 	}
 }
+
+// desk-project-steps AC-3: the handbook names the project steps in the sidebar.
+func TestHandbookProjectSteps(t *testing.T) {
+	data, err := os.ReadFile("../../handbuch/04-agenten.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "Projektschritte aus `sdd next`") {
+		t.Error("handbook does not name the project steps in the sidebar")
+	}
+}

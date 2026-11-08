@@ -1,4 +1,4 @@
-import { Component, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, output, signal } from '@angular/core';
 import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmInputImports } from '@spartan-ng/helm/input';
@@ -42,6 +42,18 @@ const STATE_LABEL: Record<Step['state'], string> = {
         <h2 id="state-title" class="text-sm font-semibold">Prozessstand</h2>
         <button hlmBtn size="xs" variant="ghost" type="button" (click)="refresh()">Aktualisieren</button>
       </div>
+      @for (s of projectSteps(); track s.id) {
+        <div class="rounded-md border p-2" data-testid="project-step">
+          <div class="flex items-center gap-1.5 text-xs">
+            <span hlmBadge [variant]="s.state === 'open' ? 'default' : 'secondary'">{{ label(s.state) }}</span>
+            <span class="font-medium">{{ s.title }}</span>
+          </div>
+          <p class="mt-0.5 text-xs text-muted-foreground">{{ s.detail }}</p>
+          @if (s.command) {
+            <code class="mt-0.5 block text-xs wrap-anywhere">{{ s.command }}</code>
+          }
+        </div>
+      }
       @if (guide()?.start; as s) {
         <p class="text-sm">{{ s.title }}</p>
         <p class="text-xs text-muted-foreground">{{ s.detail }}</p>
@@ -68,6 +80,10 @@ export class ProcessPanel {
   private readonly api = inject(DeskApi);
   readonly started = output<string>();
   protected readonly guide = signal<Guide | null>(null);
+  protected readonly projectSteps = computed(() => {
+    const g = this.guide();
+    return [g?.constitution, g?.adoption, g?.architecture].filter((s): s is Step => !!s);
+  });
   protected readonly prompts = signal<PromptInfo[]>([]);
   protected readonly error = signal('');
   private readonly values = signal<Record<string, string>>({});

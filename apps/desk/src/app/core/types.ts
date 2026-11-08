@@ -166,6 +166,10 @@ export interface FeatureGuide {
 export interface Guide {
   features: FeatureGuide[];
   start?: Step;
+  /** Project steps of sdd next, independent of a feature. */
+  constitution?: Step;
+  adoption?: Step;
+  architecture?: Step;
 }
 
 export interface PromptArgument {
