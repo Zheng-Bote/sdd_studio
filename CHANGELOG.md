@@ -2,7 +2,9 @@
 
 Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung [Semantic Versioning](https://semver.org/lang/de/). Der Regelkatalog trägt eine eigene Version (`catalog/catalog.yaml`).
 
-## [Unreleased]
+## [0.7.0] — 2026-11-08
+
+Regelkatalog unverändert `1.2.0` mit 23 Regeln. Grundlage von `sdd_commit` ist [ADR 0008](docs/adr/0008-commit-werkzeug-im-ki-desktop.md).
 
 ### Hinzugefügt
 

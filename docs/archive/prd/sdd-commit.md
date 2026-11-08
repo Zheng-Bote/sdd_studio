@@ -1,6 +1,6 @@
 ---
 feature: sdd-commit
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/scan/**
@@ -11,6 +11,7 @@ touches:
   - README.md
   - docs/arc42.md
   - CHANGELOG.md
+release: v0.7.0
 ---
 
 # PRD — Commit-Werkzeug `sdd_commit` im KI-Desktop

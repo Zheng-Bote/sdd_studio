@@ -1,11 +1,11 @@
 ---
 status: active
-release: v0.6.0
+release: v0.7.0
 ---
 
 # Architekturdokumentation — SDD Studio (arc42)
 
-Stand: Release v0.6.0 (Regelkatalog `1.2.0`, 23 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
+Stand: Release v0.7.0 (Regelkatalog `1.2.0`, 23 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
 
 # Einführung und Ziele {#section-introduction-and-goals}
 
@@ -131,7 +131,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 | `internal/ui` | `sdd ui`: eingebettete Weboberfläche, Schreiben nur über Plan/Apply. |
 | `internal/mcp` | `sdd mcp`: 21 Werkzeuge (mit `--allow-critical`), geführte Prompts, Ressourcen; Pfadschutz und Freigabeschalter. |
 | `internal/desk`, `cmd/sdd-desk` | Agentenschleife, Anbieter-Adapter, Freigabestufen, lokale HTTP-API; startet `sdd mcp --allow-write --allow-critical`. |
-| `apps/desk` | Angular-Oberfläche (Gespräch, Freigabekarten, Prozessstand) und Tauri-Hülle mit `sdd-desk` als Sidecar. |
+| `apps/desk` | Angular-Oberfläche (Gespräch, Freigabekarten, Prozessstand mit Projektschritten) und Tauri-Hülle mit `sdd-desk` als Sidecar. |
 | `catalog/`, `handbuch/`, `templates/` | Regelkatalog, Handbuch mit Prüfverträgen, Artefakt-Templates — eingebettet in das Binary. `templates/arc42.md.tmpl` steht als einzige Datei unter CC BY-SA 4.0 (ADR 0006). |
 
 ### Schnittstellen {#_name_interface_1}
@@ -338,7 +338,7 @@ Die Qualitätsziele aus Abschnitt 1 werden durch Selbstschutzregeln, Tests mit M
 | `Eff(g)` | Effektive Regelmenge eines Gates: Override oder `gate_default`, plus `pinned`-Regeln. |
 | Baseline | Gate-gebundene Liste bekannter Altbefunde in `.sdd/baseline.json`; nur schrumpfend (Ratchet). |
 | `pinned` | Katalogattribut: Regel läuft in ihren Gates trotz Override; verlangt `profile: minimal` und `baseline: forbidden`. |
-| `QA-<n>` | Kennung einer messbaren Qualitätsanforderung im PRD (ADR 0007); braucht keinen Testverweis. |
+| `QA-<n>` | Kennung einer messbaren Qualitätsanforderung im PRD (ADR 0007); braucht keinen Testverweis, `sdd_trace` verfolgt sie. |
 | Architekturdoku | Diese Seite bzw. `artifacts.architecture` eines Projekts (Standard `docs/arc42.md`); `release:` nennt den beschriebenen Stand. |
 | `touches` | Erklärte Änderungsabsicht eines Features (Pfad-Globs); Grundlage für Gate 1 und SDD-024. |
 | Profil | `minimal` ⊂ `standard` ⊂ `regulated`: welche Regeln aktiv sind. |

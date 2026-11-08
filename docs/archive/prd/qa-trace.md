@@ -1,6 +1,6 @@
 ---
 feature: qa-trace
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/rules/**
@@ -8,6 +8,7 @@ touches:
   - internal/mcp/**
   - handbuch/**
   - CHANGELOG.md
+release: v0.7.0
 ---
 
 # PRD — `sdd_trace` verfolgt Qualitätsanforderungen

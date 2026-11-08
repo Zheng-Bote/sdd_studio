@@ -1,17 +1,18 @@
 ---
 feature: desk-project-steps
-status: active
+status: archived
 archive-after:
 touches:
   - apps/desk/src/**
   - internal/desk/**
   - handbuch/**
   - CHANGELOG.md
+release: v0.7.0
 ---
 
 # Tech Spec — Projektschritte in der Seitenleiste des KI-Desktops
 
-Setzt das PRD `docs/prd/desk-project-steps.md` um. Das Backend bleibt unverändert: `/api/next` liefert `constitution`, `adoption` und `architecture` bereits im JSON von `sdd_next`.
+Setzt das PRD `docs/archive/prd/desk-project-steps.md` um. Das Backend bleibt unverändert: `/api/next` liefert `constitution`, `adoption` und `architecture` bereits im JSON von `sdd_next`.
 
 ## Architektur
 
