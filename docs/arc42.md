@@ -312,7 +312,7 @@ Die Qualitätsziele aus Abschnitt 1 werden durch Selbstschutzregeln, Tests mit M
 | Ziel | Szenario | Erwartete Reaktion |
 |---|---|---|
 | Determinismus | Gleicher Stand, zwei Läufe | Identische Befunde und Hashes. |
-| Unumgehbarkeit | Ein Branch setzt `profile: minimal` und `override: [SDD-001]` | `sdd gate pre-merge` meldet SDD-012; der Override schaltet die Regel nicht ab. |
+| Unumgehbarkeit | Ein Branch setzt `profile: minimal` und `override: [SDD-001]` oder `exclude: ["**"]` | `sdd gate pre-merge` meldet SDD-012; weder Override noch `exclude` schalten die Regel ab. |
 | Unumgehbarkeit | Das Modell will die Konfiguration ändern, `sdd_write` ist für die Sitzung freigegeben | `sdd_write` lehnt ab; `sdd_config` wartet auf einzelne Bestätigung mit Befund-Differenz. |
 | Offline | Lauf ohne Netz | `sdd` funktioniert vollständig; ein Test verbietet Code für ausgehende Verbindungen. |
 | Bestand | Erster Gate-Lauf nach `sdd adopt` | Null neue `error` für Bestandsarbeit in `pre-implementation`/`pre-merge`. |

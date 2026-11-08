@@ -43,6 +43,8 @@ func runSDD012(t *testing.T, gate, current string, atBase bool, diff []string, a
 	}
 	cfg := featureConfig()
 	cfg.Artifacts.ADR = "docs/adr"
+	parsed, _ := config.Parse([]byte(current))
+	cfg.Exclude = parsed.Exclude // the gate runs with the configuration under review
 	ctx := &Context{RepoRoot: root, Config: cfg, Gate: gate, Git: fakeGit{changed: diff, files: files}}
 	findings, err := checkSDD012(ctx, catalog.Rule{ID: "SDD-012"})
 	if err != nil {
@@ -169,6 +171,21 @@ func TestSDD012Documented(t *testing.T) {
 			if !strings.Contains(string(data), w) {
 				t.Errorf("%s lacks %q", f, w)
 			}
+		}
+	}
+}
+
+// config-weakening AC-3: an exclude that covers sdd.config.yaml itself cannot hide the change that adds it, and an ADR
+// under an excluded path still counts (found before the v0.6.0 tag: exclude: ["**"] passed the gate).
+func TestSDD012NotBlindedByExclude(t *testing.T) {
+	for _, pat := range []string{"**", "sdd.config.yaml"} {
+		weak := strings.Replace(baseConfig, "exclude: [vendor/**]", `exclude: [vendor/**, "`+pat+`"]`, 1)
+		if msgs := runSDD012(t, "pre-merge", weak, true, cfgDiff, ""); len(msgs) != 1 || !strings.Contains(msgs[0], "exclude: +"+pat) {
+			t.Errorf("exclude %s: %v", pat, msgs)
+		}
+		adr := "---\nstatus: accepted\nreferences: [sdd.config.yaml]\n---\n"
+		if msgs := runSDD012(t, "pre-merge", weak, true, []string{"sdd.config.yaml", "docs/adr/0002-x.md"}, adr); len(msgs) != 0 {
+			t.Errorf("exclude %s with ADR: %v", pat, msgs)
 		}
 	}
 }

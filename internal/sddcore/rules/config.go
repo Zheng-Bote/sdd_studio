@@ -21,7 +21,7 @@ func checkSDD012(ctx *Context, rule catalog.Rule) ([]report.Finding, error) {
 		return nil, nil
 	}
 	const cfgPath = config.DefaultConfigFileName
-	diff, err := ctx.changedFiles()
+	diff, err := ctx.changedFilesUnfiltered() // exclude must not hide the change that adds it
 	if err != nil {
 		return nil, err
 	}

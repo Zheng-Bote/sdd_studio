@@ -45,6 +45,7 @@ func (c *Context) changedFiles() ([]string, error) {
 		c.diffErr = err
 		return nil, err
 	}
+	c.rawDiff = files
 	for _, f := range files {
 		if !scan.MatchAny(c.Config.Exclude, f) {
 			c.diff = append(c.diff, f)
@@ -287,4 +288,13 @@ func uniqueSorted(in []string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// changedFilesUnfiltered is the diff before exclude is applied. The exclude comes from the configuration under review,
+// so a rule that checks that configuration (SDD-012) must not depend on it.
+func (c *Context) changedFilesUnfiltered() ([]string, error) {
+	if _, err := c.changedFiles(); err != nil {
+		return nil, err
+	}
+	return c.rawDiff, nil
 }
