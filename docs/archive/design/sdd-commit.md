@@ -1,6 +1,6 @@
 ---
 feature: sdd-commit
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/scan/**
@@ -11,11 +11,12 @@ touches:
   - README.md
   - docs/arc42.md
   - CHANGELOG.md
+release: v0.7.0
 ---
 
 # Tech Spec — Commit-Werkzeug `sdd_commit` im KI-Desktop
 
-Setzt das PRD `docs/prd/sdd-commit.md` um, auf Grundlage von ADR 0008.
+Setzt das PRD `docs/archive/prd/sdd-commit.md` um, auf Grundlage von ADR 0008.
 
 ## Architektur
 

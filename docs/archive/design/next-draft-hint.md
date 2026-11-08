@@ -1,16 +1,17 @@
 ---
 feature: next-draft-hint
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/guide/**
   - handbuch/**
   - CHANGELOG.md
+release: v0.7.0
 ---
 
 # Tech Spec — `sdd next` nennt ein PRD im Entwurf vor dem Archivieren
 
-Setzt das PRD `docs/prd/next-draft-hint.md` um.
+Setzt das PRD `docs/archive/prd/next-draft-hint.md` um.
 
 ## Architektur
 

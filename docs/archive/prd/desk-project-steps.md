@@ -1,12 +1,13 @@
 ---
 feature: desk-project-steps
-status: active
+status: archived
 archive-after:
 touches:
   - apps/desk/src/**
   - internal/desk/**
   - handbuch/**
   - CHANGELOG.md
+release: v0.7.0
 ---
 
 # PRD — Projektschritte in der Seitenleiste des KI-Desktops

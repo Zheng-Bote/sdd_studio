@@ -12,12 +12,12 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 
 ## Stand
 
-Letzte Version: **0.6.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.2.0` mit 23 Regeln. Neu: `SDD-012` verlangt für eine abschwächende Änderung der Konfiguration ein ADR, im KI-Desktop ist jede Änderung an `sdd.config.yaml` eine kritische Aktion (`sdd_config`). Eine Freigabe für die Sitzung gilt nur noch für die Stufe der Karte, auf der sie erteilt wurde. `sdd-conflicts` lässt seine Zitate maschinell prüfen, `sdd-requirements` vertieft ein PRD für mittlere und größere Vorhaben, und `sdd new --type arc42` legt die Architekturdoku `docs/arc42.md` mit Mermaid-Diagrammen an. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.6.0`.
+Letzte Version: **0.7.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.2.0` mit 23 Regeln. Neu: `sdd_commit` committet im KI-Desktop genannte Artefakte, Tests, Konfiguration und Prüfzustand nach einzelner Bestätigung, nie auf dem Standard-Branch. Die Seitenleiste zeigt die Projektschritte aus `sdd next`, `sdd next` nennt ein PRD im Entwurf, und `sdd_trace` verfolgt Qualitätsanforderungen `QA-<n>`. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern, Commit) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.7.0`.
 
 - **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.6.0 liegen archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.7.0 liegen archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -77,7 +77,7 @@ Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/featu
 Die [GitHub Action](action.yml) baut `sdd`, führt `sdd gate <gate>` aus und schreibt den Bericht in die Job-Zusammenfassung:
 
 ```yaml
-- uses: Zheng-Bote/sdd_studio@v0.6.0
+- uses: Zheng-Bote/sdd_studio@v0.7.0
   with:
     gate: pre-merge
 ```
