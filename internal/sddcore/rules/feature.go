@@ -54,6 +54,11 @@ func (c *Context) changedFiles() ([]string, error) {
 	return c.diff, nil
 }
 
+// readyForRules reports whether a feature artifact takes part in the acceptance-criteria rules. An epic with
+// `refined: false` has not settled its requirements yet (ADR 0009), so SDD-021, SDD-022, SDD-023, SDD-031 and SDD-041
+// skip it until it is refined — the same state `sdd next` shows as "no gate expected".
+func readyForRules(a scan.Artifact) bool { return !a.Frontmatter.EpicUnrefined() }
+
 // featureArtifacts returns all Markdown artifacts below the PRD, design and plan directories; computed once per run.
 func (c *Context) featureArtifacts() ([]scan.Artifact, error) {
 	if c.artifactsDone {

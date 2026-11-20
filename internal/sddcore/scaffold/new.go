@@ -23,6 +23,10 @@ const (
 	TypeADR    = "adr"
 	TypeDoc    = "doc"
 	TypeArc42  = "arc42" // architecture documentation <docs[0]>/arc42.md from the arc42 template (ADR 0006)
+	// Macro level of the BMAD pipeline (ADR 0009): the initiative with the requirements R<n>, and an epic that covers
+	// them and refines into a feature.
+	TypeInitiative = "initiative"
+	TypeEpic       = "epic"
 )
 
 // ErrInvalidInput marks user input errors of `sdd new` (exit code 2).
@@ -41,6 +45,7 @@ type NewOptions struct {
 	Slug         string // slug for adr, doc (default: derived from Title)
 	ArchiveAfter string // YYYY-MM-DD or empty
 	Touches      []string
+	Covers       []string // requirements R<n> an epic covers
 	Today        time.Time
 }
 
@@ -54,7 +59,7 @@ func NewPlan(root string, cfg *config.Config, opts NewOptions) (Plan, error) {
 	types := opts.Types
 	if len(types) == 0 {
 		if opts.Feature == "" {
-			return Plan{}, fmt.Errorf("%w: --feature <slug> oder --type adr|doc|arc42 erforderlich", ErrInvalidInput)
+			return Plan{}, fmt.Errorf("%w: --feature <slug> oder --type adr|doc|arc42|initiative|epic erforderlich", ErrInvalidInput)
 		}
 		types = []string{TypePRD, TypeDesign}
 	}
@@ -63,14 +68,14 @@ func NewPlan(root string, cfg *config.Config, opts NewOptions) (Plan, error) {
 		switch t {
 		case TypePRD, TypeDesign, TypePlan:
 			featureTypes = append(featureTypes, t)
-		case TypeADR, TypeDoc, TypeArc42:
+		case TypeADR, TypeDoc, TypeArc42, TypeInitiative, TypeEpic:
 			otherTypes = append(otherTypes, t)
 		default:
-			return Plan{}, fmt.Errorf("%w: unbekannter Typ %q (erlaubt: prd, design, plan, adr, doc, arc42)", ErrInvalidInput, t)
+			return Plan{}, fmt.Errorf("%w: unbekannter Typ %q (erlaubt: prd, design, plan, adr, doc, arc42, initiative, epic)", ErrInvalidInput, t)
 		}
 	}
 	if len(otherTypes) > 0 && (len(featureTypes) > 0 || len(otherTypes) > 1) {
-		return Plan{}, fmt.Errorf("%w: adr, doc und arc42 nur einzeln und nicht zusammen mit Feature-Artefakten anlegen", ErrInvalidInput)
+		return Plan{}, fmt.Errorf("%w: adr, doc, arc42, initiative und epic nur einzeln und nicht zusammen mit Feature-Artefakten anlegen", ErrInvalidInput)
 	}
 	if len(otherTypes) == 1 {
 		return otherPlan(root, cfg, otherTypes[0], opts)
@@ -206,12 +211,78 @@ func otherPlan(root string, cfg *config.Config, typ string, opts NewOptions) (Pl
 		}
 		target = path.Join(cfg.Artifacts.Docs[0], slug+".md")
 		content, err = render("doc.md.tmpl", struct{ Title string }{title})
+	case TypeInitiative:
+		target, err = initiativeTarget(cfg)
+		if err != nil {
+			return Plan{}, err
+		}
+		content, err = render("initiative.md.tmpl", struct{ Title string }{title})
+	case TypeEpic:
+		target, content, err = epicArtifact(cfg, slug, title, opts)
 	}
 	if err != nil {
 		return Plan{}, err
 	}
 	plan := Plan{Ops: []Op{{Path: target, Content: content}}}
 	return plan, plan.Validate()
+}
+
+// initiativeTarget is the configured initiative path, cleaned.
+func initiativeTarget(cfg *config.Config) (string, error) {
+	target, err := CleanRel(cfg.Artifacts.InitiativePath())
+	if err != nil {
+		return "", fmt.Errorf("%w: artifacts.initiative: %v", ErrInvalidInput, err)
+	}
+	return target, nil
+}
+
+// epicTemplateData is the data of templates/epic.md.tmpl.
+type epicTemplateData struct {
+	Slug, Title, Parent, ArchiveAfter, CoverList string
+	Touches, Covers                              []string
+}
+
+// requirementIDRegex accepts the stable requirement IDs of an initiative (SDD-080).
+var requirementIDRegex = regexp.MustCompile(`^R[1-9][0-9]*$`)
+
+// epicArtifact builds target and content of an epic: a feature artifact under artifacts.prd that names the initiative
+// as parent and the requirements it covers (ADR 0009).
+func epicArtifact(cfg *config.Config, slug, title string, opts NewOptions) (string, []byte, error) {
+	if strings.TrimSpace(cfg.Artifacts.PRD) == "" {
+		return "", nil, fmt.Errorf("%w: artifacts.prd ist nicht konfiguriert", ErrInvalidInput)
+	}
+	target, err := scan.TargetPath(cfg.Artifacts.PRD, slug)
+	if err != nil {
+		return "", nil, fmt.Errorf("%w: artifacts.prd: %v", ErrInvalidInput, err)
+	}
+	var covers []string
+	for _, c := range opts.Covers {
+		c = strings.TrimSpace(c)
+		if c == "" {
+			continue
+		}
+		if !requirementIDRegex.MatchString(c) {
+			return "", nil, fmt.Errorf("%w: covers %q (erwartet: R<zahl>, z. B. R1)", ErrInvalidInput, c)
+		}
+		covers = append(covers, c)
+	}
+	initiative := cfg.Artifacts.InitiativePath()
+	parent := strings.TrimSuffix(path.Base(initiative), path.Ext(initiative))
+	if parent == "" {
+		parent = "initiative"
+	}
+	coverList := "R1, R2, …"
+	if len(covers) > 0 {
+		coverList = strings.Join(covers, ", ")
+	}
+	content, err := render("epic.md.tmpl", epicTemplateData{
+		Slug: slug, Title: title, Parent: parent, ArchiveAfter: opts.ArchiveAfter,
+		Touches: opts.Touches, Covers: covers, CoverList: coverList,
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return target, content, nil
 }
 
 // arc42Plan creates artifacts.architecture (default docs/arc42.md) from the arc42 template; it needs no title, the

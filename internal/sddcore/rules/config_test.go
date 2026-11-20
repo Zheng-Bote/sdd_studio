@@ -2,12 +2,27 @@ package rules
 
 import (
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/catalog"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
 )
+
+// versionAtLeast compares major.minor of a catalog version with the one a rule arrived in.
+func versionAtLeast(got string, wantMajor, wantMinor int) bool {
+	parts := strings.SplitN(got, ".", 3)
+	if len(parts) < 2 {
+		return false
+	}
+	major, err1 := strconv.Atoi(parts[0])
+	minor, err2 := strconv.Atoi(parts[1])
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	return major > wantMajor || (major == wantMajor && minor >= wantMinor)
+}
 
 const baseConfig = `version: 1
 profile: standard
@@ -131,7 +146,8 @@ func TestSDD012IgnoresHarmless(t *testing.T) {
 	}
 }
 
-// config-weakening AC-5: SDD-012 is in the catalog with profile minimal, baseline forbidden and pinned; version 1.2.0.
+// config-weakening AC-5: SDD-012 is in the catalog with profile minimal, baseline forbidden and pinned. The catalog
+// version only has to be at least the one that introduced the rule, 1.2.0 — later rules raise it.
 func TestSDD012InCatalog(t *testing.T) {
 	data, err := os.ReadFile("../../../catalog/catalog.yaml")
 	if err != nil {
@@ -141,8 +157,8 @@ func TestSDD012InCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cat.Version != "1.2.0" {
-		t.Errorf("catalog version %q", cat.Version)
+	if !versionAtLeast(cat.Version, 1, 2) {
+		t.Errorf("catalog version %q is older than 1.2.0", cat.Version)
 	}
 	for _, r := range cat.Rules {
 		if r.ID == "SDD-012" {

@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/adopt"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/baseline"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scan"
 )
 
@@ -81,6 +83,34 @@ func specKitRepo(t *testing.T) string {
 	write(t, root, "specs/features/002-search/spec.md", "# Search\n")
 	write(t, root, "specs/features/003-done/spec.md", "---\nfeature: done\nstatus: implemented\n---\n# Done\n")
 	write(t, root, "specs/features/004-odd/spec.md", "---\ntitle: ohne feature\n---\n# Odd\n")
+	write(t, root, "main.go", "package main\n")
+	git(t, root, "init", "-q", "-b", "main")
+	git(t, root, "add", "-A")
+	git(t, root, "commit", "-q", "-m", "initial")
+	return root
+}
+
+// bmadRepo reproduces a BMAD v6 tree (ADR 0009): the tool tree `_bmad/`, the ledger `_bmad-output/` with an
+// initiative of numbered requirements, two epics that cover them, a ticket index, a forge report and memlogs. No
+// feature artifacts, no constitution, no sdd configuration — the state a project is in after the BMAD planning.
+func bmadRepo(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	write(t, root, "README.md", "# Gallery\n")
+	write(t, root, "_bmad/config.toml", "[core]\nproject_name = \"Gallery\"\n")
+	write(t, root, "_bmad/bmm/v6-shims/README.md", "# shim\n")
+	write(t, root, "_bmad-output/initiative-gallery/.memlog.md", "# memlog\n")
+	write(t, root, "_bmad-output/initiative-gallery/forge-gallery/forge-gallery.md", "# Geschärfte Idee\n")
+	write(t, root, "_bmad-output/initiative-gallery/tickets/tickets.toml",
+		"[[epic]]\nid = 1\nslug = \"epic-plattform\"\n\n[[epic]]\nid = 2\nslug = \"epic-import\"\n")
+	write(t, root, "_bmad-output/initiative-gallery/initiative-gallery.md",
+		"---\ntype: initiative\ntitle: Gallery\n---\n\n# Gallery\n\n## Requirements\n\n"+
+			"- R1 (forge §Scope): Die Gruppe meldet sich an.\n- R2 (forge §Scope): Bilder kommen ins Archiv.\n"+
+			"- R3 (forge §Scope): Nur veröffentlichte Alben sind öffentlich.\n\n## Boundaries\n\n- Nicht in V1: Slideshow.\n")
+	write(t, root, "_bmad-output/initiative-gallery/tickets/epic-plattform/epic-plattform.md",
+		"---\ntype: epic\ntitle: Plattform\ncovers: [\"R1\"]\nrefined: false\n---\n\n# Plattform\n\n## Done when\n\n- Der Admin legt ein Konto an.\n")
+	write(t, root, "_bmad-output/initiative-gallery/tickets/epic-import/epic-import.md",
+		"---\ntype: epic\ntitle: Import\ncovers: [\"R2\", \"R9\"]\nrefined: false\n---\n\n# Import\n")
 	write(t, root, "main.go", "package main\n")
 	git(t, root, "init", "-q", "-b", "main")
 	git(t, root, "add", "-A")
@@ -337,5 +367,96 @@ func TestApplyRefusesDirtyTreeAndExistingBranch(t *testing.T) {
 				t.Errorf("refused apply changed files")
 			}
 		})
+	}
+}
+
+// bmad-import AC-3: a BMAD v6 tree is recognised — one initiative, every epic, pipeline bmad in the proposed
+// configuration — and the tool tree stays out of the inventory.
+func TestBMADInventory(t *testing.T) {
+	isolateGit(t)
+	root := bmadRepo(t)
+	inv, err := adopt.Take(root, "standard")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inv.BMAD == nil {
+		t.Fatal("BMAD tree not detected")
+	}
+	if got := inv.Config.Pipeline; got != config.PipelineBMAD {
+		t.Errorf("pipeline = %q, want %q", got, config.PipelineBMAD)
+	}
+	if got, want := inv.Config.Artifacts.InitiativePath(), "docs/initiative.md"; got != want {
+		t.Errorf("artifacts.initiative = %q, want %q — the ledger is the source, not the artifact", got, want)
+	}
+	if !strings.Contains(inv.Layout, "BMAD v6") || !strings.Contains(inv.Layout, "2 Epics") || !strings.Contains(inv.Layout, "initiative-gallery.md") {
+		t.Errorf("layout = %q", inv.Layout)
+	}
+
+	kinds := map[string]adopt.Kind{}
+	for _, f := range inv.Files {
+		kinds[f.Path] = f.Kind
+	}
+	want := map[string]adopt.Kind{
+		"_bmad-output/initiative-gallery/initiative-gallery.md":                    adopt.KindInitiative,
+		"_bmad-output/initiative-gallery/tickets/epic-plattform/epic-plattform.md": adopt.KindEpic,
+		"_bmad-output/initiative-gallery/tickets/epic-import/epic-import.md":       adopt.KindEpic,
+		"_bmad-output/initiative-gallery/forge-gallery/forge-gallery.md":           adopt.KindDoc,
+	}
+	for p, k := range want {
+		if kinds[p] != k {
+			t.Errorf("%s classified %q, want %q", p, kinds[p], k)
+		}
+	}
+	for _, p := range []string{"_bmad/config.toml", "_bmad/bmm/v6-shims/README.md", "_bmad-output/initiative-gallery/.memlog.md"} {
+		if _, ok := kinds[p]; ok {
+			t.Errorf("%s belongs to the BMAD tool tree and must stay out of the inventory", p)
+		}
+	}
+	if !slices.Contains(inv.Config.Exclude, "_bmad/**") || !slices.Contains(inv.Config.Exclude, "**/.memlog.md") {
+		t.Errorf("proposed exclude misses the BMAD tool tree: %v", inv.Config.Exclude)
+	}
+}
+
+// bmad-import AC-3: a repository without _bmad/ or _bmad-output/ keeps the previous behaviour.
+func TestBMADAbsentUnchanged(t *testing.T) {
+	isolateGit(t)
+	root := specKitRepo(t)
+	inv, err := adopt.Take(root, "standard")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inv.BMAD != nil || inv.Config.Pipeline != "" {
+		t.Fatalf("BMAD detected in a Spec Kit repository: %+v", inv.BMAD)
+	}
+	for _, f := range inv.Files {
+		if f.Kind == adopt.KindInitiative || f.Kind == adopt.KindEpic {
+			t.Errorf("%s got a macro kind", f.Path)
+		}
+	}
+}
+
+// bmad-import AC-4: the take-over adds no feature frontmatter to macro artifacts and reports no conflict for them.
+func TestBMADFrontmatterUntouched(t *testing.T) {
+	isolateGit(t)
+	root := bmadRepo(t)
+	before := snapshot(t, root)
+	p, err := adopt.Propose(root, options())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, step := range p.Steps {
+		for _, op := range step.Plan.Ops {
+			if strings.HasPrefix(op.Path, "_bmad-output/") {
+				t.Errorf("step %q touches the BMAD ledger: %s", step.Title, op.Path)
+			}
+		}
+	}
+	for _, c := range p.Conflicts {
+		if strings.Contains(c, "_bmad-output/") {
+			t.Errorf("conflict on a macro artifact: %s", c)
+		}
+	}
+	if after := snapshot(t, root); !reflect.DeepEqual(before, after) {
+		t.Error("Propose changed files")
 	}
 }

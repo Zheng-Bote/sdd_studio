@@ -11,10 +11,10 @@ Dieser Teil des Handbuchs dokumentiert die Prüfmechanismen von `sdd`, das Beric
 ### `sdd init` {#sdd-init}
 
 ```text
-sdd init [--profile minimal|standard|regulated] [--dry-run] [--no-ci] [--git]
+sdd init [--profile minimal|standard|regulated] [--pipeline sdd|bmad] [--dry-run] [--no-ci] [--git]
 ```
 
-Legt an: `sdd.config.yaml` (Profil, Standardpfade, leere Schwellen), `constitution.md` mit den Pflichtabschnitten aus `SDD-002a`, die Verzeichnisse `docs/{adr,prd,design,plans,archive,notes}` (je mit `.gitkeep`, nur wenn das Verzeichnis fehlt), den Workflow `.github/workflows/sdd.yml`, eine leere `.sdd/baseline.json` und die [Agenten-Dateien](#agenten-dateien) — ein neues Projekt startet ohne Altlasten.
+Legt an: `sdd.config.yaml` (Profil, Standardpfade, leere Schwellen), `constitution.md` mit den Pflichtabschnitten aus `SDD-002a`, die Verzeichnisse `docs/{adr,prd,design,plans,archive,notes}` (je mit `.gitkeep`, nur wenn das Verzeichnis fehlt), den Workflow `.github/workflows/sdd.yml`, eine leere `.sdd/baseline.json` und die [Agenten-Dateien](#agenten-dateien) — ein neues Projekt startet ohne Altlasten. Mit **`--pipeline bmad`** kommt die Initiative (`artifacts.initiative`, Standard `docs/initiative.md`) aus einem Template hinzu, und die Regeln `SDD-080`–`SDD-082` werden aktiv ([ADR 0009](../docs/adr/0009-bmad-import-statt-zweitem-prozess.md)).
 
 #### Agenten-Dateien {#agenten-dateien}
 
@@ -33,7 +33,8 @@ Legt an: `sdd.config.yaml` (Profil, Standardpfade, leere Schwellen), `constituti
 
 ```text
 sdd new --feature <slug> [--type prd,design,plan] [--title <text>] [--touches <globs>] [--archive-after YYYY-MM-DD]
-sdd new --type adr|doc --title <text> [--slug <slug>]
+sdd new --type adr|doc|initiative --title <text> [--slug <slug>]
+sdd new --type epic --slug <slug> --title <text> [--covers R1,R2] [--touches <globs>]
 sdd new --type arc42
 ```
 
@@ -45,8 +46,12 @@ sdd new --type arc42
 | `adr` | `<artifacts.adr>/<NNNN>-<slug>.md` | `status: proposed`, `date`, `supersedes`, `references` |
 | `doc` | `<artifacts.docs[0]>/<slug>.md` | `status: active` |
 | `arc42` | `artifacts.architecture` (Standard `docs/arc42.md`) | `status: active`, `release` |
+| `initiative` | `artifacts.initiative` (Standard `docs/initiative.md`) | `type: initiative`, `unplanned` |
+| `epic` | `<artifacts.prd>/<slug>.md` | wie `prd`, dazu `type: epic`, `parent`, `covers`, `refined: false` |
 
 - **`arc42`** legt die Architekturdokumentation aus dem mitgelieferten deutschen arc42-Template an (zwölf Abschnitte mit den Ankern des Originals), ohne `--title`; Projektname ist der Ordnername. Das Template steht unter CC BY-SA 4.0 (Gliederung © Hruschka, Starke und Mitwirkende, arc42.org; [ADR 0006](../docs/adr/0006-arc42-template-unter-cc-by-sa-einbetten.md)); Lizenzkopf und Zeile zur Gliederung bleiben in der Datei stehen. `release` nennt den Stand, den die Doku beschreibt. Kontextabgrenzung, Bausteinsicht, Laufzeitsicht und Verteilungssicht enthalten Mermaid-Gerüste (`flowchart`, `sequenceDiagram`), die `sdd-arc42` durch die Bausteine des Projekts ersetzt.
+- **`initiative`** legt die Makro-Ebene an ([ADR 0009](../docs/adr/0009-bmad-import-statt-zweitem-prozess.md)): Anforderungen als Listenzeilen `- **R1** …`, Constraints, Nicht-Ziele. `unplanned` nennt Anforderungen, die bewusst nicht geplant sind (`SDD-081`).
+- **`epic`** legt ein Feature-Artefakt an, das eine Fähigkeit abdeckt: `parent` ist der Dateiname der Initiative ohne Endung, `covers` die übernommenen Anforderungen, `refined: false` markiert es als noch nicht verfeinert. Ungültige Kennungen (nicht `R<zahl>`) lehnt `sdd new` ab.
 
 - Ohne `--type` legt `--feature` PRD und Tech Spec an — genau das Paar, das `SDD-020`/`SDD-030` verlangen.
 - Trägt im Zielverzeichnis bereits eine Datei `feature: <slug>`, wird für diesen Typ nichts angelegt, auch wenn der Dateiname abweicht.
@@ -71,6 +76,8 @@ sdd adopt [--profile minimal|standard|regulated] [--apply] [--branch sdd/adopt]
 4. **Schritte** — je Schritt ein Commit, Schritte ohne Änderung entfallen: *Konfiguration* (falls keine vorhanden), *Verfassung* (aus dem Template, falls keine vorhanden), *Agenten-Dateien* (siehe [Agenten-Dateien](#agenten-dateien)), *Frontmatter* (`feature: <slug>` und `status: active` vor den Inhalt aktiver Feature-Artefakte ohne Frontmatter; der Slug ist das `*`-Segment des Globs bzw. der Dateiname), *Baseline* (alle Gates, nach den vorherigen Schritten, vor dem ersten Gate-Lauf), *Bericht* (`.sdd/adopt-report.md`).
 
 **Mit `--apply`** gelten die Grenzen aus [ADR 0001](../docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md): nur in einem Git-Repository mit sauberem Arbeitsbaum, nicht bei losgelöstem `HEAD`, nur auf einem **neuen** Branch (existiert er, bricht der Lauf ab). Kein Push, kein Merge; der Ausgangsbranch bleibt unverändert. Gelöscht oder ersetzt wird nichts: Frontmatter wird nur vorangestellt, und nur, wenn die Datei noch genau dem gelesenen Stand entspricht. Hat ein Feature-Artefakt Frontmatter ohne `feature:`, bleibt es unverändert und erscheint unter *Konflikte*.
+
+**BMAD-Bestand:** Liegen `_bmad/` oder `_bmad-output/` vor (BMAD v6), erkennt `sdd adopt` die Makro-Ebene ([ADR 0009](../docs/adr/0009-bmad-import-statt-zweitem-prozess.md)): Die Datei `_bmad-output/**/initiative-*.md` wird als **Initiative** klassifiziert, jede `epic-*.md` unter den Tickets als **Epic**, Berichte und Forge-Dateien als Doku. Die vorgeschlagene Konfiguration trägt `pipeline: bmad` und die Ausschlüsse `_bmad/**`, `**/.memlog.md` und die Skill-Spiegel der Agenten-CLIs (`.agent/**`, `.agents/**`, `.claude/**`, `.codewhale/**`, `.cursor/**`); `artifacts.initiative` bleibt auf der Vorgabe `docs/initiative.md`. Der Ledger ist Quelle, das Artefakt entsteht bei der Übernahme — der Bericht nennt den gefundenen Pfad. Makro-Artefakte sind keine Feature-Artefakte: Sie bekommen kein `feature:`-Frontmatter, und der Ledger unter `_bmad-output/` wird nie umgeschrieben. Ohne `_bmad/` und ohne `_bmad-output/` bleibt alles wie bisher.
 
 **Ausgewiesen, nicht ausgeführt:** Die Archivierung (`SDD-050`, nicht baselinefähig) listet der Bericht als Aufräumschritt vor dem ersten Release. Der vorangestellte Status `active` ist eine Annahme; längst umgesetzte Features sind auf `implemented` zu setzen.
 
@@ -154,7 +161,7 @@ Die Action im Wurzelverzeichnis von `sdd_studio` baut `sdd` aus ihrem eigenen Qu
 - uses: actions/checkout@v4
   with:
     fetch-depth: 0          # git diff <base>...HEAD braucht die Historie
-- uses: Zheng-Bote/sdd_studio@v0.7.0   # Release-Tag; @main nur zum Ausprobieren
+- uses: Zheng-Bote/sdd_studio@v0.8.0   # Release-Tag; @main nur zum Ausprobieren
   with:
     gate: pre-merge         # pre-implementation | pre-merge | pre-release
     feature: ""             # optional, kommagetrennte Slugs
@@ -735,3 +742,77 @@ Für jede Regel im Katalog, deren `severity.default` gleich `error` ist oder die
 1. Das Feld `contract` ist nicht leer und hat die Form `<pfad>#<anker>`.
 2. Die Datei `<pfad>` existiert im Handbuch.
 3. In `<pfad>` existiert eine Überschrift, deren normalisierter Markdown-Anker (oder explizite `{#...}`-ID) mit `<anker>` übereinstimmt.
+
+---
+
+## Makro-Ebene der BMAD-Strecke (`SDD-080` – `SDD-082`)
+
+Ein Vorhaben, das mit BMAD beginnt, hat eine Makro-Ebene: eine **Initiative** mit nummerierten Anforderungen (`R1`, `R2`, …), Constraints, Nicht-Zielen und **Epics**, die je eine Fähigkeit abdecken ([ADR 0009](../docs/adr/0009-bmad-import-statt-zweitem-prozess.md)). `sdd` führt diese Ebene mit, ohne einen zweiten Prozess zu starten — sie ist nur dann aktiv, wenn die Konfiguration sie erklärt:
+
+```yaml
+pipeline: bmad          # "sdd" oder leer = reine Feature-Strecke
+artifacts:
+  initiative: docs/initiative.md
+```
+
+**Artefakttypen.** Die Initiative trägt `type: initiative`, ein Epic `type: epic` mit `parent` (Name der Initiative), `covers` (übernommene Anforderungen) und `refined: false`, solange die Requirements nicht festgelegt sind. Beide sind **keine** Feature-Artefakte: sie bekommen kein `feature:`-Frontmatter, und solange ein Epic `refined: false` trägt, überspringen `SDD-021`, `SDD-022`, `SDD-023`, `SDD-031` und `SDD-041` es — ein noch nicht verfeinertes Epic ist kein unfertiges Feature. `sdd next` zeigt dafür genau einen Schritt, „Epic verfeinern“.
+
+**Anforderungskennungen.** Eine Anforderung ist eine Listenzeile, die mit ihrer Kennung beginnt (`- **R1** …` oder `- R1 …`). Prosa, die eine Kennung nur erwähnt, zählt nicht; ein Template-Platzhalter (`- <…>`) ebenso wenig.
+
+**Ohne `pipeline: bmad` prüfen alle drei Regeln nichts.** Ein Projekt ohne Makro-Ebene bleibt unberührt.
+
+---
+
+### SDD-080 — Jedes Epic übernimmt mindestens eine Anforderung der Initiative {#sdd-080}
+
+- **Schweregrad:** `error` (pre-implementation, pre-merge sowie `default`)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `epic_requirement_anchor`
+
+**Begründung:** Ein Epic ohne Anforderung ist Arbeit ohne Auftrag. Der Verweis in `covers` ist die einzige Verbindung zwischen Makro- und Mikro-Ebene, die niemand im Kopf behalten muss.
+
+#### SDD-080 Prüfvertrag {#sdd-080-vertrag}
+
+1. Geprüft wird nur bei `pipeline: bmad`; sonst entsteht kein Befund.
+2. **Initiative** ist die Datei unter `artifacts.initiative` (Vorgabe `docs/initiative.md`). Fehlt sie, entsteht kein Befund — dafür meldet `sdd next` den Schritt „Initiative anlegen“.
+3. **Epics** sind die aktiven Artefakte unter `artifacts.prd` (nicht `archived`, nicht `superseded`), deren Frontmatter `type: epic` trägt.
+4. Für jedes Epic gilt: mindestens ein Eintrag in `covers` ist eine Kennung, die als Listenzeile in der Initiative steht. Steht in `covers` nichts, entsteht ein `error`; nennt `covers` nur unbekannte Kennungen, entsteht genau ein `error`, der sie aufzählt.
+5. Der Befund steht in der Epic-Datei, in der Zeile des `covers:`-Feldes.
+
+---
+
+### SDD-081 — Jede Anforderung ist gedeckt oder ausdrücklich nicht geplant {#sdd-081}
+
+- **Schweregrad:** `warn` (pre-merge, pre-release sowie `default`)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `requirement_coverage`
+
+**Begründung:** Eine Anforderung, die kein Epic übernimmt, fällt still aus dem Vorhaben. Ist sie bewusst nicht geplant, steht das in der Initiative — dann ist die Lücke eine Entscheidung und keine Vergessenheit.
+
+#### SDD-081 Prüfvertrag {#sdd-081-vertrag}
+
+1. Geprüft wird nur bei `pipeline: bmad` und nur, wenn die Initiative mindestens eine Kennung enthält.
+2. Gibt es **kein** Epic-Artefakt (wie vor der Übernahme), entsteht kein Befund: dann ist noch nichts übernommen, und jede Anforderung sähe fälschlich ungedeckt aus.
+3. Eine Anforderung gilt als **gedeckt**, wenn ein aktives Epic sie in `covers` nennt, und als **nicht geplant**, wenn das Frontmatter der Initiative sie unter `unplanned` aufführt.
+4. Für jede übrige Kennung entsteht genau ein `warn`, in der Zeile der Anforderung in der Initiative.
+
+---
+
+### SDD-082 — Epic-Index und Epic-Dateien nennen dieselben Slugs {#sdd-082}
+
+- **Schweregrad:** `warn` (pre-merge sowie `default`)
+- **Profil:** ab `standard`
+- **Baseline:** `allowed`
+- **Check:** `ticket_index_consistent`
+
+**Begründung:** Zwei Listen derselben Epics driften: Der Index führt ein Epic, dessen Datei gelöscht wurde, oder eine Datei fehlt im Index. Der Abgleich macht die Ablage eindeutig, ohne den Index abzuschaffen.
+
+#### SDD-082 Prüfvertrag {#sdd-082-vertrag}
+
+1. Geprüft wird nur bei `pipeline: bmad` und nur, wenn `_bmad-output/**/tickets.toml` existiert; sonst entsteht kein Befund.
+2. Gibt es **kein** Epic-Artefakt (wie vor der Übernahme), entsteht kein Befund: Der Index ist dann noch BMADs eigene Liste, und es gibt nichts zu vergleichen.
+3. **Slugs des Index** sind die Werte von `slug = "…"`; die Zeile des Treffers ist die Befundzeile.
+4. **Slugs der Artefakte** sind `feature:` der Epic-Artefakte, ohne Feld der Dateiname ohne Endung.
+5. Für jeden Index-Slug ohne Epic-Artefakt entsteht ein `warn` im Index, für jedes Epic-Artefakt ohne Index-Eintrag ein `warn` in der Epic-Datei. Der Index wird nie verändert.

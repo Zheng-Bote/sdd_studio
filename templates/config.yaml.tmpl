@@ -1,7 +1,12 @@
 version: 1
 profile: {{.Profile}}
 language: de
-
+{{if .Pipeline}}# Streckenprofil (ADR 0009): "" oder "sdd" = reine Feature-Strecke, "bmad" ergänzt Initiative und Epics
+# und schaltet SDD-080 bis SDD-082 ein.
+pipeline: {{printf "%q" .Pipeline}}
+{{else}}# Streckenprofil (ADR 0009): "bmad" ergänzt Initiative und Epics und schaltet SDD-080 bis SDD-082 ein.
+# pipeline: "bmad"
+{{end}}
 # Basis für `git diff <base>...HEAD` in pre-merge. Leer = automatisch ermitteln
 # ($GITHUB_BASE_REF, @{upstream} außer der eigenen entfernten Kopie eines
 # Feature-Branches, main, master).
@@ -21,6 +26,8 @@ artifacts:
 {{- end}}
   # Architekturdokumentation nach arc42 (sdd new --type arc42), zu jedem Release nachführen.
   architecture: {{printf "%q" .Artifacts.ArchitecturePath}}
+  # Initiative der Makro-Ebene mit den Anforderungen R-<n> (ADR 0009, nur bei pipeline: bmad).
+  initiative: {{printf "%q" .Artifacts.InitiativePath}}
 
 tests:
   # Leer = Fallback-Liste aus dem Handbuch (SDD-022), z. B. **/*_test.go, **/*.spec.ts.

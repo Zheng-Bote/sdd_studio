@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/baseline"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
@@ -17,6 +18,9 @@ type InitOptions struct {
 	Profile string // minimal, standard or regulated
 	Project string // project name used in the constitution heading
 	CI      bool   // write the GitHub Actions workflow
+	// Pipeline is the process shape written to sdd.config.yaml: "" or "sdd" for the plain feature process,
+	// config.PipelineBMAD for the macro level (ADR 0009), which also writes the initiative.
+	Pipeline string
 }
 
 // DefaultArtifacts are the artifact paths `sdd init` writes and `sdd new` falls back to without a configuration.
@@ -30,6 +34,7 @@ func DefaultArtifacts() config.ArtifactsConfig {
 		Archive:      "docs/archive",
 		Docs:         []string{"docs/notes"},
 		Architecture: config.DefaultArchitecture,
+		Initiative:   config.DefaultInitiative,
 	}
 }
 
@@ -50,6 +55,7 @@ func DefaultConfig(profile string) *config.Config {
 // InitPlan builds the plan for a new project: configuration, constitution, artifact directories, CI workflow and an empty baseline.
 func InitPlan(opts InitOptions) (Plan, error) {
 	cfg := DefaultConfig(opts.Profile)
+	cfg.Pipeline = strings.TrimSpace(opts.Pipeline)
 	if err := cfg.Validate(); err != nil {
 		return Plan{}, err
 	}
@@ -65,6 +71,14 @@ func InitPlan(opts InitOptions) (Plan, error) {
 	plan.Ops = append(plan.Ops,
 		Op{Path: config.DefaultConfigFileName, Content: cfgContent},
 		Op{Path: cfg.Artifacts.Constitution, Content: constContent})
+
+	if cfg.Pipeline == config.PipelineBMAD {
+		content, err := RenderInitiative(opts.Project)
+		if err != nil {
+			return Plan{}, err
+		}
+		plan.Ops = append(plan.Ops, Op{Path: cfg.Artifacts.InitiativePath(), Content: content})
+	}
 
 	dirs := []string{cfg.Artifacts.ADR, cfg.Artifacts.PRD, cfg.Artifacts.Design, cfg.Artifacts.Plans, cfg.Artifacts.Archive}
 	dirs = append(dirs, cfg.Artifacts.Docs...)
@@ -91,12 +105,18 @@ func InitPlan(opts InitOptions) (Plan, error) {
 type templateData struct {
 	Profile   string
 	Project   string
+	Pipeline  string
 	Artifacts config.ArtifactsConfig
 }
 
-// RenderConfig renders sdd.config.yaml for the profile and artifact paths of cfg (thresholds stay empty).
+// RenderConfig renders sdd.config.yaml for the profile, pipeline and artifact paths of cfg (thresholds stay empty).
 func RenderConfig(cfg *config.Config) ([]byte, error) {
-	return render("config.yaml.tmpl", templateData{Profile: cfg.Profile, Artifacts: cfg.Artifacts})
+	return render("config.yaml.tmpl", templateData{Profile: cfg.Profile, Pipeline: cfg.Pipeline, Artifacts: cfg.Artifacts})
+}
+
+// RenderInitiative renders the macro artifact of the BMAD pipeline (ADR 0009).
+func RenderInitiative(project string) ([]byte, error) {
+	return render("initiative.md.tmpl", struct{ Title string }{project})
 }
 
 // RenderConstitution renders the constitution template with the required SDD-002a sections.

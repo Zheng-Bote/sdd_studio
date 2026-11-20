@@ -500,9 +500,11 @@ func gitEnv(t *testing.T, identity bool) {
 		t.Skip("git not installed")
 	}
 	cfg := filepath.Join(t.TempDir(), "gitconfig")
-	content := ""
+	// useConfigOnly stops Git from guessing an identity from the OS user name, so the case without identity stays
+	// without identity on every machine.
+	content := "[user]\n\tuseConfigOnly = true\n"
 	if identity {
-		content = "[user]\n\tname = T\n\temail = t@example.com\n[commit]\n\tgpgsign = false\n"
+		content = "[user]\n\tuseConfigOnly = true\n\tname = T\n\temail = t@example.com\n[commit]\n\tgpgsign = false\n"
 	}
 	if err := os.WriteFile(cfg, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
@@ -606,5 +608,88 @@ func TestInitWithGitNeedsIdentity(t *testing.T) {
 	}
 	if entries, _ := os.ReadDir(root); len(entries) != 0 {
 		t.Errorf("files written: %v", entries)
+	}
+}
+
+// bmad-import AC-5: --pipeline bmad writes the pipeline, the initiative from its template and keeps the feature
+// directories; the plain pipeline writes none of it.
+func TestInitBMAD(t *testing.T) {
+	root := t.TempDir()
+	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: "standard", Project: "gallery", Pipeline: config.PipelineBMAD})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := plan.Apply(root); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := config.Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Pipeline != config.PipelineBMAD {
+		t.Errorf("pipeline = %q", cfg.Pipeline)
+	}
+	if got := cfg.Artifacts.InitiativePath(); got != config.DefaultInitiative {
+		t.Errorf("artifacts.initiative = %q", got)
+	}
+	initiative := readFile(t, root, config.DefaultInitiative)
+	for _, want := range []string{"type: initiative", "## Requirements", "## Boundaries"} {
+		if !strings.Contains(initiative, want) {
+			t.Errorf("initiative misses %q", want)
+		}
+	}
+	if ids := scan.RequirementIDs([]byte(initiative)); len(ids) != 0 {
+		t.Errorf("a fresh initiative must not look filled, got requirements %v", ids)
+	}
+	if _, err := os.Stat(filepath.Join(root, "docs/prd/.gitkeep")); err != nil {
+		t.Errorf("feature directory missing: %v", err)
+	}
+
+	plain := initProject(t, "standard")
+	if cfg, err := config.Load(plain); err != nil || cfg.Pipeline != "" {
+		t.Errorf("plain init wrote a pipeline: %+v, %v", cfg, err)
+	}
+	if _, err := os.Stat(filepath.Join(plain, config.DefaultInitiative)); err == nil {
+		t.Error("plain init wrote an initiative")
+	}
+}
+
+// bmad-import AC-5: an initiative needs only a title, an epic a title, a slug and the requirements it covers.
+func TestNewInitiativeAndEpic(t *testing.T) {
+	root := t.TempDir()
+	cfg := scaffold.DefaultConfig("standard")
+	cfg.Pipeline = config.PipelineBMAD
+
+	plan, err := scaffold.NewPlan(root, cfg, scaffold.NewOptions{Types: []string{scaffold.TypeInitiative}, Title: "Galerie", Today: today})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := plan.Apply(root); err != nil {
+		t.Fatal(err)
+	}
+	if got := readFile(t, root, config.DefaultInitiative); !strings.Contains(got, "# Initiative — Galerie") {
+		t.Errorf("initiative heading missing: %s", got)
+	}
+
+	plan, err = scaffold.NewPlan(root, cfg, scaffold.NewOptions{
+		Types: []string{scaffold.TypeEpic}, Title: "Plattform", Slug: "epic-plattform",
+		Covers: []string{"R1", "R2"}, Touches: []string{"cmd/**"}, Today: today,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := plan.Apply(root); err != nil {
+		t.Fatal(err)
+	}
+	epic := readFile(t, root, "docs/prd/epic-plattform.md")
+	for _, want := range []string{"feature: epic-plattform", "type: epic", "parent: initiative", "refined: false", "  - R1", "  - R2"} {
+		if !strings.Contains(epic, want) {
+			t.Errorf("epic misses %q:\n%s", want, epic)
+		}
+	}
+	if _, err := scaffold.NewPlan(root, cfg, scaffold.NewOptions{
+		Types: []string{scaffold.TypeEpic}, Title: "X", Slug: "x", Covers: []string{"7"}, Today: today,
+	}); !errors.Is(err, scaffold.ErrInvalidInput) {
+		t.Errorf("invalid covers accepted: %v", err)
 	}
 }

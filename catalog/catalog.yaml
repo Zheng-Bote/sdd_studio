@@ -1,4 +1,4 @@
-version: "1.2.0"
+version: "1.3.0"
 rules:
   - id: SDD-001
     title: Verfassung vorhanden
@@ -335,3 +335,49 @@ rules:
       Blockierende Regeln (error) müssen deterministisch prüfbar sein. Ohne
       dokumentierten Prüfvertrag ist eine Regel höchstens warn.
     handbook: handbuch/03-mechanismen.md#sdd-073
+
+  - id: SDD-080
+    title: Jedes Epic übernimmt mindestens eine Anforderung der Initiative
+    severity:
+      default: error
+    profile: standard
+    check: epic_requirement_anchor
+    gate_default: [pre-implementation, pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-080-vertrag
+    rationale: >
+      Ein Epic ohne Anforderung ist Arbeit ohne Auftrag: Niemand kann später
+      sagen, welchen Teil des Vorhabens es deckt. Der Verweis in covers ist die
+      einzige Verbindung zwischen Makro- und Mikro-Ebene, die niemand im Kopf
+      behalten muss.
+    handbook: handbuch/03-mechanismen.md#sdd-080
+
+  - id: SDD-081
+    title: Jede Anforderung der Initiative ist von einem Epic gedeckt oder ausdrücklich nicht geplant
+    severity:
+      default: warn
+    profile: standard
+    check: requirement_coverage
+    gate_default: [pre-merge, pre-release]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-081-vertrag
+    rationale: >
+      Eine Anforderung, die kein Epic übernimmt, fällt still aus dem Vorhaben.
+      Ist sie bewusst nicht geplant, steht das im Frontmatter der Initiative —
+      dann ist die Lücke eine Entscheidung und keine Vergessenheit.
+    handbook: handbuch/03-mechanismen.md#sdd-081
+
+  - id: SDD-082
+    title: Epic-Index und Epic-Dateien nennen dieselben Slugs
+    severity:
+      default: warn
+    profile: standard
+    check: ticket_index_consistent
+    gate_default: [pre-merge]
+    baseline: allowed
+    contract: handbuch/03-mechanismen.md#sdd-082-vertrag
+    rationale: >
+      Zwei Listen derselben Epics driften: Der Index zeigt ein Epic, dessen Datei
+      gelöscht wurde, oder eine Datei fehlt im Index. Der Abgleich macht die
+      Ablage eindeutig, ohne den Index abzuschaffen.
+    handbook: handbuch/03-mechanismen.md#sdd-082

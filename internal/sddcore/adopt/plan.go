@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
@@ -55,6 +56,9 @@ func Propose(root string, opts Options) (*Proposal, error) {
 	}
 	p := &Proposal{Options: opts, Inventory: inv, Findings: rep.Findings}
 	p.Maturity = Assess(root, inv, rep.Findings)
+	if b := inv.BMAD; b != nil && len(b.Initiatives) > 1 {
+		p.Conflicts = append(p.Conflicts, fmt.Sprintf("%d Initiativen gefunden (%s) — artifacts.initiative in sdd.config.yaml von Hand setzen", len(b.Initiatives), strings.Join(b.Initiatives, ", ")))
+	}
 	for _, f := range rep.Findings {
 		if f.RuleID == "SDD-050" {
 			p.Archive = append(p.Archive, f)

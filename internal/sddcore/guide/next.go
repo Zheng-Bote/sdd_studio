@@ -50,6 +50,9 @@ type Guide struct {
 	Features []FeatureGuide `json:"features"`
 	// Start is set when no feature exists yet: how to begin.
 	Start *Step `json:"start,omitempty"`
+	// Initiative is the macro step of the BMAD pipeline (ADR 0009); it comes before every feature and is unset
+	// without `pipeline: bmad` and without an initiative file.
+	Initiative *Step `json:"initiative,omitempty"`
 	// Constitution is set while the constitution still holds template placeholders; it comes before everything else.
 	Constitution *Step `json:"constitution,omitempty"`
 	// Adoption is set while the branch of `sdd adopt --apply` is checked out and not yet merged; it comes right after
@@ -158,6 +161,9 @@ func Next(root, feature string) (*Guide, error) {
 			Detail:  fmt.Sprintf("%s enthält noch %d Platzhalter des Templates. Vor dem ersten PRD ausfüllen — nach sdd adopt noch auf dem Branch der Übernahme, dann gilt es als erstmaliges Anlegen (SDD-010).", rel, n),
 			Command: "Prompt sdd-constitution (sdd-desk oder sdd mcp)"}
 	}
+	if g.Initiative, err = initiativeStep(root, cfg); err != nil {
+		return nil, err
+	}
 	if b, from, ok := adoptionPending(root); ok {
 		g.Adoption = &Step{ID: "adoption", Title: "Übernahme abschließen", State: StateOpen,
 			Detail:  fmt.Sprintf("Die Übernahme auf %s ist noch nicht in %s. Änderungen (Verfassung, Agenten-Dateien) auf %s committen, prüfen (git diff %s...%s) und in %s mergen — erst danach das erste PRD.", b, from, b, from, b, from),
@@ -176,6 +182,47 @@ func Next(root, feature string) (*Guide, error) {
 		g.Features = append(g.Features, featureGuide(root, cfg, slug, sets[slug], rep.Findings))
 	}
 	return g, nil
+}
+
+// initiativeStep is the macro step of the BMAD pipeline (ADR 0009). It is nil without `pipeline: bmad` and without an
+// initiative file, so every other project keeps its previous output.
+func initiativeStep(root string, cfg *config.Config) (*Step, error) {
+	rel, err := scan.CleanRel(cfg.Artifacts.InitiativePath())
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil {
+		if cfg.Pipeline != config.PipelineBMAD {
+			return nil, nil
+		}
+		// A BMAD ledger already holds the macro level: it has to be taken over, not invented.
+		if src := bmadLedgerInitiative(root); src != "" {
+			return &Step{ID: "initiative", Title: "Initiative übernehmen", State: StateOpen,
+				Detail:  fmt.Sprintf("Der BMAD-Ledger trägt %s; die Makro-Ebene gehört als Artefakt nach %s — Anforderungen wörtlich, Constraints als Verfassungsregeln (SDD-080).", src, rel),
+				Command: "Prompt sdd-ingest-bmad (sdd-desk oder sdd mcp)"}, nil
+		}
+		return &Step{ID: "initiative", Title: "Initiative anlegen", State: StateOpen,
+			Detail:  "Die Makro-Ebene des Vorhabens fehlt: Anforderungen, Constraints, Nicht-Ziele. Jedes Epic verweist darauf (SDD-080).",
+			Command: "sdd new --type initiative --title <Vorhaben>"}, nil
+	}
+	ids := scan.RequirementIDs(data)
+	if len(ids) == 0 {
+		return &Step{ID: "initiative", Title: "Anforderungen der Initiative festhalten", State: StateOpen,
+			Detail:  rel + " enthält keine Anforderung R<n>; ohne Kennungen kann kein Epic sie übernehmen (SDD-080).",
+			Command: "Prompt sdd-ingest-bmad (sdd-desk oder sdd mcp)"}, nil
+	}
+	return &Step{ID: "initiative", Title: "Initiative", State: StateDone,
+		Detail: fmt.Sprintf("%s, %d Anforderungen", rel, len(ids))}, nil
+}
+
+// bmadLedgerInitiative finds the initiative in a BMAD ledger (`_bmad-output/**/initiative-*.md`), "" if none.
+func bmadLedgerInitiative(root string) string {
+	list, err := scan.WalkFiles(root, []string{"_bmad-output/**/initiative-*.md"}, nil)
+	if err != nil || len(list) == 0 {
+		return ""
+	}
+	return list[0]
 }
 
 // activeFeatures groups the active feature artifacts (not archived, superseded or in the archive) by feature.
@@ -277,6 +324,16 @@ func findingsAt(findings []report.Finding, rule string, paths []scan.Artifact) [
 func featureGuide(root string, cfg *config.Config, slug string, set *artifactSet, findings []report.Finding) FeatureGuide {
 	if set == nil {
 		set = &artifactSet{}
+	}
+	// An epic with `refined: false` has not settled its requirements yet: one open step, no gate expected (ADR 0009).
+	for _, p := range set.prds {
+		if !p.Frontmatter.EpicUnrefined() {
+			continue
+		}
+		step := Step{ID: "epic-refine", Title: "Epic verfeinern", State: StateOpen,
+			Detail:  p.Path + " trägt refined: false — Requirements und Akzeptanzkriterien entstehen beim Verfeinern; bis dahin erwartet kein Gate etwas.",
+			Command: "Prompt sdd-epic-refine (sdd-desk oder sdd mcp)"}
+		return FeatureGuide{Feature: slug, Steps: []Step{step}, Next: &step}
 	}
 	fg := FeatureGuide{Feature: slug}
 	add := func(s Step) { fg.Steps = append(fg.Steps, s) }

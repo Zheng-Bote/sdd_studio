@@ -19,6 +19,7 @@ func runInit(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	profile := fs.String("profile", "standard", "Profil: minimal, standard oder regulated")
+	pipeline := fs.String("pipeline", "", "Streckenprofil (ADR 0009): sdd (Standard) oder bmad — bmad legt zusätzlich die Initiative an und schaltet SDD-080 bis SDD-082 ein")
 	dryRun := fs.Bool("dry-run", false, "Nur anzeigen, was angelegt würde")
 	noCI := fs.Bool("no-ci", false, "Keinen GitHub-Actions-Workflow anlegen")
 	withGit := fs.Bool("git", false, "Ohne Git-Repository: git init (Branch main) und ein erster Commit der angelegten Dateien")
@@ -41,7 +42,7 @@ func runInit(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	if abs, err := filepath.Abs(repoRoot); err == nil {
 		project = filepath.Base(abs)
 	}
-	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: *profile, Project: project, CI: !*noCI})
+	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: *profile, Project: project, CI: !*noCI, Pipeline: *pipeline})
 	if err != nil {
 		fmt.Fprintf(stderr, "sdd init: %v\n", err)
 		return 2
@@ -78,9 +79,10 @@ func runNew(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet("new", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	feature := fs.String("feature", "", "Feature-Slug für prd, design und plan")
-	types := fs.String("type", "", "Artefakttypen, kommagetrennt: prd, design, plan, adr, doc, arc42 (Standard mit --feature: prd,design)")
+	types := fs.String("type", "", "Artefakttypen, kommagetrennt: prd, design, plan, adr, doc, arc42, initiative, epic (Standard mit --feature: prd,design)")
 	title := fs.String("title", "", "Titel des Artefakts")
 	slug := fs.String("slug", "", "Slug für adr und doc (Standard: aus dem Titel abgeleitet)")
+	covers := fs.String("covers", "", "Anforderungen R<n>, die ein Epic übernimmt (kommagetrennt)")
 	touches := fs.String("touches", "", "Erklärte Änderungsabsicht als kommagetrennte Pfad-Globs")
 	archiveAfter := fs.String("archive-after", "", "Archivierungsstichtag YYYY-MM-DD")
 	dryRun := fs.Bool("dry-run", false, "Nur anzeigen, was angelegt würde")
@@ -105,6 +107,7 @@ func runNew(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		Slug:         strings.TrimSpace(*slug),
 		ArchiveAfter: strings.TrimSpace(*archiveAfter),
 		Touches:      splitList(*touches),
+		Covers:       splitList(*covers),
 		Today:        time.Now(),
 	})
 	if err != nil {
