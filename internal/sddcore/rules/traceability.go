@@ -28,7 +28,7 @@ func activeArtifacts(ctx *Context, spec string) ([]scan.Artifact, error) {
 	archive := strings.TrimSpace(ctx.Config.Artifacts.Archive)
 	var out []scan.Artifact
 	for _, a := range list {
-		if inactiveStatuses[a.Frontmatter.Status] || (archive != "" && scan.InSpec(a.Path, archive)) {
+		if inactiveStatuses[a.Frontmatter.Status] || (archive != "" && scan.InSpec(a.Path, archive)) || !readyForRules(a) {
 			continue
 		}
 		out = append(out, a)

@@ -198,6 +198,47 @@ func promptList() []prompt {
 					"3. sdd_gate mit gate pre-merge: Besteht das Gate? Erkläre jeden Befund mit sdd_explain.\n" +
 					"4. Fasse zusammen: was fertig ist, was fehlt, der nächste Schritt. Schlage Korrekturen vor, aber führe sie nur nach Zustimmung aus.\n"
 			}},
+		{Name: "sdd-ingest-bmad", Title: "BMAD-Bestand übernehmen", Description: "Übernimmt Initiative und Epics eines BMAD-Projekts in die Artefakte von sdd: Anforderungen R<n> unverändert, Done-when-Punkte als AC<n>, Constraints als Verfassung mit Fundstelle, verworfene Optionen als ADR.",
+			Arguments: []promptArg{},
+			rules:     []string{"SDD-001", "SDD-002a", "SDD-003", "SDD-010", "SDD-080", "SDD-081"},
+			body: func(map[string]string) string {
+				return "Übernimm den BMAD-Bestand dieses Projekts in sdd. Der Ledger unter `_bmad-output/` bleibt unverändert — du liest ihn nur (ADR 0009).\n\n" +
+					"Vorgehen:\n" +
+					"1. sdd_stack und sdd_next: Wie ist das Projekt aufgebaut, und welcher Schritt steht an?\n" +
+					"2. sdd_read auf die Initiative (`artifacts.initiative`, meist `_bmad-output/<initiative>/initiative-*.md`) und auf jedes Epic (`_bmad-output/**/tickets/**/epic-*.md`). Liste mir, was du gefunden hast: Zahl der Anforderungen, Zahl der Epics, welche Anforderungen welches Epic nennt.\n" +
+					"3. **Anforderungen:** Lege die Initiative mit `sdd_new` (types: [initiative]) an bzw. ergänze sie mit `sdd_write` (base_sha256 aus sdd_read). Übernimm die Anforderungen R<n> **wörtlich und in derselben Reihenfolge**, je als Listenzeile `- **R1** …`. Nichts umnummerieren, nichts zusammenfassen, nichts ergänzen, was nicht in der Quelle steht.\n" +
+					"4. **Epics:** Lege je Epic ein Feature-Artefakt unter `artifacts.prd` an (`sdd_new` mit types: [epic], feature: der Slug des Epics, covers: die Kennungen aus dem Epic). Übernimm Beschreibung, Nicht-Ziele und die Done-when-Punkte; formuliere aus jedem Done-when-Punkt genau ein Akzeptanzkriterium AC<n> und frage mich bei Punkten, die nicht prüfbar sind, statt sie zu glätten. Solange ein Epic noch nicht verfeinert ist, bleibt `refined: false` stehen.\n" +
+					"5. **Verfassung:** Der Bestand liefert die dauerhaften Regeln: Stack, Sicherheit, Betrieb, Grenzen. Schlage sie Abschnitt für Abschnitt vor — Architektur, Security, Standards — und nenne zu jeder Regel die Fundstelle (Datei und Abschnitt). Frage nach jeder Regel; übernimm nur, was ich bestätige. Keine Feature-Inhalte, keine Anforderungen, keine Epics (SDD-003).\n" +
+					"6. **Verworfene Optionen und Entscheidungen** („Verworfen“, Decisions) gehören in je ein ADR: Alternativen, Entscheidung, Konsequenzen. Lege sie mit `sdd_new` (types: [adr]) als `status: proposed` an; entschieden und gelockt wird vom Menschen (sdd_adr_accept, sdd_baseline — kritisch, jede Ausführung einzeln).\n" +
+					"7. Prüfe jeden Entwurf mit sdd_validate_draft, bevor du ihn speicherst, und lies nach dem Speichern mit sdd_read gegen.\n" +
+					"8. Zum Schluss sdd_next und eine Zusammenfassung: welche Dateien entstanden sind, welche Anforderungen noch kein Epic nennen (SDD-081), und ob die Verfassung noch Platzhalter trägt.\n" +
+					"Ändere nie eine Datei unter `_bmad-output/`; sie ist Quelle, nicht Ziel.\n"
+			}},
+		{Name: "sdd-architecture", Title: "Architektur-Spine erarbeiten", Description: "Erarbeitet die Architektur aus dem Bestand: Tech-Stack belegt, arc42-Abschnitte gefüllt, je Entscheidung ein ADR — und daraus die Architektur- und Sicherheitsregeln der Verfassung.",
+			Arguments: []promptArg{},
+			rules:     []string{"SDD-001", "SDD-002a", "SDD-010", "SDD-011"},
+			body: func(map[string]string) string {
+				return "Erarbeite mit mir die Architektur dieses Projekts. Sie kommt **vor** der Verfassung: Regeln über ein System, das noch nicht entworfen ist, wären Behauptungen.\n\n" +
+					"Vorgehen:\n" +
+					"1. **Bestand belegen:** sdd_stack (Sprachen, Dateien, Testarten) und sdd_read auf README, Agenten-Dateien, vorhandene Doku und — falls vorhanden — die Initiative (Constraints). Nichts erfinden, was nicht im Repository steht; was fehlt, wird eine offene Frage.\n" +
+					"2. **Spine festlegen:** die Entscheidungen, die alles Weitere binden — Bausteine und ihre Grenzen, Schnittstellen und Datenmodelle, Ablage und Benennung, Persistenz und Nebenläufigkeit, Sicherheitsgrenzen, Betriebsform, messbare Leistungsziele. Je Entscheidung: Optionen, gewählte Option, Begründung, Konsequenzen — auch die unangenehmen.\n" +
+					"3. **ADR je Entscheidung:** `sdd_new` (types: [adr]) als `status: proposed`, mit `references` auf die Quellen. Keine Entscheidung ohne ADR, kein ADR ohne Alternative.\n" +
+					"4. **arc42:** `sdd_new --type arc42`, falls die Doku fehlt; sonst mit `sdd_read`/`sdd_write` nachführen (base_sha256). Nur belegte Elemente, Mermaid für Kontext, Bausteine und die wichtigsten Abläufe.\n" +
+					"5. **Verfassung ableiten:** Aus der Spine die dauerhaften Regeln formulieren — Architektur und Layering, Sicherheit, Standards — Regel für Regel mit Fundstelle, jede von mir bestätigt. Keine Feature-Inhalte (SDD-003).\n" +
+					"6. Offene Punkte bleiben offen und stehen am Ende als Liste; erfinde keine Zahl, wo keine gemessen wurde. Prüfe jeden Entwurf mit sdd_validate_draft, bevor du ihn speicherst, und lies nach dem Speichern mit sdd_read gegen.\n"
+			}},
+		{Name: "sdd-epic-refine", Title: "Epic verfeinern", Description: "Legt die Requirements eines Epics fest: Anforderungen der Initiative prüfen, Akzeptanzkriterien schärfen, refined: true setzen und den Plan vorbereiten.",
+			Arguments: []promptArg{{"feature", "Slug des Epics", true}},
+			rules:     []string{"SDD-020", "SDD-021", "SDD-023", "SDD-080", "SDD-081"},
+			body: func(a map[string]string) string {
+				return "Verfeinere das Epic `" + a["feature"] + "`. Solange `refined: false` steht, sind seine Akzeptanzkriterien unverbindlich und kein Gate erwartet es.\n\n" +
+					"Vorgehen:\n" +
+					"1. sdd_read auf das Epic und auf die Initiative; nenne mir die Anforderungen, die das Epic in `covers` übernimmt, im Wortlaut.\n" +
+					"2. Frage eine Frage nach der anderen: Was gehört zu diesem Epic, was ausdrücklich nicht (Nicht-Ziele, mit Verweis auf das Nachbar-Epic)? Welche Randfälle entscheiden über Erfolg oder Misserfolg?\n" +
+					"3. Formuliere die Akzeptanzkriterien AC<n> aus den Antworten: prüfbar, ohne „schnell“, „einfach“, „benutzerfreundlich“. Jedes Kriterium nennt die Grenze, an der es scheitert.\n" +
+					"4. Setze `refined: true` erst, wenn die Kriterien stehen; schreibe erst nach meiner Bestätigung mit `sdd_write` (base_sha256 aus sdd_read) und prüfe vorher mit sdd_validate_draft.\n" +
+					"5. Danach sdd_check_intent mit den touches: Braucht das Epic eine Tech Spec? Wenn ja, biete den Ablauf sdd-techspec an; sonst den Plan (sdd-plan).\n"
+			}},
 	}
 }
 

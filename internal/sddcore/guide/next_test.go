@@ -381,3 +381,101 @@ func TestNextDraftHintDocumented(t *testing.T) {
 		t.Error("handbook does not describe the draft hint")
 	}
 }
+
+// bmad-import AC-6: with `pipeline: bmad` the initiative comes before the features; an epic with `refined: false`
+// shows one open refine step instead of "PRD fehlt". Without the pipeline the guide is unchanged.
+func TestNextInitiativeStep(t *testing.T) {
+	root := t.TempDir()
+	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: "standard", Project: "gallery", Pipeline: "bmad"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := plan.Apply(root); err != nil {
+		t.Fatal(err)
+	}
+	g, err := guide.Next(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Initiative == nil || g.Initiative.State != guide.StateOpen || g.Initiative.ID != "initiative" {
+		t.Fatalf("empty initiative: %+v", g.Initiative)
+	}
+	write(t, root, "docs/initiative.md", "---\ntype: initiative\n---\n\n# I\n\n## Requirements\n\n- **R1** eins\n- **R2** zwei\n")
+	g, err = guide.Next(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Initiative == nil || g.Initiative.State != guide.StateDone || !strings.Contains(g.Initiative.Detail, "2 Anforderungen") {
+		t.Fatalf("filled initiative: %+v", g.Initiative)
+	}
+}
+
+// bmad-import AC-6: as long as only the BMAD ledger holds the initiative, the step names the take-over, not a new file.
+func TestNextInitiativeFromLedger(t *testing.T) {
+	root := t.TempDir()
+	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: "standard", Project: "gallery", Pipeline: "bmad"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := plan.Apply(root); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(root, "docs/initiative.md")); err != nil {
+		t.Fatal(err)
+	}
+	write(t, root, "_bmad-output/initiative-gallery/initiative-gallery.md", "---\ntype: initiative\n---\n\n- **R1** eins\n")
+	g, err := guide.Next(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Initiative == nil || g.Initiative.Title != "Initiative übernehmen" || g.Initiative.State != guide.StateOpen {
+		t.Fatalf("ledger initiative: %+v", g.Initiative)
+	}
+	if !strings.Contains(g.Initiative.Detail, "_bmad-output/initiative-gallery/initiative-gallery.md") || !strings.Contains(g.Initiative.Command, "sdd-ingest-bmad") {
+		t.Errorf("step does not point to the ledger and the take-over: %+v", g.Initiative)
+	}
+}
+
+// bmad-import AC-6: an unrefined epic offers exactly one step and no gate.
+func TestNextEpicUnrefined(t *testing.T) {
+	root := t.TempDir()
+	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: "standard", Project: "gallery", Pipeline: "bmad"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := plan.Apply(root); err != nil {
+		t.Fatal(err)
+	}
+	write(t, root, "docs/prd/epic-plattform.md",
+		"---\nfeature: epic-plattform\nstatus: draft\ntype: epic\nparent: initiative\ncovers: [\"R1\"]\nrefined: false\n---\n\n# Epic\n")
+	g, err := guide.Next(root, "epic-plattform")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(g.Features) != 1 || len(g.Features[0].Steps) != 1 {
+		t.Fatalf("steps: %+v", g.Features)
+	}
+	if s := g.Features[0].Steps[0]; s.ID != "epic-refine" || s.State != guide.StateOpen {
+		t.Errorf("step: %+v", s)
+	}
+	write(t, root, "docs/prd/epic-plattform.md",
+		"---\nfeature: epic-plattform\nstatus: draft\ntype: epic\nparent: initiative\ncovers: [\"R1\"]\nrefined: true\n---\n\n# Epic\n")
+	g, err = guide.Next(root, "epic-plattform")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(g.Features[0].Steps) < 5 || g.Features[0].Steps[0].ID != "prd" {
+		t.Errorf("refined epic keeps the plain feature steps: %+v", g.Features[0].Steps)
+	}
+}
+
+// bmad-import AC-6: a project without the BMAD pipeline has no initiative step.
+func TestNextWithoutBMADHasNoInitiative(t *testing.T) {
+	g, err := guide.Next(project(t), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.Initiative != nil {
+		t.Errorf("initiative step without pipeline: %+v", g.Initiative)
+	}
+}

@@ -168,6 +168,8 @@ export interface FeatureGuide {
 export interface Guide {
   features: FeatureGuide[];
   start?: Step;
+  /** Macro step of the BMAD pipeline (ADR 0009): the initiative with its requirements R<n>. */
+  initiative?: Step;
   /** Project steps of sdd next, independent of a feature. */
   constitution?: Step;
   adoption?: Step;

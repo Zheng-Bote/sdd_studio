@@ -15,10 +15,13 @@ const DefaultConfigFileName = "sdd.config.yaml"
 var ErrConfigNotFound = errors.New("keine Projektkonfiguration gefunden; `sdd adopt` oder `sdd init` ausführen")
 
 type Config struct {
-	Version    int              `yaml:"version"`
-	Profile    string           `yaml:"profile"`
-	Language   string           `yaml:"language"`
-	BaseRef    string           `yaml:"base_ref"`
+	Version  int    `yaml:"version"`
+	Profile  string `yaml:"profile"`
+	Language string `yaml:"language"`
+	BaseRef  string `yaml:"base_ref"`
+	// Pipeline selects the process shape: "" or "sdd" keeps the plain feature process, "bmad" adds the macro level
+	// (initiative and epics) and its rules SDD-080 to SDD-082 (ADR 0009).
+	Pipeline   string           `yaml:"pipeline"`
 	Artifacts  ArtifactsConfig  `yaml:"artifacts"`
 	Tests      TestsConfig      `yaml:"tests"`
 	Thresholds ThresholdsConfig `yaml:"thresholds"`
@@ -38,6 +41,22 @@ type ArtifactsConfig struct {
 	Docs         []string `yaml:"docs"`
 	// Architecture is the arc42 architecture documentation (ADR 0006); empty means DefaultArchitecture.
 	Architecture string `yaml:"architecture"`
+	// Initiative is the macro artifact with the numbered requirements R<n> (ADR 0009); empty means DefaultInitiative.
+	Initiative string `yaml:"initiative"`
+}
+
+// DefaultInitiative is where `sdd init --pipeline bmad` puts the initiative unless configured.
+const DefaultInitiative = "docs/initiative.md"
+
+// PipelineBMAD is the pipeline value that enables the macro level and its rules.
+const PipelineBMAD = "bmad"
+
+// InitiativePath is the configured initiative, or DefaultInitiative.
+func (a ArtifactsConfig) InitiativePath() string {
+	if p := strings.TrimSpace(a.Initiative); p != "" {
+		return p
+	}
+	return DefaultInitiative
 }
 
 // DefaultArchitecture is where `sdd new --type arc42` puts the architecture documentation unless configured.
@@ -110,6 +129,11 @@ func (c *Config) Validate() error {
 	case "minimal", "standard", "regulated":
 	default:
 		return fmt.Errorf("ungültiges Profil %q (erlaubt: minimal, standard, regulated)", c.Profile)
+	}
+	switch strings.TrimSpace(c.Pipeline) {
+	case "", "sdd", PipelineBMAD:
+	default:
+		return fmt.Errorf("ungültige Pipeline %q (erlaubt: sdd, bmad oder leer)", c.Pipeline)
 	}
 	for _, l := range c.ConstitutionSections {
 		if strings.TrimSpace(l) == "" {

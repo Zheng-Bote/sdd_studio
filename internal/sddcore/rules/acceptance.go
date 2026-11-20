@@ -81,7 +81,7 @@ func activePRDs(ctx *Context) ([]scan.Artifact, error) {
 	}
 	var out []scan.Artifact
 	for _, a := range list {
-		if !inactiveStatuses[a.Frontmatter.Status] {
+		if !inactiveStatuses[a.Frontmatter.Status] && readyForRules(a) {
 			out = append(out, a)
 		}
 	}

@@ -41,6 +41,9 @@ func registerBuiltins(r *Registry) {
 	})
 	r.Register("catalog_gate_coverage", checkSDD072)
 	r.Register("catalog_error_contract", checkSDD073)
+	r.Register("epic_requirement_anchor", checkSDD080)
+	r.Register("requirement_coverage", checkSDD081)
+	r.Register("ticket_index_consistent", checkSDD082)
 }
 
 // checkSDD070 (SDD-070): Every rule in the catalog is documented in the handbook with a heading containing its ID.

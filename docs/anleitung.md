@@ -225,7 +225,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: Zheng-Bote/sdd_studio@v0.7.0
+         - uses: Zheng-Bote/sdd_studio@v0.8.0
            with:
              gate: pre-merge
      pre-release:
@@ -235,7 +235,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: Zheng-Bote/sdd_studio@v0.7.0
+         - uses: Zheng-Bote/sdd_studio@v0.8.0
            with:
              gate: pre-release
    ```
@@ -255,6 +255,43 @@ Dann den Branch pushen, als Pull Request öffnen und mergen.
 - **Neue Einträge nur bewusst:** `sdd baseline --accept <regel-id> --gate <gate>`, als eigener Commit mit Begründung im Pull Request. Für `SDD-050`, `SDD-051` und `SDD-070`–`SDD-073` ist das verboten.
 - **Längst umgesetzte Features** auf `status: implemented` setzen; vor dem ersten Release archivieren (`SDD-050`, siehe unten).
 - **Neue Features** laufen ab jetzt wie im Alltag beschrieben. `sdd report` zeigt den Trend des Schuldenstands.
+
+---
+
+## C) Projekt mit BMAD-Vorgeschichte
+
+Ist das Vorhaben mit BMAD begonnen — eine Initiative mit Anforderungen `R1`, `R2`, …, Epics mit „Done when“-Punkten, eine Architektur-Spine —, übernimmt `sdd` die Makro-Ebene statt sie zu ignorieren ([ADR 0009](../docs/adr/0009-bmad-import-statt-zweitem-prozess.md)).
+
+### 1. Übernehmen
+
+```text
+sdd adopt                                  # Probelauf: Bericht mit erkannter Initiative und den Epics
+sdd adopt --apply                          # Branch sdd/adopt, Verfassungsgerüst, Baseline
+```
+
+Der Bericht nennt `pipeline: bmad` und die gefundene Initiative. Der Ledger unter `_bmad-output/` bleibt unverändert; `sdd` liest ihn nur.
+
+### 2. Inhalte übernehmen
+
+Im KI-Desktop (oder einem MCP-Client) den Ablauf **`sdd-ingest-bmad`** starten. Er übernimmt die Anforderungen `R<n>` **wörtlich**, formuliert aus den Done-when-Punkten je Epic die Akzeptanzkriterien `AC-<n>`, schlägt die Constraints als Verfassungsregeln mit Fundstelle vor und legt die verworfenen Optionen als ADR an. Jede Änderung bestätigst du einzeln.
+
+### 3. Architektur vor Verfassung
+
+Fehlt die Architektur — der häufigste Fall —, folgt **`sdd-architecture`**: Bausteine, Schnittstellen, Datenmodell, Ablage, Sicherheitsgrenzen, Leistungsziele, je Entscheidung ein ADR, dazu die arc42-Doku. **Erst danach** füllt `sdd-constitution` die Abschnitte Architektur und Sicherheit. Regeln über ein System, das noch nicht entworfen ist, wären Behauptungen.
+
+### 4. Epics verfeinern
+
+Ein Epic trägt `refined: false`, bis seine Requirements stehen. `sdd next` zeigt genau einen Schritt — „Epic verfeinern“ —, und `sdd-epic-refine` führt durch die Fragen; erst mit `refined: true` greifen `SDD-021`, `SDD-022` und die übrigen Feature-Regeln.
+
+### 5. Prüfen
+
+```text
+sdd lint                       # SDD-080: jedes Epic nennt eine Anforderung; SDD-081: jede Anforderung ist gedeckt
+sdd baseline                   # den Ist-Zustand einfrieren, damit der Bestand nicht am ersten Tag scheitert
+sdd gate pre-merge
+```
+
+Die drei Regeln laufen nur bei `pipeline: bmad`. Ohne das Feld bleibt ein Projekt unberührt.
 
 ---
 

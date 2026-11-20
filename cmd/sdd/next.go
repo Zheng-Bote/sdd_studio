@@ -39,6 +39,12 @@ func runNext(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		}
 		return 0
 	}
+	if i := g.Initiative; i != nil {
+		fmt.Fprintf(stdout, "Vorhaben: %s\n  %s\n", i.Title, i.Detail)
+		if i.Command != "" {
+			fmt.Fprintf(stdout, "  → %s\n", i.Command)
+		}
+	}
 	if c := g.Constitution; c != nil {
 		fmt.Fprintf(stdout, "Zuerst: %s\n  %s\n  → %s\n", c.Title, c.Detail, c.Command)
 	}

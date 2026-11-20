@@ -1,0 +1,46 @@
+---
+feature: {{.Slug}}
+status: draft
+archive-after:{{if .ArchiveAfter}} {{.ArchiveAfter}}{{end}}
+touches:{{if not .Touches}} []{{end}}
+{{- range .Touches}}
+  - {{.}}
+{{- end}}
+type: epic
+parent: {{.Parent}}
+covers:{{if not .Covers}} []{{end}}
+{{- range .Covers}}
+  - {{.}}
+{{- end}}
+refined: false
+---
+
+# Epic — {{.Title}} (`{{.Slug}}`)
+
+Ein Epic ist ein Feature der Makro-Ebene (ADR 0009): Es übernimmt Anforderungen `R-<n>` der Initiative
+`{{.Parent}}` und wird beim Verfeinern zur umsetzbaren Spec. Solange `refined: false` steht, sind die
+Akzeptanzkriterien unverbindlich und kein Gate erwartet sie (SDD-021/022).
+
+## Description
+
+<Was wird gebaut, und welchen Teil des Vorhabens deckt es ab?>
+
+## Outcome
+
+<Was ist nach dem Epic anders, aus Sicht der Nutzer?>
+
+## Nicht-Ziele
+
+- <Was ausdrücklich nicht dazugehört und zu welchem Nachbar-Epic es gehört>
+
+## Akzeptanzkriterien
+
+Aus den „Done when“-Punkten des Epics; jedes Kriterium ist prüfbar und behält seine Kennung.
+
+- **AC-1** <Prüfbares Kriterium>
+- **AC-2** <…>
+
+## References
+
+- Initiative — `{{.Parent}}`, Abschnitte Requirements ({{.CoverList}}) und Boundaries
+- <weitere Quellen>

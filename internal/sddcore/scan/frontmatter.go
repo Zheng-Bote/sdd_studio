@@ -14,6 +14,14 @@ type Frontmatter struct {
 	ArchiveAfter string   `yaml:"archive-after"`
 	Touches      []string `yaml:"touches"`
 	Release      string   `yaml:"release"`
+
+	// Macro fields of the BMAD pipeline (ADR 0009). They are read, never required: an artifact without them keeps the
+	// plain feature behaviour.
+	Type      string   `yaml:"type"`      // "initiative" or "epic" for the macro level
+	Parent    string   `yaml:"parent"`    // the initiative an epic belongs to
+	Covers    []string `yaml:"covers"`    // requirements R<n> an epic covers
+	Refined   *bool    `yaml:"refined"`   // false marks an epic whose requirements are not settled yet
+	Unplanned []string `yaml:"unplanned"` // requirements an initiative deliberately leaves unplanned (SDD-081)
 }
 
 // ParseFrontmatter extracts a YAML frontmatter block delimited by `---` lines at the very start of the file.
@@ -49,6 +57,17 @@ func ParseFrontmatter(data []byte) (Frontmatter, bool) {
 }
 
 var adrFileRegex = regexp.MustCompile(`^[0-9]{4}-.*\.md$`)
+
+// IsEpic reports whether the artifact declares itself an epic of the macro level (ADR 0009).
+func (f Frontmatter) IsEpic() bool { return strings.EqualFold(strings.TrimSpace(f.Type), "epic") }
+
+// IsInitiative reports whether the artifact declares itself an initiative of the macro level (ADR 0009).
+func (f Frontmatter) IsInitiative() bool {
+	return strings.EqualFold(strings.TrimSpace(f.Type), "initiative")
+}
+
+// EpicUnrefined reports an epic that carries `refined: false`: its requirements are not settled yet.
+func (f Frontmatter) EpicUnrefined() bool { return f.IsEpic() && f.Refined != nil && !*f.Refined }
 
 // IsADRFileName reports whether a file name follows the ADR convention NNNN-*.md.
 func IsADRFileName(name string) bool {
