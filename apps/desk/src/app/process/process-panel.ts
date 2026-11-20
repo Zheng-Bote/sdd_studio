@@ -14,7 +14,7 @@ const STATE_LABEL: Record<Step['state'], string> = {
   later: 'später',
 };
 
-/** Process state from sdd next and the guided flows of sdd mcp. */
+/** The two floors of `sdd next`: the macro level (initiative and project steps) and the features. */
 @Component({
   selector: 'desk-process-panel',
   imports: [HlmButtonImports, HlmBadgeImports, HlmInputImports, HlmSeparatorImports],
@@ -37,29 +37,47 @@ const STATE_LABEL: Record<Step['state'], string> = {
       }
     </section>
     <hlm-separator />
-    <section aria-labelledby="state-title" class="space-y-2">
+    @if (hasVorhaben()) {
+      <section aria-labelledby="vorhaben-title" class="space-y-2">
+        <h2 id="vorhaben-title" class="text-sm font-semibold">Vorhaben</h2>
+        @if (guide()?.initiative; as ini) {
+          <div class="rounded-md border p-2" data-testid="initiative-step">
+            <div class="flex items-center gap-1.5 text-xs">
+              <span hlmBadge [variant]="ini.state === 'open' ? 'default' : 'secondary'">{{ label(ini.state) }}</span>
+              <span class="font-medium">{{ ini.title }}</span>
+            </div>
+            <p class="mt-0.5 text-xs text-muted-foreground">{{ ini.detail }}</p>
+            @if (ini.command) {
+              <code class="mt-0.5 block text-xs wrap-anywhere">{{ ini.command }}</code>
+            }
+          </div>
+        }
+        @for (s of projectSteps(); track s.id) {
+          <div class="rounded-md border p-2" data-testid="project-step">
+            <div class="flex items-center gap-1.5 text-xs">
+              <span hlmBadge [variant]="s.state === 'open' ? 'default' : 'secondary'">{{ label(s.state) }}</span>
+              <span class="font-medium">{{ s.title }}</span>
+            </div>
+            <p class="mt-0.5 text-xs text-muted-foreground">{{ s.detail }}</p>
+            @if (s.command) {
+              <code class="mt-0.5 block text-xs wrap-anywhere">{{ s.command }}</code>
+            }
+          </div>
+        }
+        @if (guide()?.start; as s) {
+          <p class="text-sm">{{ s.title }}</p>
+          <p class="text-xs text-muted-foreground">{{ s.detail }}</p>
+        }
+      </section>
+      <hlm-separator />
+    }
+    <section aria-labelledby="features-title" class="space-y-2">
       <div class="flex items-center justify-between">
-        <h2 id="state-title" class="text-sm font-semibold">Prozessstand</h2>
+        <h2 id="features-title" class="text-sm font-semibold">Features</h2>
         <button hlmBtn size="xs" variant="ghost" type="button" (click)="refresh()">Aktualisieren</button>
       </div>
-      @for (s of projectSteps(); track s.id) {
-        <div class="rounded-md border p-2" data-testid="project-step">
-          <div class="flex items-center gap-1.5 text-xs">
-            <span hlmBadge [variant]="s.state === 'open' ? 'default' : 'secondary'">{{ label(s.state) }}</span>
-            <span class="font-medium">{{ s.title }}</span>
-          </div>
-          <p class="mt-0.5 text-xs text-muted-foreground">{{ s.detail }}</p>
-          @if (s.command) {
-            <code class="mt-0.5 block text-xs wrap-anywhere">{{ s.command }}</code>
-          }
-        </div>
-      }
-      @if (guide()?.start; as s) {
-        <p class="text-sm">{{ s.title }}</p>
-        <p class="text-xs text-muted-foreground">{{ s.detail }}</p>
-      }
       @for (f of guide()?.features ?? []; track f.feature) {
-        <div class="rounded-md border p-2">
+        <div class="rounded-md border p-2" data-testid="feature">
           <div class="text-sm font-medium"><code>{{ f.feature }}</code></div>
           @if (f.next; as n) {
             <div class="mt-1 flex items-center gap-1.5 text-xs">
@@ -67,6 +85,9 @@ const STATE_LABEL: Record<Step['state'], string> = {
               {{ n.title }}
             </div>
             <p class="mt-0.5 text-xs text-muted-foreground">{{ n.detail }}</p>
+            @if (n.command) {
+              <code class="mt-0.5 block text-xs wrap-anywhere">{{ n.command }}</code>
+            }
           }
         </div>
       }
@@ -84,6 +105,8 @@ export class ProcessPanel {
     const g = this.guide();
     return [g?.constitution, g?.adoption, g?.architecture].filter((s): s is Step => !!s);
   });
+  /** The macro floor is shown only when sdd next reports something there (initiative, project steps or a start hint). */
+  protected readonly hasVorhaben = computed(() => !!this.guide()?.initiative || this.projectSteps().length > 0 || !!this.guide()?.start);
   protected readonly prompts = signal<PromptInfo[]>([]);
   protected readonly error = signal('');
   private readonly values = signal<Record<string, string>>({});
