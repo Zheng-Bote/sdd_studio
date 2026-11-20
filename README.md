@@ -10,6 +10,13 @@ Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) 
 
 Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 
+---
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+---
+
 ## Stand
 
 Letzte Version: **0.7.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.2.0` mit 23 Regeln. Neu: `sdd_commit` committet im KI-Desktop genannte Artefakte, Tests, Konfiguration und Prüfzustand nach einzelner Bestätigung, nie auf dem Standard-Branch. Die Seitenleiste zeigt die Projektschritte aus `sdd next`, `sdd next` nennt ein PRD im Entwurf, und `sdd_trace` verfolgt Qualitätsanforderungen `QA-<n>`. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern, Commit) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.7.0`.
@@ -177,3 +184,22 @@ go run ./cmd/sdd lint
 
 - **Kleine lokale Modelle:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher). Im Gegentest mit `qwen3:14b` erfand das Modell bei `sdd-conflicts` Pfade, Zeilen und Zitate und fand die eingebauten Widersprüche nicht; `sdd_conflicts_check` hätte jede dieser Meldungen verworfen, und den versuchten Schreibvorgang hielt die Freigabekarte auf. Auch `qwen3:32b` genügte nicht: Es rief die Prüfung auf, ohne Verfassung und Tech Spec gelesen zu haben, und fand nichts (rund 47 Minuten). Für `sdd-conflicts` taugen die getesteten lokalen Modelle nicht; belegt ist bisher nur Claude Sonnet 5.5.
 - **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.
+
+## Diskussion
+
+Alles zu abstrakt. Ggf. konzeptionell aufbauend auf die **Kombination von SpecDD, Spec Kit und BMAD**
+
+### Kombination von SpecDD, Spec Kit und BMAD
+
+- **BMAD** wird für **Makro-Planung** und **Systemarchitektur** verwendet, während **Spec Kit** für die **Feature-Implementierung** und **schnelle Iterationen** genutzt wird [Doc: /Volumes/1TB_NVME/Documents/obsidian-snippets/BMAD method und SpecKit kombinieren.md#BMAD method und SpecKit kombinieren].
+- **SpecDD** definiert die **systemweiten Regeln** (z. B. Sicherheitsvorgaben), die **Spec Kit** automatisch erbt [Doc: /Volumes/1TB_NVME/Documents/obsidian-snippets/BMAD method und SpecKit kombinieren.md#Schritt-für-Schritt-Anleitung für die Kombination].
+- **Integration Matrix:**
+    - **SpecDD** ist verantwortlich für **System-Intent**, **Architecture**, **Governance / Security**.
+    - **Spec Kit** ist verantwortlich für **Feature-Intent**, **Feature Planning**, **Feature Implementation**.
+    - Beide Tools sind für **Drift Control** verantwortlich [Doc: /Volumes/1TB_NVME/Documents/obsidian-snippets/SpecDD_SpecKit_Integration_EN.md#5. Integration Matrix].
+
+#### Vorteile der Kombination
+
+- **BMAD** sorgt für **tiefe fachliche und architektonische Klarheit** am Projektstart.
+- **Spec Kit** ermöglicht **schnelle, token-effiziente Feature-Iterationen** im Alltag.
+- **SpecDD** sorgt für **stabile, langfristige Systemarchitektur** und **Sicherheitsvorgaben**.
