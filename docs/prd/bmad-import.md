@@ -9,13 +9,21 @@ touches:
   - internal/sddcore/scaffold/**
   - internal/sddcore/guide/**
   - internal/sddcore/rules/**
+  - internal/sddcore/report/**
   - internal/mcp/**
+  - internal/desk/**
+  - cmd/sdd/**
   - apps/desk/src/**
+  - apps/desk/src-tauri/**
+  - apps/desk/package.json
+  - apps/desk/package-lock.json
   - catalog/**
   - templates/**
+  - docs/**
   - handbuch/**
   - README.md
   - CHANGELOG.md
+  - .gitignore
 ---
 
 # PRD — BMAD-Bestand übernehmen und als Strecke führen
