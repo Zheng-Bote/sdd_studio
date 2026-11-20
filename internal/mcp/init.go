@@ -16,10 +16,11 @@ const initNext = "thresholds.layers und thresholds.feature_artifacts_required_wh
 // checked before anything is written.
 func (s *Server) toolInit(raw json.RawMessage) (*toolResult, error) {
 	a, err := args[struct {
-		Profile string `json:"profile"`
-		NoCI    bool   `json:"no_ci"`
-		Git     bool   `json:"git"`
-		Apply   bool   `json:"apply"`
+		Profile  string `json:"profile"`
+		Pipeline string `json:"pipeline"`
+		NoCI     bool   `json:"no_ci"`
+		Git      bool   `json:"git"`
+		Apply    bool   `json:"apply"`
 	}](raw)
 	if err != nil {
 		return nil, err
@@ -34,7 +35,7 @@ func (s *Server) toolInit(raw json.RawMessage) (*toolResult, error) {
 	if abs, err := filepath.Abs(s.Root); err == nil {
 		project = filepath.Base(abs)
 	}
-	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: a.Profile, Project: project, CI: !a.NoCI})
+	plan, err := scaffold.InitPlan(scaffold.InitOptions{Profile: a.Profile, Project: project, CI: !a.NoCI, Pipeline: a.Pipeline})
 	if err != nil {
 		return nil, err
 	}

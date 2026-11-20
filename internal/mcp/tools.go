@@ -75,12 +75,13 @@ func baseTools() []tool {
 			InputSchema: obj(map[string]any{"path": str("Pfad relativ zum Repository, z. B. docs/design/<feature>.md; leer = Liste")}), Annotations: readOnly},
 		{Name: "sdd_validate_draft", Title: "Entwurf prüfen", Description: "Prüft einen noch nicht gespeicherten Artefakt-Entwurf mit den Regeln, als läge er schon unter path.",
 			InputSchema: obj(map[string]any{"path": str("Zielpfad relativ zum Repository"), "content": str("vollständiger Dateiinhalt")}, "path", "content"), Annotations: readOnly},
-		{Name: "sdd_new", Title: "Artefakt anlegen", Description: "Wie `sdd new`: ohne apply nur Vorschau mit Inhalt; apply legt neue Dateien an (nur wenn der Server mit --allow-write läuft), nie überschreibend. Mit content (genau ein Typ) wird dieser geprüfte Entwurf statt des Templates angelegt; bei einem Regel-Fehler wird nichts geschrieben.",
+		{Name: "sdd_new", Title: "Artefakt anlegen", Description: "Wie `sdd new`: ohne apply nur Vorschau mit Inhalt; apply legt neue Dateien an (nur wenn der Server mit --allow-write läuft), nie überschreibend. Mit content (genau ein Typ) wird dieser geprüfte Entwurf statt des Templates angelegt; bei einem Regel-Fehler wird nichts geschrieben. initiative und epic gehören zur Makro-Ebene der BMAD-Strecke (ADR 0009): ein Epic ist ein Feature-Artefakt mit covers auf die Anforderungen R<n>.",
 			InputSchema: obj(map[string]any{
-				"types": strs("prd, design, plan, adr, doc, arc42 (Architekturdoku, ohne title); leer = prd + design"), "feature": str("Feature-Slug"), "title": str("Titel"),
+				"types": strs("prd, design, plan, adr, doc, arc42 (Architekturdoku, ohne title), initiative, epic; leer = prd + design"), "feature": str("Feature-Slug"), "title": str("Titel"),
 				"content": str("vollständiger Inhalt statt des Templates (nur mit genau einem Typ)"),
-				"slug":    str("Slug für adr/doc"), "touches": strs("erklärte Änderungsabsicht"), "archive_after": str("YYYY-MM-DD"),
-				"apply": map[string]any{"type": "boolean", "description": "Dateien wirklich anlegen"},
+				"slug":    str("Slug für adr/doc/epic"), "touches": strs("erklärte Änderungsabsicht"), "covers": strs("Anforderungen R<n>, die ein Epic übernimmt"),
+				"archive_after": str("YYYY-MM-DD"),
+				"apply":         map[string]any{"type": "boolean", "description": "Dateien wirklich anlegen"},
 			}), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
 		{Name: "sdd_write", Title: "Datei schreiben", Description: "Legt ein Artefakt oder eine Testdatei (tests.include) an oder ersetzt ihren Inhalt; sdd.config.yaml ändert nur sdd_config (kritisch). Ohne apply nur Vorschau (Diff bzw. Inhalt); apply nur mit --allow-write. Eine bestehende Datei nur mit base_sha256 aus sdd_read. Artefakte werden vorher mit den Regeln geprüft, ein Fehler verhindert das Schreiben; ein ADR auf accepted setzt dieses Werkzeug nie.",
 			InputSchema: obj(map[string]any{
@@ -90,10 +91,11 @@ func baseTools() []tool {
 			}, "path", "content"), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": true, "idempotentHint": true, "openWorldHint": false}},
 		{Name: "sdd_init", Title: "Projekt anlegen", Description: "Wie `sdd init [--git]`: Konfiguration, Verfassung, Verzeichnisse, CI-Workflow und leere Baseline, nie überschreibend. Mit git in einem Ordner ohne Git-Repository auch git init (Branch main) und ein erster Commit der angelegten Dateien. Ohne apply nur Vorschau; apply nur mit --allow-write.",
 			InputSchema: obj(map[string]any{
-				"profile": map[string]any{"type": "string", "enum": []string{"minimal", "standard", "regulated"}, "description": "Profil (Standard: standard)"},
-				"no_ci":   map[string]any{"type": "boolean", "description": "keinen GitHub-Actions-Workflow anlegen"},
-				"git":     map[string]any{"type": "boolean", "description": "ohne Repository: git init und erster Commit"},
-				"apply":   map[string]any{"type": "boolean", "description": "wirklich anlegen"},
+				"profile":  map[string]any{"type": "string", "enum": []string{"minimal", "standard", "regulated"}, "description": "Profil (Standard: standard)"},
+				"pipeline": map[string]any{"type": "string", "enum": []string{"sdd", "bmad"}, "description": "Streckenprofil (ADR 0009): bmad legt zusätzlich die Initiative an und schaltet SDD-080 bis SDD-082 ein"},
+				"no_ci":    map[string]any{"type": "boolean", "description": "keinen GitHub-Actions-Workflow anlegen"},
+				"git":      map[string]any{"type": "boolean", "description": "ohne Repository: git init und erster Commit"},
+				"apply":    map[string]any{"type": "boolean", "description": "wirklich anlegen"},
 			}), Annotations: map[string]any{"readOnlyHint": false, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false}},
 		{Name: "sdd_archive", Title: "Feature archivieren", Description: "Wie `sdd archive`: verschiebt PRD, Tech Spec und Plan eines Features nach artifacts.archive und setzt status: archived (optional release). Nur wenn kein PRD des Features mehr status: draft trägt und jedes Akzeptanzkriterium einen Testverweis hat; nach dem Release, nicht vor der Umsetzung. Ohne apply nur Vorschau; apply nur mit --allow-write.",
 			InputSchema: obj(map[string]any{
@@ -399,6 +401,7 @@ func (s *Server) toolNew(raw json.RawMessage) (*toolResult, error) {
 		Title        string   `json:"title"`
 		Slug         string   `json:"slug"`
 		Touches      []string `json:"touches"`
+		Covers       []string `json:"covers"`
 		ArchiveAfter string   `json:"archive_after"`
 		Content      string   `json:"content"`
 		Apply        bool     `json:"apply"`
@@ -421,7 +424,7 @@ func (s *Server) toolNew(raw json.RawMessage) (*toolResult, error) {
 	}
 	plan, err := scaffold.NewPlan(s.Root, cfg, scaffold.NewOptions{
 		Types: a.Types, Feature: strings.TrimSpace(a.Feature), Title: a.Title, Slug: strings.TrimSpace(a.Slug),
-		Touches: a.Touches, ArchiveAfter: strings.TrimSpace(a.ArchiveAfter), Today: s.Now(),
+		Touches: a.Touches, Covers: a.Covers, ArchiveAfter: strings.TrimSpace(a.ArchiveAfter), Today: s.Now(),
 	})
 	if err != nil {
 		return nil, err

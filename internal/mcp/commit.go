@@ -71,8 +71,8 @@ func (s *Server) toolCommit(raw json.RawMessage) (*toolResult, error) {
 			if err != nil {
 				return nil, err
 			}
-			if class == classContext {
-				return nil, fmt.Errorf("nicht committet: %s ist eine Kontextdatei", rel)
+			if class == classContext || class == classSource {
+				return nil, fmt.Errorf("nicht committet: %s ist nur lesbar (Kontextdatei oder BMAD-Ledger)", rel)
 			}
 		}
 		data, exists, err := readExisting(s.Root, rel)

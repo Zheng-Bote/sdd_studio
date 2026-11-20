@@ -156,8 +156,8 @@ func (s *Server) readReadable(rel string) (string, string, error) {
 	if cerr != nil {
 		return "", "", err
 	}
-	if class, cerr := classify(cfg, clean); cerr != nil || (class != classConfig && class != classTest && class != classContext) {
-		return "", "", fmt.Errorf("weder Artefakt, Konfiguration, Testdatei noch Kontextdatei: %s", clean)
+	if class, cerr := classify(cfg, clean); cerr != nil || (class != classConfig && class != classTest && class != classContext && class != classSource) {
+		return "", "", fmt.Errorf("weder Artefakt, Konfiguration, Testdatei, Kontextdatei noch BMAD-Quelle: %s", clean)
 	}
 	data, ok, rerr := readExisting(s.Root, clean)
 	if rerr != nil {

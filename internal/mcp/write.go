@@ -32,6 +32,7 @@ const (
 	classConfig
 	classTest
 	classContext // read only: README, agent files … (sources for the constitution)
+	classSource  // read only: the BMAD ledger _bmad-output/ (sources of the take-over, ADR 0009)
 )
 
 // contextFiles are project context files sdd_read may read (never write): sources for the constitution.
@@ -44,6 +45,10 @@ func classify(cfg *config.Config, rel string) (pathClass, error) {
 	first, _, _ := strings.Cut(rel, "/")
 	if first == ".git" || first == ".sdd" {
 		return classNone, fmt.Errorf("nicht beschreibbar: %s liegt in %s/", rel, first)
+	}
+	// The BMAD ledger is read before the exclude check: it is not an artifact, but the take-over has to read it.
+	if isBMADSource(rel) {
+		return classSource, nil
 	}
 	if scan.MatchAny(cfg.Exclude, rel) {
 		return classNone, fmt.Errorf("nicht beschreibbar: %s ist über exclude ausgenommen", rel)
@@ -78,6 +83,11 @@ func classify(cfg *config.Config, rel string) (pathClass, error) {
 		return classTest, nil
 	}
 	return classNone, fmt.Errorf("nicht beschreibbar: %s ist weder Artefakt, Konfiguration noch Testdatei (tests.include)", rel)
+}
+
+// isBMADSource reports a Markdown file of the BMAD ledger (ADR 0009): readable for the take-over, never writable.
+func isBMADSource(rel string) bool {
+	return strings.HasPrefix(rel, "_bmad-output/") && strings.EqualFold(path.Ext(rel), ".md")
 }
 
 // readExisting returns the current content of rel; exists is false if there is no file. Anything but a regular file
@@ -214,6 +224,9 @@ func (s *Server) toolWrite(raw json.RawMessage) (*toolResult, error) {
 	}
 	if class == classContext {
 		return nil, fmt.Errorf("nicht beschreibbar: %s ist eine Kontextdatei (nur lesbar)", rel)
+	}
+	if class == classSource {
+		return nil, fmt.Errorf("nicht beschreibbar: %s gehört zum BMAD-Ledger (nur lesbar, ADR 0009)", rel)
 	}
 	if class == classConfig {
 		return nil, fmt.Errorf("nicht beschreibbar mit sdd_write: %s ändert nur sdd_config (kritisch, ADR 0004)", rel)
