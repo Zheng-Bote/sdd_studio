@@ -34,8 +34,8 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 - [Tests](#tests)
 - [Nächste Schritte](#nachste-schritte)
 - [Diskussion](#diskussion)
-  - [Kombination von SpecDD, Spec Kit und BMAD](#kombination-von-specdd-spec-kit-und-bmad)
-    - [Vorteile der Kombination](#vorteile-der-kombination)
+  - [Was die Kombination trägt — und was `sdd` davon übernimmt](#was-die-kombination-tragt-und-was-sdd-davon-ubernimmt)
+  - [Der Ablauf für ein Projekt mit BMAD-Vorgeschichte](#der-ablauf-fur-ein-projekt-mit-bmad-vorgeschichte)
 
 </details>
 
