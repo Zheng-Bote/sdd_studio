@@ -15,3 +15,10 @@ config/llm.env
 /apps/desk/src-tauri/target/
 /apps/desk/src-tauri/gen/
 /apps/desk/src-tauri/binaries/
+
+# Go-Build-Cache im Arbeitsbereich (Sandbox-Läufe)
+/.gocache/
+
+# Lokale Quellen und Fremd-Bestände (nicht Teil des Projekts)
+/data/
+.DS_Store

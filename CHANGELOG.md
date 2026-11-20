@@ -2,6 +2,25 @@
 
 Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung [Semantic Versioning](https://semver.org/lang/de/). Der Regelkatalog trägt eine eigene Version (`catalog/catalog.yaml`).
 
+## [0.8.0] — 2026-11-20
+
+Regelkatalog `1.3.0` mit 26 Regeln. Grundlage ist [ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md) — [PRD](docs/prd/bmad-import.md), [Tech Spec](docs/design/bmad-import.md) — und die Notiz [Kombination von SpecDD, Spec Kit und BMAD](docs/notes/kombination-specdd-spec-kit-bmad.md).
+
+### Hinzugefügt
+
+- **Makro-Ebene für BMAD-Bestände** ([ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md)): `sdd.config.yaml` kennt `pipeline` (`sdd` oder `bmad`) und `artifacts.initiative` (Vorgabe `docs/initiative.md`). Mit `pipeline: bmad` führt `sdd` eine **Initiative** mit nummerierten Anforderungen (`R1`, `R2`, …) und **Epics**, die in `covers` nennen, welche Anforderungen sie übernehmen.
+- **`sdd adopt` erkennt BMAD v6** (`_bmad/`, `_bmad-output/`): Die Initiative wird als Typ Initiative klassifiziert, jede `epic-*.md` als Epic, `_bmad/**` und `**/.memlog.md` bleiben aus dem Inventar, und die vorgeschlagene Konfiguration trägt `pipeline: bmad`. Makro-Artefakte bekommen kein `feature:`-Frontmatter und werden nie umgeschrieben. Ohne `_bmad/` bleibt jedes Verhalten wie bisher.
+- **`sdd init --pipeline bmad`** schreibt die Initiative aus einem Template und legt den Epic-Ordner an; **`sdd new --type initiative|epic`** legt beide an (Epic mit `parent`, `covers`, `refined: false`).
+- **Drei Regeln für die Makro-Ebene:** `SDD-080` jedes Epic übernimmt mindestens eine existierende Anforderung (`error`, pre-implementation und pre-merge), `SDD-081` jede Anforderung ist gedeckt oder im Frontmatter `unplanned` genannt (`warn`), `SDD-082` `tickets.toml` und die Epic-Dateien nennen dieselben Slugs (`warn`). Alle drei prüfen nur bei `pipeline: bmad`.
+- **`sdd next` und der Desktop zeigen zwei Etagen:** die Makrostationen (Initiative, Verfassung, Übernahme, Architektur) vor den Features; ein Epic mit `refined: false` erscheint als ein offener Schritt „Epic verfeinern“ statt als unfertiges Feature, und die Regeln `SDD-021`, `SDD-022`, `SDD-023`, `SDD-031` und `SDD-041` überspringen es.
+- **Drei geführte Abläufe:** `sdd-ingest-bmad` (Anforderungen wörtlich übernehmen, Done-when → `AC-<n>`, Constraints mit Fundstelle in die Verfassung, verworfene Optionen als ADR), `sdd-architecture` (Spine aus dem Bestand, arc42, ADR je Entscheidung) und `sdd-epic-refine` (Requirements festlegen, `refined: true`).
+- **`sdd_read` liest den BMAD-Ledger** (`_bmad-output/**/*.md`) als Quelle; `sdd_write` und `sdd_commit` lehnen ihn ab. `sdd_new` nimmt `covers`, `sdd_init` nimmt `pipeline`.
+
+### Geändert
+
+- **Notiz als Quelle:** die Diskussionsnotiz liegt jetzt unter [`docs/notes/`](docs/notes) und ist versioniert; `data/` (lokale Bestände, Obsidian-Ablage) steht in `.gitignore`.
+- Katalogversion `1.3.0`; der Test, der die Katalogversion prüft, verlangt jetzt mindestens die Version, in der `SDD-012` entstand.
+
 ## [0.7.0] — 2026-11-08
 
 Regelkatalog unverändert `1.2.0` mit 23 Regeln. Grundlage von `sdd_commit` ist [ADR 0008](docs/adr/0008-commit-werkzeug-im-ki-desktop.md).

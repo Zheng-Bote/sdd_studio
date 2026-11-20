@@ -191,6 +191,14 @@ Das Programm hat fünf Betriebsarten, alle aus demselben Kern:
 6  Doku/Exploration  alles andere: Notizen, Recherche, Leitfäden
 ```
 
+Mit `pipeline: bmad` ([ADR 0009](adr/0009-bmad-import-statt-zweitem-prozess.md)) kommen zwei Typen der **Makro-Ebene** hinzu. Sie sind keine Feature-Artefakte: kein `feature:`-Feld, kein AC-Zwang, und `SDD-021` bis `SDD-041` greifen für sie nicht:
+
+```text
+7  Initiative        System-PRD mit Anforderungen R1, R2, …, Constraints, Nicht-Zielen (einmal je Vorhaben)
+8  Epic              eine Fähigkeit des Vorhabens; covers nennt die übernommenen Anforderungen,
+                     refined: false bedeutet: Requirements noch nicht festgelegt
+```
+
 Der sechste Typ hat bewusst weniger Regeln: kein `feature:`-Feld, kein AC-Zwang, kein Plan. Er hat nur einen Status (`active` | `archived`) und darf nicht unter `prd`, `design` oder `plans` liegen — sonst würde er die Feature-Prüfungen auslösen. Ohne diesen Typ müsste `sdd adopt` in jedem echten Repository Dokumente falsch klassifizieren oder ignorieren, und beides wäre eine Lüge im Bericht.
 
 ---
@@ -413,6 +421,10 @@ version: 1
 profile: standard
 language: de
 
+# Streckenprofil (ADR 0009): leer oder "sdd" = reine Feature-Strecke,
+# "bmad" ergänzt Initiative und Epics und schaltet SDD-080 bis SDD-082 ein.
+pipeline: ""
+
 # Basis für `git diff <base>...HEAD` in Gate 2 und SDD-024.
 # Leer = automatisch ermitteln: in CI $GITHUB_BASE_REF (bzw. $CI_MERGE_REQUEST_TARGET_BRANCH_NAME),
 # lokal der Upstream des Branches (`@{upstream}`, außer der eigenen entfernten Kopie
@@ -433,6 +445,7 @@ artifacts:
     - docs/notes
     - docs/research
   architecture: docs/arc42.md   # Architekturdoku nach arc42 (sdd new --type arc42), Standard docs/arc42.md
+  initiative: docs/initiative.md  # Makro-Ebene, nur bei pipeline: bmad (Artefakttyp 7), Standard docs/initiative.md
 
 tests:
   # Prüfbereich für SDD-021/SDD-022 (hier im Beispiel ein Go-Projekt).

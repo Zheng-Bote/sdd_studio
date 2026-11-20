@@ -45,7 +45,7 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 
 ## Stand
 
-Letzte Version: **0.7.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.2.0` mit 23 Regeln. Neu: `sdd_commit` committet im KI-Desktop genannte Artefakte, Tests, Konfiguration und Prüfzustand nach einzelner Bestätigung, nie auf dem Standard-Branch. Die Seitenleiste zeigt die Projektschritte aus `sdd next`, `sdd next` nennt ein PRD im Entwurf, und `sdd_trace` verfolgt Qualitätsanforderungen `QA-<n>`. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern, Commit) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.7.0`.
+Letzte Version: **0.8.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.3.0` mit 26 Regeln. Neu: **BMAD-Bestand übernehmen** (`sdd adopt` erkennt `_bmad/` und `_bmad-output/`, `sdd init --pipeline bmad`, `sdd new --type initiative|epic`) mit der Makro-Ebene aus Initiative (Anforderungen `R1`, `R2`, …) und Epics, drei Regeln `SDD-080`–`SDD-082` und den Abläufen `sdd-ingest-bmad`, `sdd-architecture`, `sdd-epic-refine`. Die Seitenleiste des Desktops trennt „Vorhaben“ und „Features“. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern, Commit) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.8.0`.
 
 - **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
@@ -62,6 +62,7 @@ Letzte Version: **0.7.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.2.0` m
 | PRD & Akzeptanzkriterien | `SDD-021` stabile Kennung `AC-<n>`, `SDD-023` Nicht-Ziele genannt, `SDD-022` in Tests referenziert (mit Feature-Slug, sobald es mehr als ein Feature gibt), `SDD-025` Kennung in Testdeklaration oder -rumpf, `SDD-031` Tech Spec nennt die umgesetzten AC-Kennungen |
 | Umfang & Plan | `SDD-024` Diff weicht nicht von der erklärten Absicht (`touches`) ab, `SDD-040` Plan vor der ersten Task, `SDD-041` jede Task nennt ein Akzeptanzkriterium |
 | Archiv | `SDD-050` abgeschlossene Features vor dem Release archiviert, `SDD-051` aktive Artefakte verweisen nicht auf archivierte |
+| Makro-Ebene (BMAD) | `SDD-080` jedes Epic übernimmt eine Anforderung der Initiative, `SDD-081` jede Anforderung ist gedeckt oder als nicht geplant genannt, `SDD-082` Epic-Index und Epic-Dateien nennen dieselben Slugs — nur bei `pipeline: bmad` |
 | Selbstschutz | `SDD-070` – `SDD-073`: Katalog, Handbuchabschnitte, Prüfverträge, Laufzeit-Checks |
 
 Jede Regel erklärt `sdd explain <regel-id>`. **Baseline & Ratchet:** gate-gebundene Baseline (`.sdd/baseline.json`) mit `content_hash`, deterministischem `ordinal` und Schutz für `baseline: forbidden`.
@@ -93,10 +94,10 @@ make uninstall       # alles wieder entfernen
 | `sdd lint [--json] [--gate <gate>]` | Befunde für das ganze Projekt |
 | `sdd gate <pre-implementation\|pre-merge\|pre-release> [--json] [--feature <slug>[,…]] [--paths <globs>]` | Gate prüfen, Exit-Code `0`/`1`/`2` |
 | `sdd baseline [--gate <gate>] [--prune] [--accept <regel-id>]` | Bestand einfrieren, quittieren (`--accept SDD-011` schreibt das ADR-Lockfile) |
-| `sdd init [--profile minimal\|standard\|regulated] [--dry-run] [--no-ci] [--git]` | Neues Projekt: Konfiguration, Verfassung, Artefaktordner, CI-Workflow, Agenten-Dateien (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`); mit `--git` ohne vorhandenes Repository auch `git init` und ein erster Commit |
-| `sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` | Feature-Artefakte aus Templates; `new --type adr\|doc --title …`; `new --type arc42` legt die Architekturdoku `docs/arc42.md` nach arc42 an |
+| `sdd init [--profile minimal\|standard\|regulated] [--pipeline sdd\|bmad] [--dry-run] [--no-ci] [--git]` | Neues Projekt: Konfiguration, Verfassung, Artefaktordner, CI-Workflow, Agenten-Dateien (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`); mit `--pipeline bmad` zusätzlich die Initiative der Makro-Ebene; mit `--git` ohne vorhandenes Repository auch `git init` und ein erster Commit |
+| `sdd new --feature <slug> [--type prd,design,plan] [--title …] [--touches …] [--archive-after YYYY-MM-DD]` | Feature-Artefakte aus Templates; `new --type adr\|doc --title …`; `new --type arc42` legt die Architekturdoku `docs/arc42.md` nach arc42 an; `new --type initiative --title …` und `new --type epic --slug … --title … --covers R1,R2` legen die Makro-Ebene an ([ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md)) |
 | `sdd archive --feature <slug> [--release <version>] [--dry-run]` | Feature nach dem Release ins Archiv verschieben (`status: archived`); nur wenn kein PRD mehr `status: draft` trägt und jedes Akzeptanzkriterium einen Testverweis hat |
-| `sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` | Bestandsprojekt übernehmen: Probelauf-Bericht; mit `--apply` auf neuem Branch, ein Commit je Schritt ([ADR 0001](docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md)) |
+| `sdd adopt [--profile …] [--apply] [--branch sdd/adopt]` | Bestandsprojekt übernehmen: Probelauf-Bericht; mit `--apply` auf neuem Branch, ein Commit je Schritt ([ADR 0001](docs/adr/0001-schreibender-git-zugriff-fuer-sdd-adopt.md)). Ein BMAD-v6-Bestand (`_bmad/`, `_bmad-output/`) wird als Makro-Ebene erkannt: `pipeline: bmad`, Initiative und Epics klassifiziert, Werkzeugbaum ausgeschlossen ([ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md)) |
 | `sdd report [--format markdown\|json] [--since <ref>]` | Reifegrad, Befunde, Gates, Schuldenstand mit Trend |
 | `sdd next [--feature <slug>]` | nächster Prozessschritt je Feature |
 | `sdd explain <regel-id>` | Regel, Begründung und Prüfvertrag |
@@ -110,7 +111,7 @@ Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/featu
 Die [GitHub Action](action.yml) baut `sdd`, führt `sdd gate <gate>` aus und schreibt den Bericht in die Job-Zusammenfassung:
 
 ```yaml
-- uses: Zheng-Bote/sdd_studio@v0.7.0
+- uses: Zheng-Bote/sdd_studio@v0.8.0
   with:
     gate: pre-merge
 ```
@@ -119,7 +120,7 @@ Vollständiges Beispiel im [Handbuch: CI-Einbindung](handbuch/03-mechanismen.md#
 
 ### Agenten (MCP)
 
-`sdd mcp` stellt sechzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_stack`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`, `sdd_conflicts_check`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`, `sdd_commit`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
+`sdd mcp` stellt sechzehn Werkzeuge (`sdd_next`, `sdd_lint`, `sdd_gate`, `sdd_report`, `sdd_explain`, `sdd_check_intent`, `sdd_context`, `sdd_trace`, `sdd_stack`, `sdd_read`, `sdd_validate_draft`, `sdd_new`, `sdd_write`, `sdd_init`, `sdd_archive`, `sdd_conflicts_check`; mit `--allow-critical` zusätzlich `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`, `sdd_commit`), Ressourcen (`sdd://constitution`, `sdd://catalog`, `sdd://handbook`, `sdd://artifact/<pfad>`) und geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`, `sdd-ingest-bmad`, `sdd-architecture`, `sdd-epic-refine`) bereit. Einbindung, z. B. in Claude Code oder Claude Desktop:
 
 ```json
 { "mcpServers": { "sdd": { "command": "sdd", "args": ["mcp"] } } }
@@ -213,19 +214,22 @@ go run ./cmd/sdd lint
 
 ## Diskussion
 
-Alles zu abstrakt. Ggf. konzeptionell aufbauend auf die **Kombination von SpecDD, Spec Kit und BMAD**
+Ausgangspunkt war der Vorwurf, alles sei zu abstrakt, und die **Kombination von SpecDD, Spec Kit und BMAD**. Die Notiz liegt als Quelle unter [`docs/notes/kombination-specdd-spec-kit-bmad.md`](docs/notes/kombination-specdd-spec-kit-bmad.md); umgesetzt ist daraus die Makro-Ebene ([ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md), [PRD](docs/prd/bmad-import.md), [Tech Spec](docs/design/bmad-import.md)).
 
-### Kombination von SpecDD, Spec Kit und BMAD
+### Was die Kombination trägt — und was `sdd` davon übernimmt
 
-- **BMAD** wird für **Makro-Planung** und **Systemarchitektur** verwendet, während **Spec Kit** für die **Feature-Implementierung** und **schnelle Iterationen** genutzt wird [Doc: /Volumes/1TB_NVME/Documents/obsidian-snippets/BMAD method und SpecKit kombinieren.md#BMAD method und SpecKit kombinieren].
-- **SpecDD** definiert die **systemweiten Regeln** (z. B. Sicherheitsvorgaben), die **Spec Kit** automatisch erbt [Doc: /Volumes/1TB_NVME/Documents/obsidian-snippets/BMAD method und SpecKit kombinieren.md#Schritt-für-Schritt-Anleitung für die Kombination].
-- **Integration Matrix:**
-    - **SpecDD** ist verantwortlich für **System-Intent**, **Architecture**, **Governance / Security**.
-    - **Spec Kit** ist verantwortlich für **Feature-Intent**, **Feature Planning**, **Feature Implementation**.
-    - Beide Tools sind für **Drift Control** verantwortlich [Doc: /Volumes/1TB_NVME/Documents/obsidian-snippets/SpecDD_SpecKit_Integration_EN.md#5. Integration Matrix].
+- **BMAD** liefert Makro-Planung und Architektur: Initiative mit Anforderungen `R1`, `R2`, …, Epics mit prüfbaren „Done when“-Punkten, eine Architektur-Spine. `sdd` erkennt diesen Bestand, übernimmt die Anforderungen **wörtlich** und macht aus den Done-when-Punkten Akzeptanzkriterien `AC-<n>`.
+- **Spec Kit** liefert die Feature-Strecke (Spec, Plan, Tasks). Sie war bereits vorhanden: Artefaktpfade dürfen Globs sein, `specs/features/*/spec.md` funktioniert ohne Umzug.
+- **SpecDD** liefert die systemweiten Regeln, die jede spätere Spec erbt. Genau diese Rolle hat die Verfassung — sie entsteht aus den Constraints des Bestands und aus der Architektur, Regel für Regel mit Fundstelle.
 
-#### Vorteile der Kombination
+Was in der Notiz als Risiko steht — „Context Drift über viele Agenten-Übergaben hinweg“ — ist der Grund für die drei Regeln `SDD-080` bis `SDD-082`: Anforderung → Epic → Index werden maschinell geprüft, nicht erinnert. Rollen (Analyst, PM, Architect) bleiben Prompt-Text in den Abläufen `sdd-ingest-bmad`, `sdd-architecture` und `sdd-epic-refine`; `sdd` selbst bleibt KI-frei.
 
-- **BMAD** sorgt für **tiefe fachliche und architektonische Klarheit** am Projektstart.
-- **Spec Kit** ermöglicht **schnelle, token-effiziente Feature-Iterationen** im Alltag.
-- **SpecDD** sorgt für **stabile, langfristige Systemarchitektur** und **Sicherheitsvorgaben**.
+### Der Ablauf für ein Projekt mit BMAD-Vorgeschichte
+
+1. `sdd adopt` — Probelauf, dann `--apply`: Branch, Verfassungsgerüst, Frontmatter, Baseline
+2. `sdd-ingest-bmad` — Anforderungen und Epics übernehmen, Constraints als Verfassungsvorschlag
+3. `sdd-architecture` — die fehlende Spine: arc42 und je Entscheidung ein ADR
+4. `sdd-constitution` — Architektur und Sicherheit aus Constraints **und** Spine
+5. `sdd baseline`, `sdd gate pre-merge`, Branch mergen
+
+Die Reihenfolge ist der Kern: Die Verfassung ist das Ergebnis der Architektur, nicht ihr Ersatz.
