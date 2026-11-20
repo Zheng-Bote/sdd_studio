@@ -13,6 +13,32 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 ---
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
+
+<details>
+<summary>Table of Contents</summary>
+
+- [Leitprinzip](#leitprinzip)
+- [Stand](#stand)
+  - [Regeln](#regeln)
+- [Bauen](#bauen)
+  - [Alles bauen und lokal installieren (Linux)](#alles-bauen-und-lokal-installieren-linux)
+- [`sdd` — Kommandos](#sdd-kommandos)
+  - [CI](#ci)
+  - [Agenten (MCP)](#agenten-mcp)
+- [KI-Desktop `sdd-desk` (optional)](#ki-desktop-sdd-desk-optional)
+  - [Als Desktop-Anwendung (Tauri v2)](#als-desktop-anwendung-tauri-v2)
+  - [Als lokale Web-Oberfläche: bauen](#als-lokale-web-oberflache-bauen)
+  - [Modelle einrichten](#modelle-einrichten)
+  - [Starten](#starten)
+  - [Was der Desktop darf](#was-der-desktop-darf)
+- [Tests](#tests)
+- [Nächste Schritte](#nachste-schritte)
+- [Diskussion](#diskussion)
+  - [Kombination von SpecDD, Spec Kit und BMAD](#kombination-von-specdd-spec-kit-und-bmad)
+    - [Vorteile der Kombination](#vorteile-der-kombination)
+
+</details>
+
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ---
