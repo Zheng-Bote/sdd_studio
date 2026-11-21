@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { ChatSession } from '../core/chat-session';
 import { DeskApi } from '../core/desk-api';
-import { Guide, Step } from '../core/types';
+import { Guide, Meta, PromptInfo, Step } from '../core/types';
 import { ProcessPanel } from './process-panel';
 
 const step = (id: string, title: string): Step => ({ id, title, state: 'open', detail: 'Details ' + id, command: 'befehl ' + id });
@@ -19,6 +20,40 @@ async function renderElement(guide: Guide): Promise<HTMLElement> {
 function texts(el: HTMLElement, testid: string): string[] {
   return Array.from(el.querySelectorAll(`[data-testid="${testid}"]`)).map((e) => e.textContent ?? '');
 }
+
+const evidenceMeta: Meta = {
+  project: 'demo',
+  config_path: 'x',
+  warnings: [],
+  judgment_flows: ['sdd-conflicts'],
+  providers: [
+    {
+      id: 'ollama-local',
+      name: 'Ollama (lokal)',
+      protocol: 'ollama',
+      endpoint: '',
+      cloud: false,
+      available: true,
+      models: [
+        {
+          name: 'qwen3:14b',
+          tools: true,
+          evidence: {
+            'sdd-conflicts': {
+              flow: 'sdd-conflicts',
+              protocol: 'ollama',
+              model_prefix: 'qwen3:',
+              status: 'failed',
+              note: 'erfand Pfade, Zeilen und Zitate',
+              source: 'README, Nächste Schritte',
+            },
+          },
+        },
+        { name: 'llama3:8b', tools: true },
+      ],
+    },
+  ],
+};
 
 describe('ProcessPanel', () => {
   // desk-project-steps AC-1: project steps appear in the order of sdd next, with state, title, detail and command.
@@ -67,5 +102,37 @@ describe('ProcessPanel', () => {
     const headings = Array.from(el.querySelectorAll('h2')).map((h) => (h.textContent ?? '').trim());
     expect(headings).toEqual(['Geführte Abläufe', 'Features']);
     expect(texts(el, 'initiative-step')).toEqual([]);
+  });
+
+  // desk-model-availability AC-4: a judgment flow names what is recorded for the selected model — and a model
+  // without a recorded result says "nicht belegt" instead of staying silent.
+  it('shows the evidence for the selected model on judgment flows only', async () => {
+    const prompts: PromptInfo[] = [
+      { name: 'sdd-conflicts', title: 'Abgleich mit der Verfassung', description: 'Sucht Widersprüche', arguments: [] },
+      { name: 'sdd-idea', title: 'Idee', description: 'Idee festhalten', arguments: [] },
+    ];
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [{ provide: DeskApi, useValue: { next: async () => ({ features: [] }), prompts: async () => ({ prompts }) } }],
+    });
+    const session = TestBed.inject(ChatSession);
+    session.meta.set(evidenceMeta);
+    session.providerId.set('ollama-local');
+    session.model.set('qwen3:14b');
+
+    const fixture = TestBed.createComponent(ProcessPanel);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    const shown = texts(el, 'flow-evidence');
+    expect(shown.length).toBe(1);
+    expect(shown[0]).toContain('im Test durchgefallen');
+    expect(shown[0]).toContain('erfand Pfade, Zeilen und Zitate');
+    expect(shown[0]).toContain('README');
+
+    session.model.set('llama3:8b');
+    fixture.detectChanges();
+    expect(texts(el, 'flow-evidence')[0]).toContain('nicht belegt');
   });
 });

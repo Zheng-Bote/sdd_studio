@@ -3,8 +3,9 @@ import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmSeparatorImports } from '@spartan-ng/helm/separator';
+import { ChatSession } from '../core/chat-session';
 import { DeskApi } from '../core/desk-api';
-import { Guide, PromptInfo, Step } from '../core/types';
+import { EvidenceEntry, Guide, PromptInfo, Step } from '../core/types';
 
 const STATE_LABEL: Record<Step['state'], string> = {
   done: 'erledigt',
@@ -26,6 +27,9 @@ const STATE_LABEL: Record<Step['state'], string> = {
         <div class="rounded-md border p-2">
           <div class="text-sm font-medium">{{ p.title }}</div>
           <p class="text-xs text-muted-foreground">{{ p.description }}</p>
+          @if (evidence(p.name); as e) {
+            <p class="mt-1 text-xs" [class]="evidenceClass(e.status)" data-testid="flow-evidence">{{ evidenceText(e) }}</p>
+          }
           @for (a of p.arguments; track a.name) {
             <label class="mt-1 block text-xs">
               {{ a.description }}{{ a.required ? ' *' : '' }}
@@ -99,6 +103,7 @@ const STATE_LABEL: Record<Step['state'], string> = {
 })
 export class ProcessPanel {
   private readonly api = inject(DeskApi);
+  private readonly session = inject(ChatSession);
   readonly started = output<string>();
   protected readonly guide = signal<Guide | null>(null);
   protected readonly projectSteps = computed(() => {
@@ -130,6 +135,29 @@ export class ProcessPanel {
 
   protected label(state: Step['state']): string {
     return STATE_LABEL[state];
+  }
+
+  /**
+   * The recorded test state for one guided flow, or null where the desktop makes no claim. Only judgment flows carry
+   * one (desk-model-availability AC-4); a model without a recorded result is shown as unproven.
+   */
+  protected evidence(flow: string): { status: 'proven' | 'failed' | 'unproven'; entry?: EvidenceEntry } | null {
+    return this.session.isJudgmentFlow(flow) ? this.session.flowEvidence(flow) : null;
+  }
+
+  protected evidenceText(e: { status: 'proven' | 'failed' | 'unproven'; entry?: EvidenceEntry }): string {
+    if (!e.entry) {
+      return `Mit ${this.session.model() || 'diesem Modell'} nicht belegt`;
+    }
+    const label = e.status === 'proven' ? 'belegt' : 'im Test durchgefallen';
+    return `${label}: ${e.entry.note} (${e.entry.source})`;
+  }
+
+  protected evidenceClass(status: 'proven' | 'failed' | 'unproven'): string {
+    if (status === 'proven') {
+      return 'text-emerald-700 dark:text-emerald-400';
+    }
+    return status === 'failed' ? 'text-destructive' : 'text-muted-foreground';
   }
 
   protected value(prompt: string, arg: string): string {

@@ -1,16 +1,62 @@
 import { TestBed } from '@angular/core/testing';
 import { ApiError, DeskApi, NdjsonLines } from './desk-api';
-import { ChatSession, trimOpenCalls } from './chat-session';
-import { modelTestText } from '../app';
+import { ChatSession, preferredModel, trimOpenCalls } from './chat-session';
+import { modelLabel, modelTestText } from '../app';
 import { Message, Meta, ModelTestRequest, ModelTestResult, StreamEvent, TurnRequest, TurnResponse } from './types';
 
 const meta: Meta = {
   project: 'demo',
   config_path: 'x',
   warnings: [],
+  judgment_flows: ['sdd-conflicts', 'sdd-review'],
   providers: [
-    { id: 'ollama-local', name: 'Ollama (lokal)', protocol: 'ollama', endpoint: '', cloud: false, models: ['qwen3:14b'], available: true },
-    { id: 'claude', name: 'Claude', protocol: 'claude', endpoint: '', cloud: true, models: ['claude-x'], available: true },
+    {
+      id: 'ollama-local',
+      name: 'Ollama (lokal)',
+      protocol: 'ollama',
+      endpoint: '',
+      cloud: false,
+      available: true,
+      models: [
+        {
+          name: 'qwen3:14b',
+          tools: true,
+          evidence: {
+            'sdd-conflicts': {
+              flow: 'sdd-conflicts',
+              protocol: 'ollama',
+              model_prefix: 'qwen3:',
+              status: 'failed',
+              note: 'erfand Zitate',
+              source: 'README',
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: 'claude',
+      name: 'Claude',
+      protocol: 'claude',
+      endpoint: '',
+      cloud: true,
+      available: true,
+      models: [
+        {
+          name: 'claude-x',
+          tools: true,
+          evidence: {
+            'sdd-conflicts': {
+              flow: 'sdd-conflicts',
+              protocol: 'claude',
+              status: 'proven',
+              note: 'Szenario cert-expiry-watcher',
+              source: 'README, Nächste Schritte',
+            },
+          },
+        },
+      ],
+    },
   ],
 };
 
@@ -208,6 +254,70 @@ describe('ChatSession', () => {
     await session.send('prüfen');
     expect(session.messages().map((m) => m.role)).toEqual(['user']);
     expect(session.error()).toContain('overloaded');
+  });
+});
+
+describe('model availability', () => {
+  // desk-model-availability AC-3: a model that calls tools is preselected; an embedding model stays selectable but
+  // says what it cannot do.
+  it('prefers a model that calls tools and labels one that does not', () => {
+    expect(preferredModel([{ name: 'emb', tools: false }, { name: 'qwen3:14b', tools: true }])).toBe('qwen3:14b');
+    expect(preferredModel([{ name: 'emb', tools: false }, { name: 'unknown' }])).toBe('unknown');
+    expect(preferredModel([{ name: 'emb', tools: false }])).toBe('emb');
+    expect(preferredModel([])).toBe('');
+    expect(modelLabel({ name: 'emb', tools: false })).toBe('emb (ohne Werkzeuge)');
+    expect(modelLabel({ name: 'unknown' })).toBe('unknown');
+  });
+
+  // desk-model-availability AC-1: a model pulled after the start is selectable after refreshing, without losing
+  // provider, model or conversation.
+  it('adds a pulled model on refresh and keeps the selection', async () => {
+    const { session } = setup([{ messages: [{ role: 'user', content: 'Hallo' }], pending: [] }]);
+    const api = TestBed.inject(DeskApi) as unknown as { meta: () => Promise<Meta> };
+    api.meta = async () => meta;
+    await session.load();
+    await session.send('Hallo');
+    const messages = session.messages().length;
+
+    api.meta = async () => ({
+      ...meta,
+      providers: [{ ...meta.providers[0], models: [...meta.providers[0].models, { name: 'neu:1b', tools: true }] }, meta.providers[1]],
+    });
+    await session.refreshMeta();
+
+    expect(session.providerId()).toBe('ollama-local');
+    expect(session.model()).toBe('qwen3:14b');
+    expect(session.provider()?.models.map((m) => m.name)).toContain('neu:1b');
+    expect(session.messages().length).toBe(messages);
+  });
+
+  // desk-model-availability AC-1: a model that disappeared from Ollama is replaced, so the next turn is not sent to
+  // a model that no longer exists.
+  it('falls back to a remaining model when the selected one is gone', async () => {
+    const { session } = setup([]);
+    const api = TestBed.inject(DeskApi) as unknown as { meta: () => Promise<Meta> };
+    api.meta = async () => meta;
+    await session.load();
+    api.meta = async () => ({
+      ...meta,
+      providers: [{ ...meta.providers[0], models: [{ name: 'neu:1b', tools: true }, { name: 'emb', tools: false }] }, meta.providers[1]],
+    });
+    await session.refreshMeta();
+    expect(session.model()).toBe('neu:1b');
+  });
+
+  // desk-model-availability AC-4: what is recorded is reported for the selected model, and nothing is claimed for a
+  // flow or a model without a recorded result.
+  it('reports the recorded evidence of the selected model', async () => {
+    const { session } = setup([]);
+    await session.load();
+    expect(session.isJudgmentFlow('sdd-conflicts')).toBe(true);
+    expect(session.isJudgmentFlow('sdd-idea')).toBe(false);
+    expect(session.flowEvidence('sdd-conflicts').status).toBe('failed');
+    expect(session.flowEvidence('sdd-review').status).toBe('unproven');
+    session.selectProvider('claude');
+    expect(session.flowEvidence('sdd-conflicts').status).toBe('proven');
+    expect(session.flowEvidence('sdd-review').status).toBe('unproven');
   });
 });
 

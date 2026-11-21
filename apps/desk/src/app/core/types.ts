@@ -14,13 +14,32 @@ export interface Message {
   tool_name?: string;
 }
 
+/** One selectable model. tools is absent when its capability is unknown: a model that cannot call tools is a
+ * finding, a model that was not asked is not (desk-model-availability). */
+export interface ModelOption {
+  name: string;
+  tools?: boolean;
+  /** Recorded test results per judgment flow (sdd-conflicts, sdd-review); absent means nothing was tested. */
+  evidence?: Record<string, EvidenceEntry>;
+}
+
+/** A recorded test of a model with a guided flow, from the table in internal/desk/evidence.go. */
+export interface EvidenceEntry {
+  flow: string;
+  protocol: string;
+  model_prefix?: string;
+  status: 'proven' | 'failed';
+  note: string;
+  source: string;
+}
+
 export interface Provider {
   id: string;
   name: string;
   protocol: string;
   endpoint: string;
   cloud: boolean;
-  models: string[];
+  models: ModelOption[];
   available: boolean;
   note?: string;
 }
@@ -34,6 +53,8 @@ export interface Meta {
   warnings: string[];
   providers: Provider[];
   project_state?: ProjectState;
+  /** The guided flows whose answer is the model's judgement; only there is the evidence shown. */
+  judgment_flows?: string[];
 }
 
 export interface PlannedOp {

@@ -94,38 +94,127 @@ func writeError(w http.ResponseWriter, status int, err error) {
 	writeJSON(w, status, map[string]string{"error": err.Error()})
 }
 
+// modelView is one selectable model. Tools is nil when its capability is unknown: a model that cannot call tools
+// is a finding, a model that was not asked is not. Evidence holds the recorded result per judgment flow; a flow
+// without a recorded result is absent, never "proven".
+type modelView struct {
+	Name     string                   `json:"name"`
+	Tools    *bool                    `json:"tools,omitempty"`
+	Evidence map[string]EvidenceEntry `json:"evidence,omitempty"`
+}
+
+// providerView is one provider as the desktop shows it.
 type providerView struct {
-	Provider
-	Available bool   `json:"available"`
-	Note      string `json:"note,omitempty"`
+	ID        string      `json:"id"`
+	Name      string      `json:"name"`
+	Protocol  string      `json:"protocol"`
+	Endpoint  string      `json:"endpoint"`
+	Cloud     bool        `json:"cloud"`
+	Available bool        `json:"available"`
+	Models    []modelView `json:"models"`
+	Note      string      `json:"note,omitempty"`
+}
+
+// mergeLocalModels returns the local provider's models: the configured ones first, then what Ollama reports, each
+// with its tools capability when it is known. Configured names stay visible when Ollama does not answer.
+//
+// desk-model-availability AC-6
+func mergeLocalModels(configured, reported []string, caps map[string]*bool) []modelView {
+	out := make([]modelView, 0, len(configured)+len(reported))
+	seen := map[string]bool{}
+	add := func(name string) {
+		if name == "" || seen[name] {
+			return
+		}
+		seen[name] = true
+		out = append(out, modelView{Name: name, Tools: caps[name]})
+	}
+	for _, name := range configured {
+		add(name)
+	}
+	for _, name := range reported {
+		add(name)
+	}
+	return out
+}
+
+// localCapabilities asks /api/show for every model under one overall deadline, in parallel. A model that does not
+// answer in time stays unknown; the map is never nil.
+func localCapabilities(ctx context.Context, c *http.Client, endpoint string, models []string) map[string]*bool {
+	caps := make(map[string]*bool, len(models))
+	type answer struct {
+		model string
+		tools *bool
+	}
+	ch := make(chan answer, len(models))
+	for _, m := range models {
+		go func(model string) {
+			mctx, cancel := context.WithTimeout(ctx, time.Second)
+			defer cancel()
+			tools, err := ModelCapabilities(mctx, c, endpoint, model)
+			if err != nil {
+				tools = nil
+			}
+			ch <- answer{model, tools}
+		}(m)
+	}
+	for range models {
+		select {
+		case a := <-ch:
+			caps[a.model] = a.tools
+		case <-ctx.Done():
+			return caps
+		}
+	}
+	return caps
 }
 
 func (s *Server) handleMeta(w http.ResponseWriter, r *http.Request) {
 	var providers []providerView
 	for _, p := range s.Config.Providers {
-		v := providerView{Provider: p, Available: true}
+		v := providerView{ID: p.ID, Name: p.Name, Protocol: p.Protocol, Endpoint: p.Endpoint, Cloud: p.Cloud, Available: true}
 		if p.ID == LocalOllamaID {
 			ctx, cancel := context.WithTimeout(r.Context(), 1500*time.Millisecond)
-			models, err := ListLocalModels(ctx, s.HTTP, p.Endpoint)
+			reported, err := ListLocalModels(ctx, s.HTTP, p.Endpoint)
 			cancel()
 			if err != nil {
 				v.Available, v.Note = len(p.Models) > 0, "lokales Ollama nicht erreichbar: "+err.Error()
 			}
-			for _, m := range models {
-				if !containsString(v.Models, m) {
-					v.Models = append(v.Models, m)
-				}
+			cctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			caps := localCapabilities(cctx, s.HTTP, p.Endpoint, mergeNames(p.Models, reported))
+			cancel()
+			v.Models = mergeLocalModels(p.Models, reported, caps)
+		} else {
+			for _, m := range p.Models {
+				v.Models = append(v.Models, modelView{Name: m})
 			}
 		}
+		annotateEvidence(p.Protocol, v.Models)
 		providers = append(providers, v)
 	}
 	meta := map[string]any{
 		"project": s.Project, "config_path": s.Config.Path, "warnings": s.Config.Warnings, "providers": providers,
+		"judgment_flows": JudgmentFlows,
 	}
 	if state := s.projectState(); state != "" {
 		meta["project_state"] = state
 	}
 	writeJSON(w, http.StatusOK, meta)
+}
+
+// mergeNames is the union of two name lists without duplicates, configured first.
+func mergeNames(a, b []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, list := range [][]string{a, b} {
+		for _, name := range list {
+			if name != "" && !seen[name] {
+				seen[name] = true
+				out = append(out, name)
+			}
+		}
+	}
+	return out
 }
 
 // projectState says whether the project is covered by sdd: "configured", "existing" (files, no configuration) or
@@ -152,15 +241,6 @@ func (s *Server) projectState() string {
 		return "existing"
 	}
 	return "empty"
-}
-
-func containsString(list []string, s string) bool {
-	for _, x := range list {
-		if x == s {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *Server) handleTools(w http.ResponseWriter, r *http.Request) {

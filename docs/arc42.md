@@ -138,7 +138,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 
 - **CLI** — Kommandos und Exit-Codes, Berichtsformat JSON `schema_version: 1`.
 - **MCP** — Werkzeuge mit Ein-/Ausgabeschema; schreibend nur mit `--allow-write`, kritisch nur mit `--allow-critical`.
-- **Desk-API** — `POST /api/turn[/stream]` mit `allowed_tools`, `allowed_writes`, `approved_calls`, `denied_calls`; Sitzungstoken.
+- **Desk-API** — `POST /api/turn[/stream]` mit `allowed_tools`, `allowed_writes`, `approved_calls`, `denied_calls`; Sitzungstoken. `GET /api/meta` nennt je lokalem Modell die Fähigkeit `tools` (`POST /api/show` beim Ollama-Dienst; unbekannt, wenn er sie nicht meldet) und je Urteilsablauf den Belegstand aus `internal/desk/evidence.go`.
 
 ## Ebene 2 {#_level_2}
 
@@ -326,6 +326,7 @@ Die Qualitätsziele aus Abschnitt 1 werden durch Selbstschutzregeln, Tests mit M
 - **Kleine lokale Modelle** halten Form- und Zitierregeln weniger zuverlässig ein; `sdd_conflicts_check` fängt Zitate ab, die Bewertung bleibt beim Menschen.
 - **Übersprungene Tests** zählen für SDD-022 als Testverweis; ob ein Test wirklich läuft, prüft `sdd` sprachneutral nicht.
 - **Plattformen:** Desktop-Anwendung außerhalb von Linux `.deb` ungetestet.
+- **Belegstände für Modelle sind Handarbeit:** Die Tabelle in `internal/desk/evidence.go` wächst nur, wenn ein Test mit einem Modell schriftlich festgehalten wird; alles Ungetestete bleibt „nicht belegt“ und die Kennzeichnung damit konservativ.
 - **Makro-Ebene nur bei `pipeline: bmad`:** `SDD-080`–`SDD-082` schweigen in einem Projekt ohne BMAD-Bestand, und eine Initiative ohne Epics wird nicht erzwungen — die Regeln prüfen die Verbindung, nicht die Vollständigkeit des Vorhabens.
 - Weitere Risiken und Gegenmaßnahmen: [Konzept, Abschnitt 12](sdd_konzept.md).
 
