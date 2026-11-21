@@ -1,6 +1,6 @@
 ---
 feature: bmad-import
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/config/**
@@ -24,6 +24,7 @@ touches:
   - README.md
   - CHANGELOG.md
   - .gitignore
+release: v0.8.0
 ---
 
 # PRD — BMAD-Bestand übernehmen und als Strecke führen

@@ -50,7 +50,7 @@ Letzte Version: **0.8.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.3.0` m
 - **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.7.0 liegen archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.8.0 liegen archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -214,7 +214,7 @@ go run ./cmd/sdd lint
 
 ## Diskussion
 
-Ausgangspunkt war der Vorwurf, alles sei zu abstrakt, und die **Kombination von SpecDD, Spec Kit und BMAD**. Die Notiz liegt als Quelle unter [`docs/notes/kombination-specdd-spec-kit-bmad.md`](docs/notes/kombination-specdd-spec-kit-bmad.md); umgesetzt ist daraus die Makro-Ebene ([ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md), [PRD](docs/prd/bmad-import.md), [Tech Spec](docs/design/bmad-import.md)).
+Ausgangspunkt war der Vorwurf, alles sei zu abstrakt, und die **Kombination von SpecDD, Spec Kit und BMAD**. Die Notiz liegt als Quelle unter [`docs/notes/kombination-specdd-spec-kit-bmad.md`](docs/notes/kombination-specdd-spec-kit-bmad.md); umgesetzt ist daraus die Makro-Ebene ([ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md), [PRD](docs/archive/prd/bmad-import.md), [Tech Spec](docs/archive/design/bmad-import.md)).
 
 ### Was die Kombination trägt — und was `sdd` davon übernimmt
 

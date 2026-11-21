@@ -1,11 +1,11 @@
 ---
 status: active
-release: v0.7.0
+release: v0.8.0
 ---
 
 # Architekturdokumentation — SDD Studio (arc42)
 
-Stand: Release v0.7.0 (Regelkatalog `1.2.0`, 23 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
+Stand: Release v0.8.0 (Regelkatalog `1.3.0`, 26 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
 
 # Einführung und Ziele {#section-introduction-and-goals}
 
@@ -14,8 +14,8 @@ SDD Studio setzt Spec-Driven Development durch: Ein Projekt hält dauerhafte Reg
 ## Aufgabenstellung {#_requirements_overview}
 
 - **Prüfen:** `sdd lint` und `sdd gate pre-implementation | pre-merge | pre-release` gegen den Regelkatalog (`catalog/catalog.yaml`), lokal und in CI (`action.yml`).
-- **Bestand heben:** `sdd adopt` übernimmt ein gewachsenes Projekt auf einem eigenen Branch; Altbefunde landen in einer gate-gebundenen, nur schrumpfenden Baseline (Ratchet).
-- **Führen:** `sdd next` nennt den nächsten Prozessschritt je Feature (Idee → PRD → Tech Spec → Plan → Tests → Umsetzung → Gate → Merge → Release → Archiv).
+- **Bestand heben:** `sdd adopt` übernimmt ein gewachsenes Projekt auf einem eigenen Branch; Altbefunde landen in einer gate-gebundenen, nur schrumpfenden Baseline (Ratchet). Erkennt es einen BMAD-v6-Bestand (`_bmad/`, `_bmad-output/`), nimmt es zusätzlich die Makro-Ebene auf: die Initiative als Anforderungsliste und jedes `epic-*.md` als Epic ([ADR 0009](adr/0009-bmad-import-statt-zweitem-prozess.md)).
+- **Führen:** `sdd next` nennt den nächsten Prozessschritt je Feature (Idee → PRD → Tech Spec → Plan → Tests → Umsetzung → Gate → Merge → Release → Archiv); bei `pipeline: bmad` stehen die Makrostationen (Initiative, Verfassung, Übernahme, Architektur) davor.
 - **Anlegen und abschließen:** `sdd init`, `sdd new` (auch die Architekturdoku nach arc42: `sdd new --type arc42`), `sdd archive`.
 - **Assistieren (optional):** `sdd mcp` stellt die Funktionen Agenten bereit; der getrennte KI-Desktop `sdd-desk` führt mit einem Sprachmodell durch den Prozess.
 
@@ -147,14 +147,14 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 | Paket | Verantwortung |
 |---|---|
 | `catalog` | Regelkatalog laden (Datei oder eingebettet), Schweregrad je Gate, Profile, `pinned`. |
-| `config` | `sdd.config.yaml` laden und validieren; ohne Konfiguration Exit 2. |
-| `scan` | Artefakte, Frontmatter, Pfad-Globs, Git-Zugriff (Merge-Basis, Diff, `show`). |
-| `rules` | Prüfungen je Regel, effektive Regelmenge je Gate (`Eff(g)`), Rückverfolgung AC → Tech Spec → Test → Task. |
+| `config` | `sdd.config.yaml` laden und validieren; ohne Konfiguration Exit 2. Mit `pipeline: bmad` kommt die Makro-Ebene hinzu; `artifacts.initiative` nennt ihr Artefakt (Vorgabe `docs/initiative.md`). |
+| `scan` | Artefakte, Frontmatter (inkl. `type`, `parent`, `covers`, `refined`, `unplanned`), Pfad-Globs, Git-Zugriff (Merge-Basis, Diff, `show`). |
+| `rules` | Prüfungen je Regel, effektive Regelmenge je Gate (`Eff(g)`), Rückverfolgung AC → Tech Spec → Test → Task; `SDD-080`–`SDD-082` für die Makro-Ebene, aktiv nur bei `pipeline: bmad`. |
 | `baseline`, `adrlock`, `baselineplan` | Baseline anwenden und pflegen; ADR-Lockfile; Plan für `sdd baseline`. |
 | `report` | Befunde, Berichtsformat v1. |
 | `scaffold` | Pläne für `init`, `new`, `archive`, ADR-Entscheid, Agenten-Dateien; Apply mit Pfad- und Symlink-Schutz. |
-| `guide` | `sdd next` (mit Projektschritten Verfassung, Übernahme, Architekturdoku), `sdd archive` (Testverweise, kein Entwurf). |
-| `adopt` | Bestandsaufnahme, Reifegrad, Übernahme auf eigenem Branch. |
+| `guide` | `sdd next` (mit Projektschritten Verfassung, Übernahme, Architekturdoku; bei `pipeline: bmad` die Makrostationen und ein offenes Epic als „Epic verfeinern“), `sdd archive` (Testverweise, kein Entwurf). |
+| `adopt` | Bestandsaufnahme, Reifegrad, Übernahme auf eigenem Branch; erkennt BMAD v6 (`_bmad/`, `_bmad-output/`) und lässt Makro-Artefakte ungeschrieben. |
 | `overview` | `sdd report`: Reifegrad, Gates, Schuldenstand. |
 
 ### Whitebox *`internal/mcp`* {#_white_box_building_block_2}
@@ -165,7 +165,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 | schreibend (`--allow-write`) | `sdd_new`, `sdd_write` (Artefakte, Testdateien), `sdd_init`, `sdd_archive` |
 | kritisch (`--allow-critical`) | `sdd_baseline`, `sdd_adr_accept`, `sdd_adopt_apply`, `sdd_config`, `sdd_commit` |
 
-Dazu geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`).
+Dazu geführte Prompts (`sdd-idea`, `sdd-requirements`, `sdd-techspec`, `sdd-adr`, `sdd-plan`, `sdd-adopt`, `sdd-start`, `sdd-constitution`, `sdd-arc42`, `sdd-tests`, `sdd-conflicts`, `sdd-review`, `sdd-ingest-bmad`, `sdd-architecture`, `sdd-epic-refine`).
 
 # Laufzeitsicht {#section-runtime-view}
 
@@ -299,6 +299,7 @@ SDD Studio wird mit sich selbst entwickelt: jedes Feature mit PRD und Tech Spec,
 | [0006](adr/0006-arc42-template-unter-cc-by-sa-einbetten.md) | arc42-Template als eigenständige Datei unter CC BY-SA 4.0. |
 | [0007](adr/0007-qualitaetsanforderungen-im-prd-mit-kennung-qa.md) | Qualitätsanforderungen im PRD mit stabiler Kennung `QA-<n>`; optionale Abschnitte, keine neue Pflichtregel. |
 | [0008](adr/0008-commit-werkzeug-im-ki-desktop.md) | Kritisches Werkzeug `sdd_commit` für genannte Dateien, nie auf dem Standard-Branch. |
+| [0009](adr/0009-bmad-import-statt-zweitem-prozess.md) | BMAD-Bestand übernehmen statt einen zweiten Prozess führen: Makro-Ebene aus Initiative und Epics, `pipeline: bmad`, SDD-080–SDD-082. |
 
 Weitere Richtungsentscheidungen ohne eigenes ADR stehen im [Konzept, Abschnitt 14](sdd_konzept.md).
 
@@ -325,6 +326,7 @@ Die Qualitätsziele aus Abschnitt 1 werden durch Selbstschutzregeln, Tests mit M
 - **Kleine lokale Modelle** halten Form- und Zitierregeln weniger zuverlässig ein; `sdd_conflicts_check` fängt Zitate ab, die Bewertung bleibt beim Menschen.
 - **Übersprungene Tests** zählen für SDD-022 als Testverweis; ob ein Test wirklich läuft, prüft `sdd` sprachneutral nicht.
 - **Plattformen:** Desktop-Anwendung außerhalb von Linux `.deb` ungetestet.
+- **Makro-Ebene nur bei `pipeline: bmad`:** `SDD-080`–`SDD-082` schweigen in einem Projekt ohne BMAD-Bestand, und eine Initiative ohne Epics wird nicht erzwungen — die Regeln prüfen die Verbindung, nicht die Vollständigkeit des Vorhabens.
 - Weitere Risiken und Gegenmaßnahmen: [Konzept, Abschnitt 12](sdd_konzept.md).
 
 # Glossar {#section-glossary}
@@ -341,5 +343,8 @@ Die Qualitätsziele aus Abschnitt 1 werden durch Selbstschutzregeln, Tests mit M
 | `QA-<n>` | Kennung einer messbaren Qualitätsanforderung im PRD (ADR 0007); braucht keinen Testverweis, `sdd_trace` verfolgt sie. |
 | Architekturdoku | Diese Seite bzw. `artifacts.architecture` eines Projekts (Standard `docs/arc42.md`); `release:` nennt den beschriebenen Stand. |
 | `touches` | Erklärte Änderungsabsicht eines Features (Pfad-Globs); Grundlage für Gate 1 und SDD-024. |
+| Initiative | Makro-Artefakt mit nummerierten Anforderungen `R<n>`, Constraints und Nicht-Zielen; Grundlage der Epics (ADR 0009). |
+| Epic | Makro-Artefakt mit `parent`, `covers` und `refined`; nennt in `covers`, welche Anforderungen der Initiative es übernimmt. |
+| `pipeline` | Konfigurationswert `sdd` oder `bmad`; `bmad` schaltet die Makro-Ebene und `SDD-080`–`SDD-082` ein. |
 | Profil | `minimal` ⊂ `standard` ⊂ `regulated`: welche Regeln aktiv sind. |
 | Prüfvertrag | Deterministische Beschreibung, wann eine `error`-Regel greift (Handbuch). |
