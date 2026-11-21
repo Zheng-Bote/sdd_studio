@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [0.8.0] — 2026-11-20
 
-Regelkatalog `1.3.0` mit 26 Regeln. Grundlage ist [ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md) — [PRD](docs/prd/bmad-import.md), [Tech Spec](docs/design/bmad-import.md) — und die Notiz [Kombination von SpecDD, Spec Kit und BMAD](docs/notes/kombination-specdd-spec-kit-bmad.md).
+Regelkatalog `1.3.0` mit 26 Regeln. Grundlage ist [ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md) — [PRD](docs/archive/prd/bmad-import.md), [Tech Spec](docs/archive/design/bmad-import.md) — und die Notiz [Kombination von SpecDD, Spec Kit und BMAD](docs/notes/kombination-specdd-spec-kit-bmad.md).
 
 ### Hinzugefügt
 
@@ -20,6 +20,10 @@ Regelkatalog `1.3.0` mit 26 Regeln. Grundlage ist [ADR 0009](docs/adr/0009-bmad-
 
 - **Notiz als Quelle:** die Diskussionsnotiz liegt jetzt unter [`docs/notes/`](docs/notes) und ist versioniert; `data/` (lokale Bestände, Obsidian-Ablage) steht in `.gitignore`.
 - Katalogversion `1.3.0`; der Test, der die Katalogversion prüft, verlangt jetzt mindestens die Version, in der `SDD-012` entstand.
+
+### Archiviert
+
+Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.8.0`): `bmad-import`.
 
 ## [0.7.0] — 2026-11-08
 

@@ -1,6 +1,6 @@
 ---
 feature: bmad-import
-status: active
+status: archived
 archive-after:
 touches:
   - internal/sddcore/config/**
@@ -16,11 +16,12 @@ touches:
   - handbuch/**
   - README.md
   - CHANGELOG.md
+release: v0.8.0
 ---
 
 # Tech Spec — BMAD-Bestand übernehmen und als Strecke führen
 
-Setzt das PRD `docs/prd/bmad-import.md` um, auf Grundlage von ADR 0009.
+Setzt das PRD `docs/archive/prd/bmad-import.md` um, auf Grundlage von ADR 0009.
 
 ## Architektur
 
