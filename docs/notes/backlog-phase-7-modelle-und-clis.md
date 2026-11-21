@@ -80,3 +80,8 @@ Ein eigenes Feature mit PRD und Tech Spec (`docs/prd/`, `docs/design/`), weil es
 Konfiguration, Kern und Oberfläche berührt. Teil A ist klein und unabhängig
 lieferbar; Teil B braucht vorher ein ADR zur Frage, wem die Freigabe gehört,
 wenn ein fremder Agent die Werkzeuge aufruft.
+
+Teil A ist als `desk-model-availability` umgesetzt (v0.9-Kandidat). Für Teil B
+liegt der Vorschlag als [ADR 0010](../adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md)
+vor: MCP-Proxy im Desktop, damit ADR 0003 unverändert gilt. Er ist `proposed` —
+entschieden wird er vom Menschen, nicht durch dieses Dokument.
