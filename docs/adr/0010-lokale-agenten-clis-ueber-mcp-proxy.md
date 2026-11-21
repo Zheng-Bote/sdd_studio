@@ -38,7 +38,9 @@ Erwogen wurden drei Varianten:
 4. **Aufrufe werden über eine Kennung korreliert, nicht über die Reihenfolge.** Über Prozessgrenzen hinweg ist „der nächste Aufruf gehört zu Karte X" nicht belastbar: Die CLI kann parallel arbeiten, wiederholen oder abbrechen. Der Proxy vergibt je Aufruf eine Kennung, führt sie in der Karte und im Protokoll und beantwortet genau den Aufruf, für den entschieden wurde.
 5. **Eine CLI wird nur angeboten, wenn zwei Bedingungen belegt sind.** Beides wird geprüft, nicht angenommen:
    - **Sie lässt sich headless starten** und nimmt einen MCP-Server an (Aufruf ohne Interaktion, Ausgabeformat, Abbruchsignal dokumentiert).
-   - **Sie bringt keine eigenen Werkzeuge mit, die am Proxy vorbeischreiben.** Ein Agent mit eigenem Dateizugriff kann die Zusage aus ADR 0003 nicht halten, gleichgültig wie sauber der Proxy ist. Lässt sich der Eigenzugriff nicht abschalten oder auf das Projektverzeichnis ohne Schreibrecht beschränken, wird die CLI nicht angeboten.
+   - **Ihre eigenen Schreibzugriffe sind mechanisch verhindert**, nicht bloß unerwünscht. Die Tech Spec nennt den Mechanismus: abgeschaltete Datei- und Shell-Werkzeuge, ein Nur-Lese-Mount des Projektverzeichnisses, eine Sandbox ohne Schreibrecht. Geprüft wird nicht die Abwesenheit eigener Werkzeuge, sondern die Wirksamkeit der Sperre.
+
+     Erwogen war, eine CLI nur anzubieten, wenn sie gar keine eigenen Werkzeuge mitbringt, die am Proxy vorbeischreiben. Verworfen: Für die genannten CLIs ist das nicht erfüllbar — Datei- und Shell-Werkzeuge sind ihr Kern, nicht ihre Beigabe; man könnte sie nicht entfernen, ohne die CLI auf einen Textgenerator zu reduzieren (Variante 1). Eine Bedingung, die die Entscheidung selbst aufhebt, ist keine Bedingung. Geprüft wird deshalb die Sperre, nicht die Abwesenheit.
 6. **Cloud bleibt Cloud.** `claude` und — bis zum Beleg des Gegenteils — `agy` und `codewhale` werden als Cloud-Anbieter klassifiziert: Hinweis vor dem ersten Zug, keine stillschweigende Lokalität.
 
 ## Konsequenzen
@@ -49,10 +51,18 @@ Erwogen wurden drei Varianten:
 - **Risiko: Kartenflut.** Ein Agent, der in einem Zug zwanzig Werkzeuge aufruft, erzeugt zwanzig Karten. Gegenmaßnahme ist die bestehende Stufenlogik (lesend ohne Karte, Vorschau vor dem Schreiben), nicht eine pauschale Freigabe.
 - **Risiko: Abbruch und Timeout über Prozessgrenzen.** Stirbt die CLI, muss der Proxy offene Karten zurücknehmen, statt auf eine Entscheidung zu warten, die niemand mehr sieht. Das braucht eine explizite Frist je Aufruf.
 - **Risiko: Belegstand.** Ob eine CLI die Abläufe wirklich trägt, ist danach so unbelegt wie bei den lokalen Modellen. Die Belegstand-Tabelle aus `desk-model-availability` (`internal/desk/evidence.go`) gilt entsprechend: ohne Test „nicht belegt", nie „belegt".
+- **Die Zusage im README stimmt danach nicht mehr, wenn sie bleibt, wie sie ist.** Dort steht: „**Nur die Werkzeuge von `sdd mcp`**, keine eigenen, kein Dateizugriff daran vorbei." Für ein gehostetes CLI gilt das nur für Aktionen **über `sdd`**; was die CLI mit ihren eigenen Werkzeugen schreibt, sieht keine Karte, keine Regelprüfung und kein Gate. Vor der Umsetzung wird die Aussage deshalb eingeschränkt („kein Dateizugriff an `sdd` vorbei") und der CLI-Modus in der Oberfläche sichtbar gekennzeichnet. Eine Zusage, die stillschweigend nicht mehr stimmt, ist der größere Schaden als die Einschränkung.
 - **Nicht entschieden und nicht beauftragt:** welche CLI zuerst kommt, wann Teil B umgesetzt wird und wie der Belegstand je CLI erhoben wird. Dieses ADR entscheidet den Weg, nicht den Fahrplan. Die Umsetzung braucht ein eigenes Feature mit PRD und Tech Spec.
+
+## Vor der Entscheidung
+
+Dieses ADR bleibt `proposed`, bis zwei Dinge geklärt sind. Sie entscheiden, ob die Entscheidung überhaupt einen Gegenstand hat:
+
+1. **Headless-Verträge.** Für `agy` und `codewhale` ist unbelegt, ob sie ohne Interaktion starten, welches Ausgabeformat sie haben, wie sie abbrechen und ob sie einen MCP-Server annehmen. Für `claude` ist das dokumentiert — aber `claude` ist Cloud, das Lokalitätsargument trägt dort nicht.
+2. **Wirksame Schreibsperre.** Je CLI ist zu belegen, mit welchem Mechanismus eigene Schreibzugriffe verhindert werden (Entscheidung 5b). Ein Mechanismus, der auf gutem Willen oder auf einer Einstellung beruht, die die CLI selbst ändern kann, zählt nicht.
+
+Kommt kein Kandidat durch dieses Tor, lautet die richtige Entscheidung **„keine CLI-Integration"**. Auch das ist ein Ergebnis, und es ist billiger als ein Proxy ohne Nutznießer. Der Bau des Proxys beginnt erst nach dieser Klärung, nicht davor.
 
 ## Offene Punkte
 
-- **Headless-Verträge von `agy` und `codewhale`.** Beim Hersteller nachsehen, nicht raten; ohne Beleg keine Aufnahme in die Anbieterliste.
-- **Eigene Werkzeuge der CLIs.** Je CLI prüfen, ob sich der Eigenzugriff abschalten lässt; das Ergebnis gehört in die Tech Spec des Features, nicht in dieses ADR.
 - **Sitzungszuordnung.** Ob eine CLI-Sitzung einer Desktop-Sitzung entspricht oder mehrere erlaubt, entscheidet der Proxy; die Karten müssen auch dann eindeutig bleiben, wenn zwei CLIs gleichzeitig laufen.
