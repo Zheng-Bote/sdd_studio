@@ -3,7 +3,7 @@ import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { ChatPanel } from './chat/chat-panel';
 import { ChatSession } from './core/chat-session';
-import { ModelTest } from './core/types';
+import { ModelOption, ModelTest } from './core/types';
 import { ProcessPanel } from './process/process-panel';
 
 /** Shell: provider and model selection, process sidebar, conversation. */
@@ -27,11 +27,21 @@ import { ProcessPanel } from './process/process-panel';
         <label class="flex items-center gap-1.5 text-sm">
           Modell
           <select class="h-8 max-w-56 rounded-md border bg-background px-2 text-sm" [value]="session.model()" (change)="session.selectModel($any($event.target).value)">
-            @for (m of session.provider()?.models ?? []; track m) {
-              <option [value]="m">{{ m }}</option>
+            @for (m of session.provider()?.models ?? []; track m.name) {
+              <option [value]="m.name">{{ modelOptionText(m) }}</option>
             }
           </select>
         </label>
+        <button
+          hlmBtn
+          variant="ghost"
+          size="sm"
+          type="button"
+          title="Anbieter und Modelle erneut lesen (z. B. nach ollama pull)"
+          (click)="session.refreshMeta()"
+        >
+          Modelle aktualisieren
+        </button>
         <button
           hlmBtn
           variant="outline"
@@ -81,6 +91,10 @@ export class App {
     return modelTestText(t);
   }
 
+  protected modelOptionText(m: ModelOption): string {
+    return modelLabel(m);
+  }
+
   constructor() {
     const dark = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
     const apply = (): void => {
@@ -90,6 +104,11 @@ export class App {
     dark?.addEventListener('change', apply);
     void this.session.load();
   }
+}
+
+/** One line describing a model in the selection: a model without tool calls stays selectable but says so. */
+export function modelLabel(m: ModelOption): string {
+  return m.tools === false ? `${m.name} (ohne Werkzeuge)` : m.name;
 }
 
 /** One line describing a model test for the header. */

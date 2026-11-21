@@ -2,6 +2,12 @@
 
 Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), die Versionierung [Semantic Versioning](https://semver.org/lang/de/). Der Regelkatalog trägt eine eigene Version (`catalog/catalog.yaml`).
 
+## [Unreleased]
+
+### Hinzugefügt
+
+- **Modelle, die ehrlich verfügbar sind** (`desk-model-availability`, Phase 7 Teil A): Der Desktop nennt zu jedem lokalen Modell, ob es Werkzeuge aufrufen kann (`POST /api/show`); ein Modell ohne Werkzeugaufruf bleibt wählbar, ist in der Auswahl als „ohne Werkzeuge“ gekennzeichnet und wird nicht vorausgewählt. Ein Knopf **Modelle aktualisieren** liest Anbieter und Modellliste neu, sodass ein frisch geholtes `ollama pull` ohne Neustart erscheint. Für die Abläufe, deren Ergebnis ein Urteil des Modells ist (`sdd-conflicts`, `sdd-review`), nennt die Karte den Belegstand zum gewählten Modell — belegt, im Test durchgefallen oder nicht belegt — aus einer Tabelle mit Quelle (`internal/desk/evidence.go`); ohne Testeintrag steht dort „nicht belegt“, nie „belegt“.
+
 ## [0.8.0] — 2026-11-20
 
 Regelkatalog `1.3.0` mit 26 Regeln. Grundlage ist [ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md) — [PRD](docs/archive/prd/bmad-import.md), [Tech Spec](docs/archive/design/bmad-import.md) — und die Notiz [Kombination von SpecDD, Spec Kit und BMAD](docs/notes/kombination-specdd-spec-kit-bmad.md).

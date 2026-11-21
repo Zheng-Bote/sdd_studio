@@ -1,6 +1,21 @@
 import { computed, inject, Service, signal } from '@angular/core';
 import { ApiError, DeskApi } from './desk-api';
-import { Decision, Message, Meta, ModelTest, Pending, Provider } from './types';
+import { Decision, EvidenceEntry, Message, Meta, ModelOption, ModelTest, Pending, Provider } from './types';
+
+/**
+ * The model to preselect: one that calls tools, then one whose capability is unknown, then any (desk-model-availability
+ * AC-3). An embedding model is selectable but never the first choice.
+ */
+export function preferredModel(models: ModelOption[]): string {
+  const rank = (m: ModelOption): number => (m.tools === true ? 0 : m.tools === undefined ? 1 : 2);
+  let best: ModelOption | undefined;
+  for (const m of models) {
+    if (!best || rank(m) < rank(best)) {
+      best = m;
+    }
+  }
+  return best?.name ?? '';
+}
 
 /**
  * State of one conversation. The backend is stateless: every turn sends the conversation and the user's decisions.
@@ -68,8 +83,49 @@ export class ChatSession {
 
   selectProvider(id: string): void {
     this.providerId.set(id);
-    this.model.set(this.provider()?.models[0] ?? '');
+    this.model.set(preferredModel(this.provider()?.models ?? []));
     this.modelTest.set(null);
+  }
+
+  /**
+   * Reads /api/meta again, e.g. after `ollama pull`: a model that arrived is selectable without a restart
+   * (desk-model-availability AC-1). Provider, model and conversation stay as they are while they are still offered.
+   */
+  async refreshMeta(): Promise<void> {
+    try {
+      const meta = await this.api.meta();
+      this.meta.set(meta);
+      this.error.set('');
+      const p =
+        meta.providers.find((x) => x.id === this.providerId()) ??
+        meta.providers.find((x) => x.available && x.models.length > 0) ??
+        meta.providers[0];
+      if (!p) {
+        return;
+      }
+      if (p.id !== this.providerId()) {
+        this.selectProvider(p.id);
+      } else if (!p.models.some((m) => m.name === this.model())) {
+        this.model.set(preferredModel(p.models));
+        this.modelTest.set(null);
+      }
+    } catch (e) {
+      this.error.set(errorText(e));
+    }
+  }
+
+  /** Whether the desktop states its evidence for this guided flow (sdd-conflicts, sdd-review). */
+  isJudgmentFlow(flow: string): boolean {
+    return (this.meta()?.judgment_flows ?? []).includes(flow);
+  }
+
+  /**
+   * What is recorded for the selected model with one guided flow. A model without a recorded result is unproven — it
+   * is never reported as proven (desk-model-availability AC-4).
+   */
+  flowEvidence(flow: string): { status: 'proven' | 'failed' | 'unproven'; entry?: EvidenceEntry } {
+    const entry = this.provider()?.models.find((m) => m.name === this.model())?.evidence?.[flow];
+    return entry ? { status: entry.status, entry } : { status: 'unproven' };
   }
 
   selectModel(model: string): void {

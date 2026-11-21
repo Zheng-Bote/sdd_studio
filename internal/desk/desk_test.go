@@ -724,6 +724,129 @@ func TestMetaProjectState(t *testing.T) {
 	}
 }
 
+// metaProvider is one provider as /api/meta reports it.
+type metaProvider struct {
+	ID        string `json:"id"`
+	Available bool   `json:"available"`
+	Note      string `json:"note"`
+	Models    []struct {
+		Name     string                   `json:"name"`
+		Tools    *bool                    `json:"tools"`
+		Evidence map[string]EvidenceEntry `json:"evidence"`
+	} `json:"models"`
+}
+
+func metaOf(t *testing.T, s *Server) ([]metaProvider, []string) {
+	t.Helper()
+	rec := request(t, s.Handler(), http.MethodGet, "/api/meta", "", auth)
+	var meta struct {
+		Providers     []metaProvider `json:"providers"`
+		JudgmentFlows []string       `json:"judgment_flows"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &meta); err != nil || rec.Code != 200 {
+		t.Fatalf("meta %d %s", rec.Code, rec.Body.String())
+	}
+	return meta.Providers, meta.JudgmentFlows
+}
+
+// desk-model-availability AC-6: without Ollama the local provider stays listed as unavailable, and the models known
+// from the configuration stay visible without a guessed capability.
+func TestMetaOllamaUnreachable(t *testing.T) {
+	cfg := &Config{Path: "x", Providers: []Provider{{
+		ID: LocalOllamaID, Name: "Ollama (lokal)", Protocol: ProtocolOllama,
+		Endpoint: "http://127.0.0.1:1", Models: []string{"qwen3:14b"},
+	}}}
+	s := &Server{Addr: "127.0.0.1:48001", Token: "tok", Project: "demo", Config: cfg,
+		HTTP: &http.Client{Timeout: 300 * time.Millisecond}}
+	providers, _ := metaOf(t, s)
+	if len(providers) != 1 {
+		t.Fatalf("providers %+v", providers)
+	}
+	p := providers[0]
+	if !strings.Contains(p.Note, "nicht erreichbar") {
+		t.Errorf("unreachable Ollama must be reported: %+v", p)
+	}
+	// available stays true while the configuration names models: they remain selectable, the note says why they
+	// may fail.
+	if !p.Available {
+		t.Errorf("configured models must stay selectable: %+v", p)
+	}
+	if len(p.Models) != 1 || p.Models[0].Name != "qwen3:14b" || p.Models[0].Tools != nil {
+		t.Errorf("configured model must stay visible and unknown: %+v", p.Models)
+	}
+}
+
+// desk-model-availability AC-2: /api/meta carries the tools capability of every local model, and an answer without
+// a capabilities field stays unknown instead of false.
+func TestMetaLocalCapabilities(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/tags":
+			_, _ = io.WriteString(w, `{"models":[{"name":"qwen3:14b"},{"name":"nomic-embed-text"},{"name":"old:1b"}]}`)
+		case "/api/show":
+			var req struct {
+				Model string `json:"model"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&req)
+			switch req.Model {
+			case "qwen3:14b":
+				_, _ = io.WriteString(w, `{"capabilities":["completion","tools"]}`)
+			case "nomic-embed-text":
+				_, _ = io.WriteString(w, `{"capabilities":["embedding"]}`)
+			default:
+				_, _ = io.WriteString(w, `{}`)
+			}
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	cfg := &Config{Path: "x", Providers: []Provider{{
+		ID: LocalOllamaID, Name: "Ollama (lokal)", Protocol: ProtocolOllama,
+		Endpoint: srv.URL, Models: []string{},
+	}}}
+	s := &Server{Addr: "127.0.0.1:48001", Token: "tok", Project: "demo", Config: cfg, HTTP: srv.Client()}
+	providers, _ := metaOf(t, s)
+	tools := map[string]*bool{}
+	for _, m := range providers[0].Models {
+		tools[m.Name] = m.Tools
+	}
+	if v := tools["qwen3:14b"]; v == nil || !*v {
+		t.Errorf("qwen3:14b must be able to call tools: %v", v)
+	}
+	if v := tools["nomic-embed-text"]; v == nil || *v {
+		t.Errorf("an embedding model must not claim tools: %v", v)
+	}
+	if v, ok := tools["old:1b"]; !ok || v != nil {
+		t.Errorf("a daemon without capabilities leaves the value unknown: %v %v", v, ok)
+	}
+}
+
+// desk-model-availability AC-4: /api/meta names the recorded evidence for a judgment flow and nothing for the rest.
+func TestMetaEvidence(t *testing.T) {
+	cfg := &Config{Path: "x", Providers: []Provider{{
+		ID: "claude", Name: "Claude", Protocol: ProtocolClaude, Cloud: true, APIKey: "k",
+		Models: []string{"claude-sonnet-5.5"},
+	}}}
+	s := &Server{Addr: "127.0.0.1:48001", Token: "tok", Project: "demo", Config: cfg, HTTP: http.DefaultClient}
+	providers, flows := metaOf(t, s)
+	if !slices.Contains(flows, "sdd-conflicts") {
+		t.Errorf("judgment flows %v", flows)
+	}
+	ev := providers[0].Models[0].Evidence
+	if got := ev["sdd-conflicts"].Status; got != EvidenceProven {
+		t.Errorf("claude with sdd-conflicts: %q", got)
+	}
+	if ev["sdd-conflicts"].Source == "" {
+		t.Errorf("evidence must carry its source: %+v", ev["sdd-conflicts"])
+	}
+	if _, ok := ev["sdd-review"]; ok {
+		t.Errorf("sdd-review has no recorded result and must be absent: %+v", ev)
+	}
+}
+
 // desk-approval-scope AC-1, AC-2, AC-4: a session approval given on a preview (allowed_tools) runs further previews
 // without a card but never a write; the preview card is marked preview_only. Live test 2026-11-05: sdd_new allowed on its
 // template preview later wrote the PRD without a card.

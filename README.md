@@ -166,6 +166,8 @@ chmod 600 bin/config/llm.env      # sdd-desk lehnt Dateien ab, die Gruppe oder a
 
 Unterstützt: Ollama lokal, Ollama Cloud, OpenRouter, NVIDIA NIM, Claude und Gemini. Je Anbieter `<ANBIETER>_API_KEY`, optional `<ANBIETER>_ENDPOINT`, `<ANBIETER>_LLM_01…` und `<ANBIETER>_TURN_TIMEOUT` (Frist eines Gesprächszugs, Standard 30 Minuten für lokales Ollama, 10 für Cloud-Anbieter); Prozessvariablen haben Vorrang. Ohne Datei steht nur lokales Ollama zur Verfügung (Modelle über `/api/tags`). Mit `--config <pfad>` lässt sich eine andere Datei angeben.
 
+Je lokalem Modell fragt der Desktop über `/api/show` ab, ob es Werkzeuge aufrufen kann. Ein Modell ohne Werkzeugaufruf bleibt wählbar, ist in der Auswahl aber als „ohne Werkzeuge“ gekennzeichnet und wird nicht vorausgewählt; sagt der Ollama-Dienst nichts über die Fähigkeiten (ältere Version), bleibt der Wert unbekannt, statt geraten zu werden. **Modelle aktualisieren** im Kopfbereich liest Anbieter und Modellliste neu — ein gerade geholtes `ollama pull` erscheint damit ohne Neustart.
+
 ### Starten
 
 Im Repository, das du bearbeiten willst:
@@ -186,7 +188,7 @@ bin/sdd-desk --project . --open
 
 `sdd-desk` gibt Adresse und URL mit Sitzungstoken aus; ohne `--open` diese URL im Browser öffnen. Beenden mit Strg+C.
 
-In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**, **Anforderungen vertiefen** für mittlere und größere Vorhaben, **Verfassung erarbeiten**, **Tests je Kriterium** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Ist das Projekt noch nicht mit sdd erfasst, schlägt ein Hinweis über dem Gespräch **Bestehendes Projekt übernehmen** bzw. **Neues Projekt anlegen** vor. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
+In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab, ob das Modell antwortet und Werkzeuge annimmt —, links einen geführten Ablauf starten (z. B. **Idee → PRD**, **Anforderungen vertiefen** für mittlere und größere Vorhaben, **Verfassung erarbeiten**, **Tests je Kriterium** oder **Abgleich mit der Verfassung**, der Widersprüche zwischen Tech Spec und Verfassung mit Zitaten auflistet) oder frei fragen. Bei den Abläufen, deren Ergebnis ein Urteil des Modells ist (`sdd-conflicts`, `sdd-review`), nennt die Karte den Belegstand zum gewählten Modell — „belegt“, „im Test durchgefallen“ oder „nicht belegt“; die Belege stehen mit Quelle in `internal/desk/evidence.go`. Ist das Projekt noch nicht mit sdd erfasst, schlägt ein Hinweis über dem Gespräch **Bestehendes Projekt übernehmen** bzw. **Neues Projekt anlegen** vor. Die Seitenleiste zeigt den Prozessstand aus `sdd next`. Antworten erscheinen gestreamt, der Gedankengang des Modells ist aufklappbar, und **Abbrechen** beendet einen laufenden Zug.
 
 ### Was der Desktop darf
 
@@ -209,7 +211,7 @@ go run ./cmd/sdd lint
 
 ## Nächste Schritte
 
-- **Kleine lokale Modelle:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher). Im Gegentest mit `qwen3:14b` erfand das Modell bei `sdd-conflicts` Pfade, Zeilen und Zitate und fand die eingebauten Widersprüche nicht; `sdd_conflicts_check` hätte jede dieser Meldungen verworfen, und den versuchten Schreibvorgang hielt die Freigabekarte auf. Auch `qwen3:32b` genügte nicht: Es rief die Prüfung auf, ohne Verfassung und Tech Spec gelesen zu haben, und fand nichts (rund 47 Minuten). Für `sdd-conflicts` taugen die getesteten lokalen Modelle nicht; belegt ist bisher nur Claude Sonnet 5.5.
+- **Kleine lokale Modelle:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher). Im Gegentest mit `qwen3:14b` erfand das Modell bei `sdd-conflicts` Pfade, Zeilen und Zitate und fand die eingebauten Widersprüche nicht; `sdd_conflicts_check` hätte jede dieser Meldungen verworfen, und den versuchten Schreibvorgang hielt die Freigabekarte auf. Auch `qwen3:32b` genügte nicht: Es rief die Prüfung auf, ohne Verfassung und Tech Spec gelesen zu haben, und fand nichts (rund 47 Minuten). Für `sdd-conflicts` taugen die getesteten lokalen Modelle nicht; belegt ist bisher nur Claude Sonnet 5.5. Der Desktop nennt diesen Stand jetzt selbst auf der Ablaufkarte (`desk-model-availability`).
 - **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.
 
 ## Diskussion

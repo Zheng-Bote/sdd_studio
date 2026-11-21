@@ -184,12 +184,21 @@ func ListLocalModels(ctx context.Context, c *http.Client, endpoint string) ([]st
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	if err != nil {
+		return nil, err
+	}
+	return parseTags(body)
+}
+
+// parseTags reads the model names of a /api/tags answer.
+func parseTags(body []byte) ([]string, error) {
 	var tags struct {
 		Models []struct {
 			Name string `json:"name"`
 		} `json:"models"`
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&tags); err != nil {
+	if err := json.Unmarshal(body, &tags); err != nil {
 		return nil, err
 	}
 	var out []string
@@ -197,6 +206,44 @@ func ListLocalModels(ctx context.Context, c *http.Client, endpoint string) ([]st
 		out = append(out, m.Name)
 	}
 	return out, nil
+}
+
+// ModelCapabilities asks a local Ollama instance whether the model can call tools (POST /api/show). A daemon older
+// than the capabilities field, an error or a timeout leaves the value unknown.
+func ModelCapabilities(ctx context.Context, c *http.Client, endpoint, model string) (*bool, error) {
+	resp, err := post(ctx, c, endpoint+"/api/show", nil, map[string]string{"model": model})
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+	return parseCapabilities(body)
+}
+
+// parseCapabilities reads the tools flag of a /api/show answer. Without a capabilities field the answer says nothing
+// about tools, so the result is nil (unknown) instead of false.
+//
+// desk-model-availability AC-2
+func parseCapabilities(body []byte) (*bool, error) {
+	var show struct {
+		Capabilities []string `json:"capabilities"`
+	}
+	if err := json.Unmarshal(body, &show); err != nil {
+		return nil, err
+	}
+	if show.Capabilities == nil {
+		return nil, nil
+	}
+	tools := false
+	for _, c := range show.Capabilities {
+		if c == "tools" {
+			tools = true
+		}
+	}
+	return &tools, nil
 }
 
 // ---------- OpenAI-compatible (OpenRouter, NVIDIA NIM, Gemini) ----------
