@@ -79,7 +79,7 @@ sdd adopt [--profile minimal|standard|regulated] [--apply] [--branch sdd/adopt]
 
 **BMAD-Bestand:** Liegen `_bmad/` oder `_bmad-output/` vor (BMAD v6), erkennt `sdd adopt` die Makro-Ebene ([ADR 0009](../docs/adr/0009-bmad-import-statt-zweitem-prozess.md)): Die Datei `_bmad-output/**/initiative-*.md` wird als **Initiative** klassifiziert, jede `epic-*.md` unter den Tickets als **Epic**, Berichte und Forge-Dateien als Doku. Die vorgeschlagene Konfiguration trägt `pipeline: bmad` und die Ausschlüsse `_bmad/**`, `**/.memlog.md` und die Skill-Spiegel der Agenten-CLIs (`.agent/**`, `.agents/**`, `.claude/**`, `.codewhale/**`, `.cursor/**`); `artifacts.initiative` bleibt auf der Vorgabe `docs/initiative.md`. Der Ledger ist Quelle, das Artefakt entsteht bei der Übernahme — der Bericht nennt den gefundenen Pfad. Makro-Artefakte sind keine Feature-Artefakte: Sie bekommen kein `feature:`-Frontmatter, und der Ledger unter `_bmad-output/` wird nie umgeschrieben. Ohne `_bmad/` und ohne `_bmad-output/` bleibt alles wie bisher.
 
-**Ausgewiesen, nicht ausgeführt:** Die Archivierung (`SDD-050`, nicht baselinefähig) listet der Bericht als Aufräumschritt vor dem ersten Release. Der vorangestellte Status `active` ist eine Annahme; längst umgesetzte Features sind auf `implemented` zu setzen.
+**Ausgewiesen, nicht ausgeführt:** Die Archivierung (`SDD-050`, nicht baselinefähig) listet der Bericht als Aufräumschritt vor dem ersten Release. Der vorangestellte Status `active` ist eine Annahme; längst umgesetzte Features werden im Release-Vorbereitungs-Commit nach dem Archiv verschoben, `sdd archive` setzt `status: archived`. `status: implemented` ist dafür nicht nötig und wird bis zur Archivierung als Befund gemeldet.
 
 ### `sdd report` {#sdd-report}
 
@@ -112,7 +112,7 @@ Nennt den nächsten Prozessschritt — aus den Dateien und denselben Regeln abge
 | ADR | *nicht nötig*, wenn `touches` die Verfassung nicht berührt; sonst erledigt, sobald ein Artefakt des Features auf ein ADR verlinkt, das die Verfassung in `references` nennt und `accepted` ist — bis dahin *manuell* (anlegen, verlinken, entscheiden; `SDD-010` prüft im Gate) |
 | Plan | *nicht nötig* ohne Plan; sonst kein `SDD-040`/`SDD-041` |
 | Tests | kein `SDD-022` für die Kennungen des PRDs |
-| Abschluss | nach dem Merge `status: implemented`; dann vor dem Release archivieren (`SDD-050`). Trägt ein PRD noch `status: draft`, nennt der Schritt es, weil `sdd archive` Entwürfe ablehnt |
+| Abschluss | nach dem Merge bleibt der Status unverändert; im Release-Vorbereitungs-Commit archivieren (`SDD-050`), `sdd archive` setzt `status: archived`. `status: implemented` ist ein Erinnerungsstand: er schaltet den Schritt in `sdd next` von „später“ auf „offen“ und wird bis zur Archivierung als Befund gemeldet (`warn`, in `pre-release` `error`) — deshalb bleibt dieses Repository bis zur Archivierung bei `active`. Trägt ein PRD noch `status: draft`, nennt der Schritt es, weil `sdd archive` Entwürfe ablehnt |
 
 **Projektschritt „Architekturdoku“:** Liegt im Archiv mindestens ein Feature-Artefakt mit `release:`, zeigt `sdd next` „Zum Release: Architekturdoku anlegen“, solange `artifacts.architecture` fehlt, und „Architekturdoku nachführen“, solange ihr `release:` nicht das höchste archivierte Release nennt (`v1.10.0` > `v1.9.0`). Nachgeführt wird mit dem geführten Ablauf `sdd-arc42`. Der Schritt ist kein Befund und blockiert kein Gate.
 

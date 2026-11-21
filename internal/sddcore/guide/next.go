@@ -479,11 +479,11 @@ func featureGuide(root string, cfg *config.Config, slug string, set *artifactSet
 	}
 	if implemented {
 		add(Step{ID: "archive", Title: "Archivieren vor dem Release", State: StateOpen,
-			Detail:  draftHint + "status: implemented — vor dem nächsten Tag nach " + cfg.Artifacts.Archive + " verschieben und status: archived setzen (SDD-050)",
+			Detail:  draftHint + "status: implemented meldet SDD-050 als Befund, bis archiviert ist — vor dem nächsten Tag nach " + cfg.Artifacts.Archive + " verschieben; sdd archive setzt status: archived",
 			Command: "sdd gate pre-release"})
 	} else {
 		add(Step{ID: "archive", Title: "Abschließen und archivieren", State: StateLater,
-			Detail: draftHint + "nach dem Merge status: implemented setzen; vor dem Release archivieren (SDD-050)"})
+			Detail: draftHint + "nach dem Merge bleibt der Status unverändert; im Release-Vorbereitungs-Commit archivieren — sdd archive setzt status: archived (SDD-050)"})
 	}
 
 	for _, state := range []string{StateOpen, StateManual} {

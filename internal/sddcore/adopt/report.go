@@ -141,7 +141,7 @@ func RenderReport(p *Proposal, res *Result) string {
 
 	w("## Hinweise")
 	w("")
-	w("- Ergänzte Feature-Artefakte tragen `status: active`. Längst umgesetzte Features auf `status: implemented` setzen — dann weist sie SDD-050 für die Archivierung aus.")
+	w("- Ergänzte Feature-Artefakte tragen `status: active`. Längst umgesetzte Features im Release-Vorbereitungs-Commit nach dem Archiv verschieben — `sdd archive` setzt `status: archived`. `status: implemented` ist nur ein Erinnerungsstand und wird bis dahin als Befund gemeldet (SDD-050).")
 	if len(inv.Config.Thresholds.Layers) == 0 && len(inv.Config.Thresholds.FeatureArtifactsRequiredWhen.TouchedPaths) == 0 {
 		w("- Die Größenschwelle ist leer: SDD-020/030 verlangen erst dann PRD und Tech Spec, wenn `thresholds.layers` oder `touched_paths` gesetzt sind.")
 	}

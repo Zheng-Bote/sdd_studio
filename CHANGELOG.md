@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Behoben
+
+- **Der Abschluss eines Features widersprach `SDD-050`:** `sdd next`, Handbuch und Anleitung verlangten nach dem Merge `status: implemented` — dieselbe Regel meldet genau diesen Zustand aber als Befund, und `TestSelfDogfoodingClean` verlangt null Befunde auf dem eigenen Repository. Nach dem Merge bleibt der Status jetzt unverändert; archiviert wird im Release-Vorbereitungs-Commit über `sdd archive`, das `status: archived` setzt. `status: implemented` ist ein Erinnerungsstand: er schaltet den Schritt in `sdd next` von „später" auf „offen" und wird bis zur Archivierung gemeldet (`warn`, in `pre-release` `error`). Dieselbe Korrektur im Hinweis des Übernahmeberichts (`sdd adopt`) und in der Meldung, mit der `sdd archive` einen Entwurf ablehnt.
+
 ### Hinzugefügt
 
 - **Modelle, die ehrlich verfügbar sind** (`desk-model-availability`, Phase 7 Teil A): Der Desktop nennt zu jedem lokalen Modell, ob es Werkzeuge aufrufen kann (`POST /api/show`); ein Modell ohne Werkzeugaufruf bleibt wählbar, ist in der Auswahl als „ohne Werkzeuge“ gekennzeichnet und wird nicht vorausgewählt. Ein Knopf **Modelle aktualisieren** liest Anbieter und Modellliste neu, sodass ein frisch geholtes `ollama pull` ohne Neustart erscheint. Für die Abläufe, deren Ergebnis ein Urteil des Modells ist (`sdd-conflicts`, `sdd-review`), nennt die Karte den Belegstand zum gewählten Modell — belegt, im Test durchgefallen oder nicht belegt — aus einer Tabelle mit Quelle (`internal/desk/evidence.go`); ohne Testeintrag steht dort „nicht belegt“, nie „belegt“.
