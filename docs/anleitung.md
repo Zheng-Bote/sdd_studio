@@ -253,7 +253,7 @@ Dann den Branch pushen, als Pull Request öffnen und mergen.
 
 - **Die Baseline schrumpft nur.** Ändert sich eine gebaselinete Stelle, gilt der Eintrag als erledigt, und der Befund ist wieder ein Fehler — wer Altbestand anfasst, bringt ihn in Ordnung. Erledigte Einträge entfernt `sdd baseline --prune`.
 - **Neue Einträge nur bewusst:** `sdd baseline --accept <regel-id> --gate <gate>`, als eigener Commit mit Begründung im Pull Request. Für `SDD-050`, `SDD-051` und `SDD-070`–`SDD-073` ist das verboten.
-- **Längst umgesetzte Features** auf `status: implemented` setzen; vor dem ersten Release archivieren (`SDD-050`, siehe unten).
+- **Längst umgesetzte Features** im Release-Vorbereitungs-Commit archivieren; `sdd archive` setzt `status: archived` (`SDD-050`, siehe unten). `status: implemented` ist nur ein Erinnerungsstand und wird bis zur Archivierung als Befund gemeldet.
 - **Neue Features** laufen ab jetzt wie im Alltag beschrieben. `sdd report` zeigt den Trend des Schuldenstands.
 
 ---
@@ -360,7 +360,7 @@ git push -u origin feature/csv-export
 
 ### 6. Nach dem Merge und vor dem Release
 
-1. Nach dem Merge im PRD `status: implemented` setzen.
+1. Nach dem Merge bleibt der Status der Feature-Artefakte, wie er ist (`active`). `status: implemented` ist ein Erinnerungsstand: `SDD-050` meldet ihn sofort als Befund (`warn`, in `pre-release` `error`), und `sdd next` schaltet damit den Schritt „Abschließen und archivieren“ von *später* auf *offen*.
 2. Vor dem Release die Artefakte abgeschlossener Features archivieren (`SDD-050`): `sdd archive --feature <slug> --release <version>` verschiebt PRD, Tech Spec und Plan nach `docs/archive/` und setzt `status: archived` — nur wenn jedes Akzeptanzkriterium einen Testverweis hat. Archiviert wird verschoben, nicht gelöscht; Links auf die neue Lage anpassen. Danach die Architekturdoku nachführen: `sdd new --type arc42` legt `docs/arc42.md` an, der Ablauf `sdd-arc42` füllt sie aus den Quellen, `release:` nennt die Version; `sdd next` erinnert daran.
 3. Auf dem Release-Branch prüfen:
    ```text

@@ -24,7 +24,7 @@ func Archive(root, feature, release string) (scaffold.Plan, error) {
 		return scaffold.Plan{}, err
 	}
 	if len(drafts) > 0 {
-		return scaffold.Plan{}, fmt.Errorf("%w: Feature %s nicht archivierbar: %s hat status: draft — archiviert wird erst nach Umsetzung und Merge (status: implemented), vor dem Release",
+		return scaffold.Plan{}, fmt.Errorf("%w: Feature %s nicht archivierbar: %s hat status: draft — archiviert wird erst nach Umsetzung und Merge, vor dem Release",
 			scaffold.ErrInvalidInput, feature, strings.Join(drafts, ", "))
 	}
 	trace, err := rules.Trace(&rules.Context{RepoRoot: root, Config: cfg}, feature)
