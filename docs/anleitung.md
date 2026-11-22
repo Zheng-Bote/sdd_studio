@@ -225,7 +225,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: Zheng-Bote/sdd_studio@v0.8.0
+         - uses: Zheng-Bote/sdd_studio@v0.9.0
            with:
              gate: pre-merge
      pre-release:
@@ -235,7 +235,7 @@ git switch main && git branch -D sdd/adopt    # verwerfen
          - uses: actions/checkout@v4
            with:
              fetch-depth: 0
-         - uses: Zheng-Bote/sdd_studio@v0.8.0
+         - uses: Zheng-Bote/sdd_studio@v0.9.0
            with:
              gate: pre-release
    ```
