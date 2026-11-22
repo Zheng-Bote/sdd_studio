@@ -1,12 +1,13 @@
 ---
 feature: clean-code-refactoring
-status: active
+status: archived
 archive-after:
 touches:
   - internal/mcp/**
   - internal/ui/**
   - cmd/**
   - CHANGELOG.md
+release: v0.9.1
 ---
 
 # PRD — Clean Code: Toter Code, Defensives Dispatching und Deduplizierung (`clean-code-refactoring`)

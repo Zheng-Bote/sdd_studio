@@ -1,7 +1,8 @@
 ---
 feature: mcpclient-lifecycle
-status: active
+status: archived
 archive-after:
+release: v0.9.1
 ---
 
 # Plan — Robustes Ressourcenmanagement und idempotenter Lifecycle im MCPClient (`mcpclient-lifecycle`)

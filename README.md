@@ -45,12 +45,12 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 
 ## Stand
 
-Letzte Version: **0.9.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.3.0` mit 26 Regeln. Neu: **Modelle, die ehrlich verfügbar sind** — der Desktop nennt zu jedem lokalen Modell, ob es Werkzeuge aufrufen kann, kennzeichnet Modelle ohne Werkzeugaufruf in der Auswahl und wählt sie nicht voraus; **Modelle aktualisieren** liest Anbieter und Modellliste ohne Neustart neu; für die Urteilsabläufe `sdd-conflicts` und `sdd-review` steht der Belegstand des gewählten Modells auf der Karte. Aus 0.8.0: **BMAD-Bestand übernehmen** (`sdd adopt` erkennt `_bmad/` und `_bmad-output/`, `sdd init --pipeline bmad`, `sdd new --type initiative|epic`) mit der Makro-Ebene aus Initiative (Anforderungen `R1`, `R2`, …) und Epics, drei Regeln `SDD-080`–`SDD-082` und den Abläufen `sdd-ingest-bmad`, `sdd-architecture`, `sdd-epic-refine`. Die Seitenleiste des Desktops trennt „Vorhaben“ und „Features“. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern, Commit) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.9.0`.
+Letzte Version: **0.9.1** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.3.0` mit 26 Regeln. Neu in 0.9.1: **Security Hardening, MCPClient-Lifecycle & Clean Code** (`POST /api/open` gegen Symlink-Pfadflucht gehärtet, `Origin`-Validierung für `POST /api/*` in `sdd-desk`, Timeout-Cleanup und idempotentes Prozess-Reaping in `MCPClient`, defensives Dispatching und Deduplizierung) sowie **ADR 0010 angenommen** (Headless-Verträge für `claude` und `codewhale` belegt). Aus 0.9.0: **Modelle, die ehrlich verfügbar sind** — der Desktop nennt zu jedem lokalen Modell, ob es Werkzeuge aufrufen kann, kennzeichnet Modelle ohne Werkzeugaufruf in der Auswahl und wählt sie nicht voraus; **Modelle aktualisieren** liest Anbieter und Modellliste ohne Neustart neu; für die Urteilsabläufe `sdd-conflicts` und `sdd-review` steht der Belegstand des gewählten Modells auf der Karte. Aus 0.8.0: **BMAD-Bestand übernehmen** (`sdd adopt` erkennt `_bmad/` und `_bmad-output/`, `sdd init --pipeline bmad`, `sdd new --type initiative|epic`) mit der Makro-Ebene aus Initiative (Anforderungen `R1`, `R2`, …) und Epics, drei Regeln `SDD-080`–`SDD-082` und den Abläufen `sdd-ingest-bmad`, `sdd-architecture`, `sdd-epic-refine`. Die Seitenleiste des Desktops trennt „Vorhaben“ und „Features“. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern, Commit) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.9.1`.
 
 - **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.9.0 liegen archiviert unter [`docs/archive`](docs/archive)
+- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.9.1 liegen archiviert unter [`docs/archive`](docs/archive)
 
 ### Regeln
 
@@ -111,7 +111,7 @@ Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/featu
 Die [GitHub Action](action.yml) baut `sdd`, führt `sdd gate <gate>` aus und schreibt den Bericht in die Job-Zusammenfassung:
 
 ```yaml
-- uses: Zheng-Bote/sdd_studio@v0.9.0
+- uses: Zheng-Bote/sdd_studio@v0.9.1
   with:
     gate: pre-merge
 ```

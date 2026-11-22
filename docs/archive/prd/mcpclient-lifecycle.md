@@ -1,10 +1,11 @@
 ---
 feature: mcpclient-lifecycle
-status: active
+status: archived
 archive-after:
 touches:
   - internal/desk/**
   - CHANGELOG.md
+release: v0.9.1
 ---
 
 # PRD — Robustes Ressourcenmanagement und idempotenter Lifecycle im MCPClient (`mcpclient-lifecycle`)

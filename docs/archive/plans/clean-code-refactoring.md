@@ -1,7 +1,8 @@
 ---
 feature: clean-code-refactoring
-status: active
+status: archived
 archive-after:
+release: v0.9.1
 ---
 
 # Plan — Clean Code: Toter Code, Defensives Dispatching und Deduplizierung (`clean-code-refactoring`)

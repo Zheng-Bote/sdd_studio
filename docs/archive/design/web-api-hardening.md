@@ -1,11 +1,12 @@
 ---
 feature: web-api-hardening
-status: active
+status: archived
 archive-after:
 touches:
   - internal/ui/**
   - internal/desk/**
   - CHANGELOG.md
+release: v0.9.1
 ---
 
 # Tech Spec — Security Hardening für lokale Web-APIs (`web-api-hardening`)

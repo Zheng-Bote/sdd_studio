@@ -1,7 +1,8 @@
 ---
 feature: web-api-hardening
-status: active
+status: archived
 archive-after:
+release: v0.9.1
 ---
 
 # Plan — Security Hardening für lokale Web-APIs (`web-api-hardening`)

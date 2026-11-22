@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-11-22
+
+Regelkatalog unverändert `1.3.0` mit 26 Regeln. Grundlage sind die Features `web-api-hardening` ([PRD](docs/archive/prd/web-api-hardening.md), [Tech Spec](docs/archive/design/web-api-hardening.md), [Plan](docs/archive/plans/web-api-hardening.md)), `mcpclient-lifecycle` ([PRD](docs/archive/prd/mcpclient-lifecycle.md), [Tech Spec](docs/archive/design/mcpclient-lifecycle.md), [Plan](docs/archive/plans/mcpclient-lifecycle.md)) und `clean-code-refactoring` ([PRD](docs/archive/prd/clean-code-refactoring.md), [Tech Spec](docs/archive/design/clean-code-refactoring.md), [Plan](docs/archive/plans/clean-code-refactoring.md)) sowie [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md).
+
 ### Behoben
 
 - **Clean Code: Toter Code, Defensives Dispatching und Deduplizierung** (`clean-code-refactoring`, Issue #24): Unerreichbaren `case classConfig:`-Zweig in `internal/mcp/write.go` (`toolWrite`) entfernt (`CC-01`), `sdd_adopt_apply` in `internal/mcp/critical.go` (`runCritical`) explizit gematcht und `default:` mit `errUnknownTool` abgesichert (`CC-03`), Inline-Code-Platzhalter in `internal/ui/markdown.go` auf numerische Indizes umgestellt (`CC-02`) sowie `ui.OpenBrowser` zwischen `cmd/sdd/ui.go` und `cmd/sdd-desk/main.go` dedupliziert (`CC-04`).
@@ -14,6 +18,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 - **Headless-Verträge der Agenten-CLIs belegt, ADR 0010 angenommen** ([Belegnote](docs/notes/headless-vertraege-agenten-clis.md), [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md), Phase 7 Teil B): Die fünf Fragen aus ADR 0010 — headless, Ausgabeformat, Abbruchsignal, MCP-Annahme, wirksame Schreibsperre — sind für `claude` 2.1.330, `agy` 1.5.9 und `codewhale` 0.10.3 gegen die installierten Programme geprüft, mit Versuchsaufbau und Belegen. Ergebnis: `claude` und `codewhale` bestehen beide Bedingungen — bei beiden ging ein MCP-Werkzeugaufruf durch (`PROBE-MCP-OK`), während ein Shell-Schreibversuch abgewiesen wurde (bei `claude` als `permission_denials`, bei `codewhale` durch die Betriebssystem-Sandbox mit `Operation not permitted`; Datei jeweils nicht angelegt), und beide enden auf `SIGTERM` mit Exit 143. `agy` besteht die Schreibsperre nicht (Standardmodus führt Shell-Schreibbefehle ohne Freigabe aus, `--mode plan` sperrt auch MCP) und wird zurückgestellt. ADR 0010 ist damit `accepted` und mit `SDD-011` gelockt. Ein Befund für den Bau: `--allowed-tools` ist bei `codewhale` eine Allowlist, die auch den Aufrufpfad (`tool_search`) wegnimmt — die Liste muss ihn einschließen, sonst ist selbst das erlaubte MCP-Werkzeug nicht ladbar.
 - **Diskussionsnotiz um OpenSpec und die Einstiegspunkte erweitert** ([`docs/notes/kombination-specdd-spec-kit-bmad.md`](docs/notes/kombination-specdd-spec-kit-bmad.md)): Die Quelle zur Makro-Ebene beschreibt jetzt vier Bausteine und trennt **Greenfield, Brownfield und BMAD-Vorgeschichte**, weil sie unterschiedliche Reihenfolgen verlangen — im Bestand kommt die Bestandsaufnahme vor der Verfassung. Die Angaben zu OpenSpec sind gegen die Primärquelle geprüft (`openspec/changes/<change>/` mit `proposal.md`, `specs/`, `design.md`, `tasks.md`; `openspec/specs/`; Archiv nach Abschluss). Die Notiz hält außerdem fest, dass BMAD v6 sein Werkzeug unter `.agents/skills/…` installiert — `sdd adopt` erkennt deshalb am Ergebnis `_bmad-output/`, nicht am Werkzeugordner `_bmad/`. Anleitung: der fehlende Abschnitt **C) Projekt mit BMAD-Vorgeschichte** steht jetzt im Inhaltsverzeichnis.
+
+### Archiviert
+
+Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.9.1`): `web-api-hardening`, `mcpclient-lifecycle`, `clean-code-refactoring`.
 
 ## [0.9.0] — 2026-11-22
 
