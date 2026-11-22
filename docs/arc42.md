@@ -1,11 +1,11 @@
 ---
 status: active
-release: v0.8.0
+release: v0.9.0
 ---
 
 # Architekturdokumentation — SDD Studio (arc42)
 
-Stand: Release v0.8.0 (Regelkatalog `1.3.0`, 26 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
+Stand: Release v0.9.0 (Regelkatalog `1.3.0`, 26 Regeln). Gliederung nach dem [arc42](https://arc42.org)-Template 9.1 (© Dr. Peter Hruschka, Dr. Gernot Starke und Mitwirkende), lizenziert unter [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); Überschriften ins Deutsche übertragen. Diese Seite fasst zusammen und verweist; maßgeblich bleiben [Verfassung](../constitution.md), [ADRs](adr/), [Konzept](sdd_konzept.md) und [Handbuch](../handbuch/).
 
 # Einführung und Ziele {#section-introduction-and-goals}
 
@@ -138,7 +138,7 @@ Begründung: Die Bibliothek ist die Wahrheit, jede Oberfläche (CLI, `sdd ui`, M
 
 - **CLI** — Kommandos und Exit-Codes, Berichtsformat JSON `schema_version: 1`.
 - **MCP** — Werkzeuge mit Ein-/Ausgabeschema; schreibend nur mit `--allow-write`, kritisch nur mit `--allow-critical`.
-- **Desk-API** — `POST /api/turn[/stream]` mit `allowed_tools`, `allowed_writes`, `approved_calls`, `denied_calls`; Sitzungstoken. `GET /api/meta` nennt je lokalem Modell die Fähigkeit `tools` (`POST /api/show` beim Ollama-Dienst; unbekannt, wenn er sie nicht meldet) und je Urteilsablauf den Belegstand aus `internal/desk/evidence.go`.
+- **Desk-API** — `POST /api/turn[/stream]` mit `allowed_tools`, `allowed_writes`, `approved_calls`, `denied_calls`; Sitzungstoken. `GET /api/meta` nennt je lokalem Modell die Fähigkeit `tools` (`POST /api/show` beim Ollama-Dienst; unbekannt, wenn er sie nicht meldet) und je Urteilsablauf den Belegstand aus `internal/desk/evidence.go`. Der Knopf **Modelle aktualisieren** ruft `GET /api/meta` erneut ab, sodass ein frisch geholtes Modell ohne Neustart erscheint.
 
 ## Ebene 2 {#_level_2}
 

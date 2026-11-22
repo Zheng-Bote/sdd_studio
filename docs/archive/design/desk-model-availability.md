@@ -1,6 +1,6 @@
 ---
 feature: desk-model-availability
-status: active
+status: archived
 archive-after:
 touches:
   - internal/desk/**
@@ -8,6 +8,7 @@ touches:
   - README.md
   - CHANGELOG.md
   - docs/arc42.md
+release: v0.9.0
 ---
 
 # Tech Spec — Modelle im Desktop, die ehrlich verfügbar sind (`desk-model-availability`)
