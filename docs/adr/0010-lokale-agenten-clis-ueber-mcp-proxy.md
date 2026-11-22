@@ -6,6 +6,7 @@ references:
   - constitution.md
   - docs/adr/0003-ki-desktop-darf-alle-sdd-aktionen-mit-freigabe.md
   - docs/notes/backlog-phase-7-modelle-und-clis.md
+  - docs/notes/headless-vertraege-agenten-clis.md
 ---
 
 # ADR 0010 — Lokale Agenten-CLIs nur über einen MCP-Proxy des Desktops
@@ -62,6 +63,24 @@ Dieses ADR bleibt `proposed`, bis zwei Dinge geklärt sind. Sie entscheiden, ob 
 2. **Wirksame Schreibsperre.** Je CLI ist zu belegen, mit welchem Mechanismus eigene Schreibzugriffe verhindert werden (Entscheidung 5b). Ein Mechanismus, der auf gutem Willen oder auf einer Einstellung beruht, die die CLI selbst ändern kann, zählt nicht.
 
 Kommt kein Kandidat durch dieses Tor, lautet die richtige Entscheidung **„keine CLI-Integration"**. Auch das ist ein Ergebnis, und es ist billiger als ein Proxy ohne Nutznießer. Der Bau des Proxys beginnt erst nach dieser Klärung, nicht davor.
+
+### Belegstand vom 2026-11-22
+
+Die Recherche ist gelaufen; Belege und Versuchsaufbau stehen in [`docs/notes/headless-vertraege-agenten-clis.md`](../notes/headless-vertraege-agenten-clis.md). Geprüft wurden `claude` 2.1.330, `agy` 1.5.9 und `codewhale` 0.10.2 gegen die lokal installierten Programme.
+
+| CLI | 5a headless + MCP | 5b wirksame Schreibsperre | Ergebnis |
+|---|---|---|---|
+| `claude` | belegt | belegt (`--allowedTools` ist eine Allowlist; Shell-Schreibversuch als `permission_denials` abgewiesen, Datei nicht angelegt) | **besteht** |
+| `agy` | belegt, Abbruchsignal nur Exit 1 (nicht unterscheidbar) | **nicht belegt** — Standardmodus führt Shell-Schreibbefehle ohne Freigabe aus; `--mode plan` sperrt den Schreibzugriff, aber auch MCP | besteht nicht |
+| `codewhale` | laut Vertrag, Lauf ohne Anbieterschlüssel nicht möglich | Mechanismus vorhanden und betriebssystemseitig durchgesetzt (`--sandbox read-only` verweigert Schreiben mit `EPERM`), Kombination mit MCP nicht belegt | offen |
+
+Damit ist die Lage nicht mehr „unbekannt", sondern entscheidbar:
+
+- **`claude` ist der erste Kandidat.** Beide Bedingungen belegt. Es bleibt Cloud: der Hinweis „Inhalte verlassen das Gerät" gilt, und die README-Zusage aus den Konsequenzen ist vor der Umsetzung einzuschränken.
+- **`codewhale` ist der passendste Vertrag für den Proxy** (`--parent-death-watch` beantwortet das Abbruchrisiko, `--max-turns`/`--max-tool-calls` die Kartenflut), braucht aber einen Beleglauf mit Schlüssel.
+- **`agy` wird zurückgestellt.** Ohne belegte Schreibsperre kein Angebot.
+
+Über Annahme, Verwerfung oder Einschränkung entscheidet der Mensch — dieses ADR bleibt bis dahin `proposed`.
 
 ## Offene Punkte
 

@@ -6,6 +6,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ### Geändert
 
+- **Headless-Verträge der Agenten-CLIs belegt** ([`docs/notes/headless-vertraege-agenten-clis.md`](docs/notes/headless-vertraege-agenten-clis.md), Phase 7 Teil B): Die fünf Fragen aus [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md) — headless, Ausgabeformat, Abbruchsignal, MCP-Annahme, wirksame Schreibsperre — sind für `claude` 2.1.330, `agy` 1.5.9 und `codewhale` 0.10.2 gegen die installierten Programme geprüft, mit Versuchsaufbau und Belegen. Ergebnis: `claude` besteht beide Bedingungen (MCP-Werkzeug aufgerufen, Shell-Schreibversuch als `permission_denials` abgewiesen, Datei nicht angelegt); `agy` besteht die Schreibsperre nicht (Standardmodus führt Shell-Schreibbefehle ohne Freigabe aus, `--mode plan` sperrt auch MCP); `codewhale` hat den Mechanismus (`--sandbox read-only` betriebssystemseitig durchgesetzt), der Beleglauf mit Modell steht aus. ADR 0010 bleibt `proposed` und trägt den Belegstand jetzt selbst.
+
+### Geändert
+
 - **Diskussionsnotiz um OpenSpec und die Einstiegspunkte erweitert** ([`docs/notes/kombination-specdd-spec-kit-bmad.md`](docs/notes/kombination-specdd-spec-kit-bmad.md)): Die Quelle zur Makro-Ebene beschreibt jetzt vier Bausteine und trennt **Greenfield, Brownfield und BMAD-Vorgeschichte**, weil sie unterschiedliche Reihenfolgen verlangen — im Bestand kommt die Bestandsaufnahme vor der Verfassung. Die Angaben zu OpenSpec sind gegen die Primärquelle geprüft (`openspec/changes/<change>/` mit `proposal.md`, `specs/`, `design.md`, `tasks.md`; `openspec/specs/`; Archiv nach Abschluss). Die Notiz hält außerdem fest, dass BMAD v6 sein Werkzeug unter `.agents/skills/…` installiert — `sdd adopt` erkennt deshalb am Ergebnis `_bmad-output/`, nicht am Werkzeugordner `_bmad/`. Anleitung: der fehlende Abschnitt **C) Projekt mit BMAD-Vorgeschichte** steht jetzt im Inhaltsverzeichnis.
 
 ## [0.9.0] — 2026-11-22
