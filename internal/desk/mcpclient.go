@@ -18,6 +18,8 @@ type MCPClient struct {
 	nextID       int64
 	pending      map[int64]chan rpcReply
 	closed       chan struct{}
+	closeOnce    sync.Once
+	closeTimeout time.Duration
 	err          error
 	Instructions string
 	cmd          *exec.Cmd
@@ -115,9 +117,16 @@ func (c *MCPClient) Call(method string, params any) (json.RawMessage, error) {
 		_, err = c.w.Write(append(data, '\n'))
 	}
 	c.mu.Unlock()
+	defer func() {
+		c.mu.Lock()
+		delete(c.pending, id)
+		c.mu.Unlock()
+	}()
 	if err != nil {
 		return nil, err
 	}
+	timer := time.NewTimer(c.Timeout)
+	defer timer.Stop()
 	select {
 	case r := <-ch:
 		if r.Error != nil {
@@ -126,7 +135,7 @@ func (c *MCPClient) Call(method string, params any) (json.RawMessage, error) {
 		return r.Result, nil
 	case <-c.closed:
 		return nil, c.err
-	case <-time.After(c.Timeout):
+	case <-timer.C:
 		return nil, fmt.Errorf("sdd mcp: keine Antwort auf %s", method)
 	}
 }
@@ -206,19 +215,30 @@ func (c *MCPClient) CallTool(name string, args json.RawMessage) (*ToolResult, er
 	return out, nil
 }
 
-// Close ends the child process.
+// Close ends the child process idempotently and waits for it to be reaped.
 func (c *MCPClient) Close() error {
-	if closer, ok := c.w.(io.Closer); ok {
-		_ = closer.Close()
-	}
-	if c.cmd != nil {
-		done := make(chan error, 1)
-		go func() { done <- c.cmd.Wait() }()
-		select {
-		case <-done:
-		case <-time.After(3 * time.Second):
-			_ = c.cmd.Process.Kill()
+	c.closeOnce.Do(func() {
+		if closer, ok := c.w.(io.Closer); ok {
+			_ = closer.Close()
 		}
-	}
+		if c.cmd != nil {
+			done := make(chan error, 1)
+			go func() { done <- c.cmd.Wait() }()
+			timeout := c.closeTimeout
+			if timeout <= 0 {
+				timeout = 3 * time.Second
+			}
+			timer := time.NewTimer(timeout)
+			defer timer.Stop()
+			select {
+			case <-done:
+			case <-timer.C:
+				if c.cmd.Process != nil {
+					_ = c.cmd.Process.Kill()
+				}
+				<-done
+			}
+		}
+	})
 	return nil
 }
