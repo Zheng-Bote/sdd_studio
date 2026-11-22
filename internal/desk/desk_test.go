@@ -12,9 +12,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -999,5 +1001,89 @@ func TestCommitIsCritical(t *testing.T) {
 	}
 	if len(res.Pending) != 1 || !res.Pending[0].Critical {
 		t.Fatalf("sdd_commit must wait for a single confirmation: %+v", res.Pending)
+	}
+}
+
+type failingWriter struct{}
+
+func (failingWriter) Write([]byte) (int, error) { return 0, errors.New("write failed") }
+
+// mcpclient-lifecycle AC-1: a timed-out or failed Call removes its request ID from c.pending.
+func TestMCPClientCallTimeoutCleansPending(t *testing.T) {
+	clientR, serverW := io.Pipe()
+	defer serverW.Close()
+	c := NewMCPClient(clientR, io.Discard)
+	c.Timeout = 20 * time.Millisecond
+
+	if _, err := c.Call("ping", map[string]any{}); err == nil || !strings.Contains(err.Error(), "keine Antwort auf ping") {
+		t.Fatalf("want timeout error, got %v", err)
+	}
+	c.mu.Lock()
+	leftAfterTimeout := len(c.pending)
+	c.mu.Unlock()
+	if leftAfterTimeout != 0 {
+		t.Errorf("pending entries after timeout: %d, want 0", leftAfterTimeout)
+	}
+
+	cFail := NewMCPClient(clientR, failingWriter{})
+	if _, err := cFail.Call("ping", map[string]any{}); err == nil {
+		t.Fatal("want write error")
+	}
+	cFail.mu.Lock()
+	leftAfterErr := len(cFail.pending)
+	cFail.mu.Unlock()
+	if leftAfterErr != 0 {
+		t.Errorf("pending entries after write error: %d, want 0", leftAfterErr)
+	}
+}
+
+func TestMCPHelperIgnoreStdin(t *testing.T) {
+	if os.Getenv("SDD_TEST_HELPER_HANG") != "1" {
+		return
+	}
+	time.Sleep(30 * time.Second)
+}
+
+// mcpclient-lifecycle AC-2: Close is idempotent across repeated and concurrent calls.
+// mcpclient-lifecycle AC-3: Close waits for cmd.Wait after Process.Kill so the child process is reaped.
+func TestMCPClientCloseIdempotentAndReapsProcess(t *testing.T) {
+	exe, err := os.Executable()
+	if err != nil {
+		t.Skipf("executable unknown: %v", err)
+	}
+	cmd := exec.Command(exe, "-test.run=^TestMCPHelperIgnoreStdin$")
+	cmd.Env = append(os.Environ(), "SDD_TEST_HELPER_HANG=1")
+	in, err := cmd.StdinPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	c := NewMCPClient(out, in)
+	c.cmd = cmd
+	c.closeTimeout = 30 * time.Millisecond
+
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := c.Close(); err != nil {
+				t.Errorf("Close: %v", err)
+			}
+		}()
+	}
+	wg.Wait()
+	if err := c.Close(); err != nil {
+		t.Fatalf("second Close: %v", err)
+	}
+	if cmd.ProcessState == nil {
+		t.Fatal("child process was not reaped by cmd.Wait after Kill")
 	}
 }
