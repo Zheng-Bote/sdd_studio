@@ -389,6 +389,7 @@ func TestPaletteReachesAllViews(t *testing.T) {
 }
 
 // sdd-ui AC-7: opening a finding in $EDITOR is token-protected and limited to files in the repository.
+// web-api-hardening AC-1: POST /api/open starts $EDITOR for a regular file inside the repository root and returns 204.
 func TestOpenStaysInRepository(t *testing.T) {
 	root := project(t)
 	s := server(root)
@@ -416,5 +417,36 @@ func TestOpenStaysInRepository(t *testing.T) {
 	t.Setenv("EDITOR", "")
 	if rec := post(t, s, "/api/open", `{"path":"constitution.md","line":3}`); rec.Code != http.StatusBadRequest {
 		t.Errorf("empty $EDITOR: %d", rec.Code)
+	}
+}
+
+// web-api-hardening AC-2: POST /api/open rejects symbolic links and paths whose parent directory resolves outside s.Root.
+func TestOpenRejectsSymlinkEscape(t *testing.T) {
+	root := project(t)
+	outside := t.TempDir()
+	outsideFile := filepath.Join(outside, "secret.md")
+	if err := os.WriteFile(outsideFile, []byte("secret"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outsideFile, filepath.Join(root, "docs", "leak.md")); err != nil {
+		t.Skipf("symlink not supported: %v", err)
+	}
+	if err := os.Symlink(outside, filepath.Join(root, "docs", "escapedir")); err != nil {
+		t.Fatal(err)
+	}
+
+	s := server(root)
+	var called []string
+	s.Exec = func(name string, args ...string) error { called = append([]string{name}, args...); return nil }
+	t.Setenv("EDITOR", "nvim")
+
+	for _, rel := range []string{"docs/leak.md", "docs/escapedir/secret.md"} {
+		rec := post(t, s, "/api/open", `{"path":"`+rel+`","line":1}`)
+		if rec.Code != http.StatusBadRequest && rec.Code != http.StatusNotFound {
+			t.Errorf("%s: got status %d, want 400 or 404 (%s)", rel, rec.Code, rec.Body.String())
+		}
+	}
+	if called != nil {
+		t.Fatalf("editor must not start for symlink escapes: %v", called)
 	}
 }

@@ -459,7 +459,7 @@ func request(t *testing.T, h http.Handler, method, path, body string, hdr map[st
 	return rec
 }
 
-var auth = map[string]string{"X-SDD-Token": "tok", "Content-Type": "application/json"}
+var auth = map[string]string{"X-SDD-Token": "tok", "Origin": "http://127.0.0.1:48001", "Content-Type": "application/json"}
 
 // sdd-desk AC-6: guided prompts of sdd mcp and the process state are available to the UI.
 func TestPromptsAndNext(t *testing.T) {
@@ -479,6 +479,8 @@ func TestPromptsAndNext(t *testing.T) {
 }
 
 // sdd-desk AC-7: Host check, token for every API call, CSP, and no key in any response.
+// web-api-hardening AC-3: POST /api/* without or with foreign Origin is rejected with 403 Forbidden.
+// web-api-hardening AC-4: POST /api/* with valid Origin, Host and X-SDD-Token is processed normally.
 func TestServerSecurity(t *testing.T) {
 	_, h := testServer(t)
 	req := httptest.NewRequest(http.MethodGet, "http://evil.example/api/meta", nil)
@@ -492,7 +494,15 @@ func TestServerSecurity(t *testing.T) {
 	if rec := request(t, h, http.MethodGet, "/api/meta", "", nil); rec.Code != http.StatusForbidden {
 		t.Errorf("no token: %d", rec.Code)
 	}
-	if rec := request(t, h, http.MethodPost, "/api/turn", `{}`, map[string]string{"X-SDD-Token": "tok", "Content-Type": "text/plain"}); rec.Code != http.StatusUnsupportedMediaType {
+	for name, hdr := range map[string]map[string]string{
+		"no origin":      {"X-SDD-Token": "tok", "Content-Type": "application/json"},
+		"foreign origin": {"X-SDD-Token": "tok", "Origin": "http://evil.example", "Content-Type": "application/json"},
+	} {
+		if rec := request(t, h, http.MethodPost, "/api/turn", `{}`, hdr); rec.Code != http.StatusForbidden {
+			t.Errorf("%s: got %d, want 403", name, rec.Code)
+		}
+	}
+	if rec := request(t, h, http.MethodPost, "/api/turn", `{}`, map[string]string{"X-SDD-Token": "tok", "Origin": "http://127.0.0.1:48001", "Content-Type": "text/plain"}); rec.Code != http.StatusUnsupportedMediaType {
 		t.Errorf("form post: %d", rec.Code)
 	}
 	rec = request(t, h, http.MethodGet, "/api/meta", "", auth)

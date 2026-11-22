@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Behoben
+
+- **Security Hardening für lokale Web-APIs** (`web-api-hardening`, Issue #22): `POST /api/open` in `sdd ui` (`internal/ui/api.go`) prüft Zielpfade mit `os.Lstat` und `filepath.EvalSymlinks` gegen das Repository-Wurzelverzeichnis, sodass symbolische Links oder über verlinkte Elternverzeichnisse ausbrechende Pfade abgewiesen werden und `$EDITOR` nicht starten (`SEC-01`). `sdd-desk` (`internal/desk/server.go`) validiert bei allen `POST /api/*`-Anfragen analog zu `sdd ui` zusätzlich den `Origin`-Header gegen `"http://" + s.Addr` (`SEC-02`).
+
 ### Geändert
 
 - **Headless-Verträge der Agenten-CLIs belegt, ADR 0010 angenommen** ([Belegnote](docs/notes/headless-vertraege-agenten-clis.md), [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md), Phase 7 Teil B): Die fünf Fragen aus ADR 0010 — headless, Ausgabeformat, Abbruchsignal, MCP-Annahme, wirksame Schreibsperre — sind für `claude` 2.1.330, `agy` 1.5.9 und `codewhale` 0.10.3 gegen die installierten Programme geprüft, mit Versuchsaufbau und Belegen. Ergebnis: `claude` und `codewhale` bestehen beide Bedingungen — bei beiden ging ein MCP-Werkzeugaufruf durch (`PROBE-MCP-OK`), während ein Shell-Schreibversuch abgewiesen wurde (bei `claude` als `permission_denials`, bei `codewhale` durch die Betriebssystem-Sandbox mit `Operation not permitted`; Datei jeweils nicht angelegt), und beide enden auf `SIGTERM` mit Exit 143. `agy` besteht die Schreibsperre nicht (Standardmodus führt Shell-Schreibbefehle ohne Freigabe aus, `--mode plan` sperrt auch MCP) und wird zurückgestellt. ADR 0010 ist damit `accepted` und mit `SDD-011` gelockt. Ein Befund für den Bau: `--allowed-tools` ist bei `codewhale` eine Allowlist, die auch den Aufrufpfad (`tool_search`) wegnimmt — die Liste muss ihn einschließen, sonst ist selbst das erlaubte MCP-Werkzeug nicht ladbar.

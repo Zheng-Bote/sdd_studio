@@ -75,9 +75,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusForbidden, errors.New("Sitzungstoken fehlt oder ist ungültig"))
 			return
 		}
-		if r.Method == http.MethodPost && !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
-			writeError(w, http.StatusUnsupportedMediaType, errors.New("Content-Type application/json erforderlich"))
-			return
+		if r.Method == http.MethodPost {
+			if r.Header.Get("Origin") != "http://"+s.Addr {
+				writeError(w, http.StatusForbidden, errors.New("unerwarteter Origin"))
+				return
+			}
+			if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+				writeError(w, http.StatusUnsupportedMediaType, errors.New("Content-Type application/json erforderlich"))
+				return
+			}
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
 	}
