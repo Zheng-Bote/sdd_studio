@@ -77,7 +77,7 @@ Hier ist **nichts neu zu erfinden**. Anforderungen werden **wörtlich** übernom
 
 Was `sdd` an dieser Stelle tut: `sdd adopt` erkennt `_bmad-output/` und schaltet `pipeline: bmad` ein; `sdd-ingest-bmad`, `sdd-architecture` und `sdd-epic-refine` führen durch die Schritte, und `SDD-080`–`SDD-082` prüfen maschinell, dass Anforderung → Epic → Index zusammenpassen. Der Ledger unter `_bmad-output/` bleibt unverändert und wird nur gelesen.
 
-**Ein Befund aus der Praxis (2026-11-22):** BMAD v6 installiert sein Werkzeug nicht mehr zwingend unter `_bmad/`, sondern als Skills unter `.agents/skills/…`; im Referenzbestand `GeoGallery` ist `_bmad/` verschwunden, während `_bmad-output/` blieb. Die Erkennung hängt deshalb zu Recht am **Ergebnis** (`_bmad-output/`), nicht am Werkzeugordner. Ein Probelauf über diesen Bestand erkennt 8 Epics und die Initiative; Architektur-Spine, Forge-Brief, Review-Berichte und die Stories unter `tickets/epic-*/tickets/` werden als Doku klassifiziert, nicht als Feature-Artefakte.
+**Ein Befund aus der Praxis (2026-11-22):** BMAD v6 installiert sein Werkzeug nicht mehr unter `_bmad/`, sondern als Skills unter `.agents/skills/` (26 `bmad-*`-Skills, dazu das Modulverzeichnis `bmod-method`; installiert mit `npx skills add bmad-code-org/BMAD-METHOD --skill bmad`); im Referenzbestand `GeoGallery` ist `_bmad/` vollständig verschwunden, während `_bmad-output/` blieb. Die Erkennung hängt deshalb zu Recht am **Ergebnis** (`_bmad-output/`), nicht am Werkzeugordner. Ein Probelauf über diesen Bestand erkennt 8 Epics und die Initiative; Architektur-Spine, Forge-Brief, Review-Berichte und die Stories unter `tickets/epic-*/tickets/` werden als Doku klassifiziert, nicht als Feature-Artefakte.
 
 ## Rollenverteilung im hybriden Workflow (Greenfield)
 
@@ -91,7 +91,7 @@ Was `sdd` an dieser Stelle tut: `sdd adopt` erkennt `_bmad-output/` und schaltet
 
 ## Schritt für Schritt (Greenfield)
 
-1. **Projekt-Setup im Repository.** Beide Werkzeuge im selben Projektverzeichnis initialisieren, sodass sie auf dieselbe Codebasis zugreifen ([Speckit-Deep-Dive](https://blog.lpains.net/posts/2025-12-07-deep-dive-into-speckit/)): BMAD über `npx bmad-method install`, Spec Kit über `specify init`. Auf GitHub existiert mit [BMAD-SPEC-KIT](https://github.com/oimiragieo/BMAD-SPEC-KIT) ein Community-Fork, der beide Ansätze vorintegriert.
+1. **Projekt-Setup im Repository.** Beide Werkzeuge im selben Projektverzeichnis initialisieren, sodass sie auf dieselbe Codebasis zugreifen ([Speckit-Deep-Dive](https://blog.lpains.net/posts/2025-12-07-deep-dive-into-speckit/)): BMAD v6 als Skills (`npx skills add bmad-code-org/BMAD-METHOD --skill bmad`, danach `bmad` mit `setup method`), Spec Kit über `specify init`. Auf GitHub existiert mit [BMAD-SPEC-KIT](https://github.com/oimiragieo/BMAD-SPEC-KIT) ein Community-Fork, der beide Ansätze vorintegriert.
 2. **Makro-Planung mit BMAD** (einmalig zum Projektstart): Analyst und Product Manager schärfen die Anforderungen und schneiden Epics; der Architect entwirft Systemarchitektur, API-Schnittstellen und Datenbankschemas.
 3. **Architektur in der Verfassung verankern.** Das größte Risiko bei reinem BMAD ist der „Context Drift" über viele Agenten-Übergaben hinweg. Die wichtigsten Architekturentscheidungen (Tech-Stack, Coding-Standards, Sicherheitsvorgaben) wandern in die `constitution.md`; jede spätere Spec erbt sie automatisch.
 4. **Feature-Umsetzung mit Spec Kit** (iterativ pro Epic): `/specify` mit dem Epic als Eingabe, `/clarify` für offene Randfälle, `/plan` und `/tasks`, dann `/implement`.
