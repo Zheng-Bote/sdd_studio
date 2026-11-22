@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-11-21
 supersedes: []
 references:
@@ -53,34 +53,34 @@ Erwogen wurden drei Varianten:
 - **Risiko: Abbruch und Timeout über Prozessgrenzen.** Stirbt die CLI, muss der Proxy offene Karten zurücknehmen, statt auf eine Entscheidung zu warten, die niemand mehr sieht. Das braucht eine explizite Frist je Aufruf.
 - **Risiko: Belegstand.** Ob eine CLI die Abläufe wirklich trägt, ist danach so unbelegt wie bei den lokalen Modellen. Die Belegstand-Tabelle aus `desk-model-availability` (`internal/desk/evidence.go`) gilt entsprechend: ohne Test „nicht belegt", nie „belegt".
 - **Die Zusage im README stimmt danach nicht mehr, wenn sie bleibt, wie sie ist.** Dort steht: „**Nur die Werkzeuge von `sdd mcp`**, keine eigenen, kein Dateizugriff daran vorbei." Für ein gehostetes CLI gilt das nur für Aktionen **über `sdd`**; was die CLI mit ihren eigenen Werkzeugen schreibt, sieht keine Karte, keine Regelprüfung und kein Gate. Vor der Umsetzung wird die Aussage deshalb eingeschränkt („kein Dateizugriff an `sdd` vorbei") und der CLI-Modus in der Oberfläche sichtbar gekennzeichnet. Eine Zusage, die stillschweigend nicht mehr stimmt, ist der größere Schaden als die Einschränkung.
-- **Nicht entschieden und nicht beauftragt:** welche CLI zuerst kommt, wann Teil B umgesetzt wird und wie der Belegstand je CLI erhoben wird. Dieses ADR entscheidet den Weg, nicht den Fahrplan. Die Umsetzung braucht ein eigenes Feature mit PRD und Tech Spec.
+- **Nachtrag 2026-11-22:** Beide Kandidaten werden genommen, `claude` und `codewhale`. Damit ist auch die in den Konsequenzen offen gelassene Frage entschieden, welche CLI zuerst kommt: nicht zuerst, sondern beide. Grundlage ist der Belegstand unten; `agy` bleibt zurückgestellt.
 
 ## Vor der Entscheidung
 
-Dieses ADR bleibt `proposed`, bis zwei Dinge geklärt sind. Sie entscheiden, ob die Entscheidung überhaupt einen Gegenstand hat:
+Dieses ADR blieb `proposed`, bis zwei Dinge geklärt waren. Sie entschieden, ob die Entscheidung überhaupt einen Gegenstand hat:
 
-1. **Headless-Verträge.** Für `agy` und `codewhale` ist unbelegt, ob sie ohne Interaktion starten, welches Ausgabeformat sie haben, wie sie abbrechen und ob sie einen MCP-Server annehmen. Für `claude` ist das dokumentiert — aber `claude` ist Cloud, das Lokalitätsargument trägt dort nicht.
+1. **Headless-Verträge.** Für `agy` und `codewhale` war unbelegt, ob sie ohne Interaktion starten, welches Ausgabeformat sie haben, wie sie abbrechen und ob sie einen MCP-Server annehmen. Für `claude` war das dokumentiert — aber `claude` ist Cloud, das Lokalitätsargument trägt dort nicht.
 2. **Wirksame Schreibsperre.** Je CLI ist zu belegen, mit welchem Mechanismus eigene Schreibzugriffe verhindert werden (Entscheidung 5b). Ein Mechanismus, der auf gutem Willen oder auf einer Einstellung beruht, die die CLI selbst ändern kann, zählt nicht.
 
 Kommt kein Kandidat durch dieses Tor, lautet die richtige Entscheidung **„keine CLI-Integration"**. Auch das ist ein Ergebnis, und es ist billiger als ein Proxy ohne Nutznießer. Der Bau des Proxys beginnt erst nach dieser Klärung, nicht davor.
 
 ### Belegstand vom 2026-11-22
 
-Die Recherche ist gelaufen; Belege und Versuchsaufbau stehen in [`docs/notes/headless-vertraege-agenten-clis.md`](../notes/headless-vertraege-agenten-clis.md). Geprüft wurden `claude` 2.1.330, `agy` 1.5.9 und `codewhale` 0.10.2 gegen die lokal installierten Programme.
+Die Recherche ist gelaufen; Belege und Versuchsaufbau stehen in [`docs/notes/headless-vertraege-agenten-clis.md`](../notes/headless-vertraege-agenten-clis.md). Geprüft wurden `claude` 2.1.330, `agy` 1.5.9 und `codewhale` 0.10.3 gegen die lokal installierten Programme; der codewhale-Lauf mit Modell wurde nachgeholt, sobald ein Anbieterschlüssel bereitstand.
 
 | CLI | 5a headless + MCP | 5b wirksame Schreibsperre | Ergebnis |
 |---|---|---|---|
 | `claude` | belegt | belegt (`--allowedTools` ist eine Allowlist; Shell-Schreibversuch als `permission_denials` abgewiesen, Datei nicht angelegt) | **besteht** |
 | `agy` | belegt, Abbruchsignal nur Exit 1 (nicht unterscheidbar) | **nicht belegt** — Standardmodus führt Shell-Schreibbefehle ohne Freigabe aus; `--mode plan` sperrt den Schreibzugriff, aber auch MCP | besteht nicht |
-| `codewhale` | laut Vertrag, Lauf ohne Anbieterschlüssel nicht möglich | Mechanismus vorhanden und betriebssystemseitig durchgesetzt (`--sandbox read-only` verweigert Schreiben mit `EPERM`), Kombination mit MCP nicht belegt | offen |
+| `codewhale` | belegt (`exec` headless, Exit 0; MCP-Werkzeug aufgerufen: `PROBE-MCP-OK`; `SIGTERM` → Exit 143) | belegt (`--sandbox read-only` verweigert den Shell-Schreibversuch mit `Operation not permitted`, Datei nicht angelegt) | **besteht** |
 
 Damit ist die Lage nicht mehr „unbekannt", sondern entscheidbar:
 
 - **`claude` ist der erste Kandidat.** Beide Bedingungen belegt. Es bleibt Cloud: der Hinweis „Inhalte verlassen das Gerät" gilt, und die README-Zusage aus den Konsequenzen ist vor der Umsetzung einzuschränken.
-- **`codewhale` ist der passendste Vertrag für den Proxy** (`--parent-death-watch` beantwortet das Abbruchrisiko, `--max-turns`/`--max-tool-calls` die Kartenflut), braucht aber einen Beleglauf mit Schlüssel.
+- **`codewhale` ist der passendste Vertrag für den Proxy** (`--parent-death-watch` beantwortet das Abbruchrisiko, `--max-turns`/`--max-tool-calls` die Kartenflut). Beide Bedingungen sind belegt: MCP-Aufruf und Shell-Schreibversuch liefen im selben Lauf gegeneinander, der Schreibversuch scheiterte an der OS-Sandbox. Offen bleibt eine Design-Frage für den Proxy: `--allowed-tools` nimmt als Allowlist auch den Aufrufpfad (`tool_search`) weg — die Liste muss ihn einschließen, sonst kann selbst das erlaubte MCP-Werkzeug nicht geladen werden.
 - **`agy` wird zurückgestellt.** Ohne belegte Schreibsperre kein Angebot.
 
-Über Annahme, Verwerfung oder Einschränkung entscheidet der Mensch — dieses ADR bleibt bis dahin `proposed`.
+Über Annahme, Verwerfung oder Einschränkung entscheidet der Mensch. **Angenommen am 2026-11-22**: Beide Kandidaten werden genommen — `claude` und `codewhale`; `agy` bleibt zurückgestellt.
 
 ## Offene Punkte
 
