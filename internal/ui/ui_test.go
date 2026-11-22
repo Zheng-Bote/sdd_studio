@@ -450,3 +450,33 @@ func TestOpenRejectsSymlinkEscape(t *testing.T) {
 		t.Fatalf("editor must not start for symlink escapes: %v", called)
 	}
 }
+
+// clean-code-refactoring AC-3: RenderMarkdown handles more than 26 inline code spans in one paragraph without placeholder collisions.
+func TestRenderMarkdownManyCodeSpans(t *testing.T) {
+	var parts []string
+	for i := range 35 {
+		parts = append(parts, "`code_"+string(rune('a'+(i%26)))+"`")
+	}
+	src := strings.Join(parts, " ") + " **fett** *kursiv* [Link](#anker)\n"
+	out := RenderMarkdown([]byte(src))
+	if got := strings.Count(out, "<code>"); got != 35 {
+		t.Fatalf("want 35 <code> tags, got %d in %s", got, out)
+	}
+	if !strings.Contains(out, "<strong>fett</strong>") || !strings.Contains(out, "<em>kursiv</em>") || !strings.Contains(out, `<a href="#anker">Link</a>`) {
+		t.Errorf("inline formatting broken after >26 code spans: %s", out)
+	}
+}
+
+// clean-code-refactoring AC-4: OpenBrowser shares the platform command selection for cmd/sdd and cmd/sdd-desk.
+func TestBrowserCommandForOS(t *testing.T) {
+	const u = "http://127.0.0.1:1234/?token=abc"
+	if name, args := browserCommand("darwin", u); name != "open" || strings.Join(args, " ") != u {
+		t.Errorf("darwin: %s %v", name, args)
+	}
+	if name, args := browserCommand("windows", u); name != "rundll32" || len(args) != 2 || args[1] != u {
+		t.Errorf("windows: %s %v", name, args)
+	}
+	if name, args := browserCommand("linux", u); name != "xdg-open" || strings.Join(args, " ") != u {
+		t.Errorf("linux: %s %v", name, args)
+	}
+}

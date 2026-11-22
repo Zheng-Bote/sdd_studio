@@ -12,6 +12,8 @@ import (
 	"io/fs"
 	"net"
 	"net/http"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -123,4 +125,22 @@ func decode(r *http.Request, v any) error {
 		return fmt.Errorf("ungültige Anfrage: %w", err)
 	}
 	return nil
+}
+
+// browserCommand returns the platform-specific command and arguments to open url in the default browser.
+func browserCommand(goos, url string) (string, []string) {
+	switch goos {
+	case "darwin":
+		return "open", []string{url}
+	case "windows":
+		return "rundll32", []string{"url.dll,FileProtocolHandler", url}
+	default:
+		return "xdg-open", []string{url}
+	}
+}
+
+// OpenBrowser launches the system default browser for url without waiting for it to exit.
+func OpenBrowser(url string) error {
+	name, args := browserCommand(runtime.GOOS, url)
+	return exec.Command(name, args...).Start()
 }

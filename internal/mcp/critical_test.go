@@ -293,3 +293,11 @@ func TestRequirementsDocumented(t *testing.T) {
 		}
 	}
 }
+
+// clean-code-refactoring AC-2: runCritical matches sdd_adopt_apply explicitly and returns errUnknownTool for unknown names.
+func TestRunCriticalRejectsUnknownTool(t *testing.T) {
+	s := criticalServer(project(t))
+	if _, err := s.runCritical("sdd_unknown_critical", nil); err == nil || !strings.Contains(err.Error(), "unbekanntes Werkzeug") {
+		t.Fatalf("expected errUnknownTool, got %v", err)
+	}
+}

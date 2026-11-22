@@ -329,3 +329,13 @@ func TestNewToolArc42(t *testing.T) {
 		t.Errorf("sdd_new arc42 with content: %v", r)
 	}
 }
+
+// clean-code-refactoring AC-1: toolWrite rejects sdd.config.yaml with a hint to sdd_config (ADR 0004) without dead fallback branches.
+func TestWriteRejectsConfigWithADR0004Hint(t *testing.T) {
+	root := project(t)
+	s := newServer(root, true)
+	r := call(t, s, "sdd_write", map[string]any{"path": "sdd.config.yaml", "content": "version: 1\n", "apply": false})
+	if r["isError"] != true || !strings.Contains(errText(r), "sdd_config") {
+		t.Fatalf("expected ADR 0004 rejection for sdd.config.yaml, got %v", r)
+	}
+}

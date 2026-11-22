@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/desk"
+	"github.com/Zheng-Bote/sdd_studio/internal/ui"
 )
 
 const systemPreamble = `Du bist der Begleiter von SDD Studio. Du führst den Nutzer durch Spec-Driven Development: von der Produkt-Idee über PRD, Tech Spec, ADR und Plan bis zu Tests, Gate und Archiv. Antworte auf Deutsch, knapp und konkret. Stelle eine Frage nach der anderen und erfinde keine Anforderungen. Nutze die sdd-Werkzeuge, um den Stand zu prüfen und Entwürfe zu validieren; jeder Aufruf wird dem Nutzer zur Erlaubnis vorgelegt.`
@@ -95,7 +96,7 @@ func run() int {
 		fmt.Fprintf(os.Stderr, "sdd-desk: %s\n", w)
 	}
 	if *open {
-		_ = openBrowser(url)
+		_ = ui.OpenBrowser(url)
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -165,17 +166,4 @@ func exeDir() string {
 func fileExists(p string) bool {
 	info, err := os.Stat(p)
 	return err == nil && info.Mode().IsRegular()
-}
-
-func openBrowser(url string) error {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("open", url)
-	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
-	default:
-		cmd = exec.Command("xdg-open", url)
-	}
-	return cmd.Start()
 }

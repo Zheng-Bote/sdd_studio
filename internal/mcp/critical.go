@@ -50,12 +50,14 @@ func (s *Server) runCritical(name string, raw json.RawMessage) (*toolResult, err
 		return s.toolBaseline(raw)
 	case "sdd_adr_accept":
 		return s.toolADRAccept(raw)
+	case "sdd_adopt_apply":
+		return s.toolAdoptApply(raw)
 	case "sdd_config":
 		return s.toolConfig(raw)
 	case "sdd_commit":
 		return s.toolCommit(raw)
 	default:
-		return s.toolAdoptApply(raw)
+		return nil, fmt.Errorf("%w %q", errUnknownTool, name)
 	}
 }
 
