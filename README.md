@@ -216,13 +216,14 @@ go run ./cmd/sdd lint
 
 ## Diskussion
 
-Ausgangspunkt war der Vorwurf, alles sei zu abstrakt, und die **Kombination von SpecDD, Spec Kit und BMAD**. Die Notiz liegt als Quelle unter [`docs/notes/kombination-specdd-spec-kit-bmad.md`](docs/notes/kombination-specdd-spec-kit-bmad.md); umgesetzt ist daraus die Makro-Ebene ([ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md), [PRD](docs/archive/prd/bmad-import.md), [Tech Spec](docs/archive/design/bmad-import.md)).
+Ausgangspunkt war der Vorwurf, alles sei zu abstrakt, und die **Kombination von SpecDD, Spec Kit, OpenSpec und BMAD**. Die Notiz liegt als Quelle unter [`docs/notes/kombination-specdd-spec-kit-bmad.md`](docs/notes/kombination-specdd-spec-kit-bmad.md); umgesetzt ist daraus die Makro-Ebene ([ADR 0009](docs/adr/0009-bmad-import-statt-zweitem-prozess.md), [PRD](docs/archive/prd/bmad-import.md), [Tech Spec](docs/archive/design/bmad-import.md)). Die Notiz trennt inzwischen drei Einstiegspunkte — Greenfield, Brownfield und BMAD-Vorgeschichte —, weil sie unterschiedliche Reihenfolgen verlangen.
 
 ### Was die Kombination trägt — und was `sdd` davon übernimmt
 
 - **BMAD** liefert Makro-Planung und Architektur: Initiative mit Anforderungen `R1`, `R2`, …, Epics mit prüfbaren „Done when“-Punkten, eine Architektur-Spine. `sdd` erkennt diesen Bestand, übernimmt die Anforderungen **wörtlich** und macht aus den Done-when-Punkten Akzeptanzkriterien `AC-<n>`.
 - **Spec Kit** liefert die Feature-Strecke (Spec, Plan, Tasks). Sie war bereits vorhanden: Artefaktpfade dürfen Globs sein, `specs/features/*/spec.md` funktioniert ohne Umzug.
 - **SpecDD** liefert die systemweiten Regeln, die jede spätere Spec erbt. Genau diese Rolle hat die Verfassung — sie entsteht aus den Constraints des Bestands und aus der Architektur, Regel für Regel mit Fundstelle.
+- **OpenSpec** liefert versionierte Änderungsspezifikationen (`changes/` mit Proposal, Delta-Specs und Tasks, nach der Umsetzung archiviert) und ist selbst auf den Bestand zugeschnitten. `sdd` setzt OpenSpec nicht um: für einen gewachsenen Bestand tragen dort `sdd adopt` und `sdd baseline` dieselbe Rolle.
 
 Was in der Notiz als Risiko steht — „Context Drift über viele Agenten-Übergaben hinweg“ — ist der Grund für die drei Regeln `SDD-080` bis `SDD-082`: Anforderung → Epic → Index werden maschinell geprüft, nicht erinnert. Rollen (Analyst, PM, Architect) bleiben Prompt-Text in den Abläufen `sdd-ingest-bmad`, `sdd-architecture` und `sdd-epic-refine`; `sdd` selbst bleibt KI-frei.
 
