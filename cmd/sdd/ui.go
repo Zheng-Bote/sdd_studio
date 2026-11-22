@@ -8,10 +8,8 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
@@ -51,7 +49,7 @@ func runUI(args []string, repoRoot string, stdout, stderr io.Writer) int {
 	url := "http://" + addr + "/?token=" + token
 	fmt.Fprintf(stdout, "SDD Studio läuft auf %s (nur lokal). Beenden mit Strg+C.\n%s\n", addr, url)
 	if *open {
-		if err := openBrowser(url); err != nil {
+		if err := ui.OpenBrowser(url); err != nil {
 			fmt.Fprintf(stderr, "sdd ui: Browser nicht startbar: %v\n", err)
 		}
 	}
@@ -69,17 +67,4 @@ func runUI(args []string, repoRoot string, stdout, stderr io.Writer) int {
 		return 2
 	}
 	return 0
-}
-
-func openBrowser(url string) error {
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("open", url)
-	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
-	default:
-		cmd = exec.Command("xdg-open", url)
-	}
-	return cmd.Start()
 }

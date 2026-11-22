@@ -240,14 +240,9 @@ func (s *Server) toolWrite(raw json.RawMessage) (*toolResult, error) {
 	}
 
 	findings := []report.Finding{}
-	switch class {
-	case classArtifact:
+	if class == classArtifact {
 		if findings, err = s.checkArtifact(cfg, rel, old, exists, a.Content); err != nil {
 			return nil, err
-		}
-	case classConfig:
-		if _, err := config.Parse([]byte(a.Content)); err != nil {
-			return nil, fmt.Errorf("sdd.config.yaml nicht geschrieben: %w", err)
 		}
 	}
 

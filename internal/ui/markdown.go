@@ -3,6 +3,7 @@ package ui
 import (
 	"html"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -116,7 +117,7 @@ func inline(text string) string {
 	var codes []string
 	text = codeRe.ReplaceAllStringFunc(text, func(m string) string {
 		codes = append(codes, "<code>"+html.EscapeString(m[1:len(m)-1])+"</code>")
-		return "\x00" + string(rune(len(codes)-1+'A')) + "\x00"
+		return "\x00" + strconv.Itoa(len(codes)-1) + "\x00"
 	})
 	text = html.EscapeString(text)
 	text = linkRe.ReplaceAllStringFunc(text, func(m string) string {
@@ -130,7 +131,7 @@ func inline(text string) string {
 	text = boldRe.ReplaceAllString(text, "<strong>$1</strong>")
 	text = emRe.ReplaceAllString(text, "$1<em>$2</em>")
 	for i, c := range codes {
-		text = strings.Replace(text, "\x00"+string(rune(i+'A'))+"\x00", c, 1)
+		text = strings.Replace(text, "\x00"+strconv.Itoa(i)+"\x00", c, 1)
 	}
 	return text
 }
