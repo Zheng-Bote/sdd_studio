@@ -1,6 +1,6 @@
 # Anleitung — SDD Studio im eigenen Projekt einsetzen
 
-Diese Anleitung führt Schritt für Schritt durch die Einführung von `sdd` in **(A) ein neues Projekt** und **(B) ein bestehendes Projekt**. Sie beschreibt den Ablauf, nicht jede Regel; Einzelheiten stehen im [Handbuch](../handbuch/03-mechanismen.md), jede Regel erklärt `sdd explain <regel-id>`.
+Diese Anleitung führt Schritt für Schritt durch die Einführung von `sdd` in **(A) ein neues Projekt**, **(B) ein bestehendes Projekt** und **(C) ein Projekt mit BMAD-Vorgeschichte**. Sie beschreibt den Ablauf, nicht jede Regel; Einzelheiten stehen im [Handbuch](../handbuch/03-mechanismen.md), jede Regel erklärt `sdd explain <regel-id>`.
 
 ## Inhalt
 
@@ -8,6 +8,7 @@ Diese Anleitung führt Schritt für Schritt durch die Einführung von `sdd` in *
 - [Installation](#installation)
 - [A) Neues Projekt](#a-neues-projekt)
 - [B) Bestehendes Projekt](#b-bestehendes-projekt)
+- [C) Projekt mit BMAD-Vorgeschichte](#c-projekt-mit-bmad-vorgeschichte)
 - [Der Alltag: ein Feature von der Idee bis zum Release](#der-alltag-ein-feature-von-der-idee-bis-zum-release)
 - [Spickzettel](#spickzettel)
 - [Häufige Stolpersteine](#häufige-stolpersteine)

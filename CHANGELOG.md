@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Geändert
+
+- **Diskussionsnotiz um OpenSpec und die Einstiegspunkte erweitert** ([`docs/notes/kombination-specdd-spec-kit-bmad.md`](docs/notes/kombination-specdd-spec-kit-bmad.md)): Die Quelle zur Makro-Ebene beschreibt jetzt vier Bausteine und trennt **Greenfield, Brownfield und BMAD-Vorgeschichte**, weil sie unterschiedliche Reihenfolgen verlangen — im Bestand kommt die Bestandsaufnahme vor der Verfassung. Die Angaben zu OpenSpec sind gegen die Primärquelle geprüft (`openspec/changes/<change>/` mit `proposal.md`, `specs/`, `design.md`, `tasks.md`; `openspec/specs/`; Archiv nach Abschluss). Die Notiz hält außerdem fest, dass BMAD v6 sein Werkzeug unter `.agents/skills/…` installiert — `sdd adopt` erkennt deshalb am Ergebnis `_bmad-output/`, nicht am Werkzeugordner `_bmad/`. Anleitung: der fehlende Abschnitt **C) Projekt mit BMAD-Vorgeschichte** steht jetzt im Inhaltsverzeichnis.
+
 ## [0.9.0] — 2026-11-22
 
 Regelkatalog unverändert `1.3.0` mit 26 Regeln. Grundlage ist das Feature `desk-model-availability` — [PRD](docs/archive/prd/desk-model-availability.md), [Tech Spec](docs/archive/design/desk-model-availability.md).
