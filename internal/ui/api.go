@@ -268,8 +268,23 @@ func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	abs := filepath.Join(s.Root, filepath.FromSlash(rel))
-	if info, err := os.Stat(abs); err != nil || !info.Mode().IsRegular() {
+	info, err := os.Lstat(abs)
+	if err != nil {
 		writeError(w, http.StatusNotFound, fmt.Errorf("%s ist keine Datei im Repository", rel))
+		return
+	}
+	if !info.Mode().IsRegular() {
+		status := http.StatusNotFound
+		if info.Mode()&os.ModeSymlink != 0 {
+			status = http.StatusBadRequest
+		}
+		writeError(w, status, fmt.Errorf("%s ist keine reguläre Datei im Repository", rel))
+		return
+	}
+	realRoot, rootErr := filepath.EvalSymlinks(s.Root)
+	realTarget, targetErr := filepath.EvalSymlinks(abs)
+	if rootErr != nil || targetErr != nil || !strings.HasPrefix(realTarget, realRoot+string(filepath.Separator)) {
+		writeError(w, http.StatusBadRequest, fmt.Errorf("%w: %s", scan.ErrUnsafePath, rel))
 		return
 	}
 	editor := strings.Fields(os.Getenv("EDITOR"))
