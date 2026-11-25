@@ -76,17 +76,24 @@ Voraussetzung: Go 1.27 (für `sdd-desk` zusätzlich Node.js und npm).
 go build -o bin/sdd ./cmd/sdd
 ```
 
-### Alles bauen und lokal installieren (Linux)
+### Alles bauen und lokal installieren (Linux und macOS)
 
 Voraussetzung zusätzlich: Node.js, npm, Rust und die [Tauri-Systemabhängigkeiten](https://v2.tauri.app/start/prerequisites/).
 
 ```text
-make                 # Oberfläche, bin/sdd, bin/sdd-desk und die Desktop-Anwendung sdd-desk-app bauen
-make install         # nach ~/.local installieren, mit Desktop-Verknüpfung und Icons für den KI-Desktop
+make                 # Oberfläche, bin/sdd, bin/sdd-desk und die Desktop-Anwendung bauen
+make install         # Linux: nach ~/.local; macOS: zusätzlich das .app-Bundle nach ~/Applications
 make uninstall       # alles wieder entfernen
+make print-os        # zeigt das erkannte System (linux, darwin)
 ```
 
-`make install` legt `sdd`, `sdd-desk` und `sdd-desk-app` gemeinsam nach `~/.local/bin` (die Anwendung findet `sdd-desk` und dieses `sdd` daneben), die Verknüpfung „SDD Studio Desktop“ nach `~/.local/share/applications/io.github.zhengbote.sdddesk.desktop` und die Icons aus `apps/desk/src-tauri/icons` ins `hicolor`-Thema. Systemweit: `sudo make install PREFIX=/usr/local`; für Pakete `make install DESTDIR=<root> PREFIX=/usr`. Schlüssel installiert `make` nicht — `llm.env` legst du selbst an (siehe [Modelle einrichten](#modelle-einrichten)).
+Das System erkennt `make` über `uname -s`; `OS=Linux` bzw. `OS=Darwin` erzwingt eines, etwa für einen Probelauf mit `make -n`.
+
+**Linux:** `make install` legt `sdd`, `sdd-desk` und `sdd-desk-app` gemeinsam nach `~/.local/bin` (die Anwendung findet `sdd-desk` und dieses `sdd` daneben), die Verknüpfung „SDD Studio Desktop“ nach `~/.local/share/applications/io.github.zhengbote.sdddesk.desktop` und die Icons aus `apps/desk/src-tauri/icons` ins `hicolor`-Thema. Systemweit: `sudo make install PREFIX=/usr/local`; für Pakete `make install DESTDIR=<root> PREFIX=/usr`.
+
+**macOS:** `make` baut mit `tauri build --bundles app`, also zusätzlich „SDD Studio Desktop.app“ mit Info.plist, Icon und den drei Binaries in `Contents/MacOS`. `make install` kopiert das Bundle nach `~/Applications` (überschreibbar mit `APPDIR=…`, systemweit `APPDIR=/Applications`) und legt `sdd` und `sdd-desk` nach `~/.local/bin`; eine `.desktop`-Datei und ein hicolor-Thema entstehen hier nicht, weil macOS beides nicht liest. Das Bundle ist ad-hoc signiert, wie Tauri es erzeugt — beim ersten Start kann Gatekeeper nachfragen. `make uninstall` entfernt Bundle und Binaries.
+
+Schlüssel installiert `make` auf keinem System — `llm.env` legst du selbst an (siehe [Modelle einrichten](#modelle-einrichten)); auf macOS unter `~/Library/Application Support/io.github.zhengbote.sdddesk/`.
 
 ## `sdd` — Kommandos
 
