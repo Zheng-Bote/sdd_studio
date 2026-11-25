@@ -212,6 +212,10 @@ Was das **nicht** abdeckt: Die CLI bringt eigene Werkzeuge mit. Ihre Schreibzugr
 
 In der Seitenleiste gibt es dafür den Abschnitt **Agenten-CLI**: Auswahl der angebotenen CLI mit Begründung, wenn eine fehlt, der Belegstand je CLI, der Cloud-Hinweis vor dem ersten Lauf und die offenen Aufrufe mit Kennung, Sitzung und Frist. Eine Sitzungsfreigabe wird dort nur für lesende und schreibende Karten angeboten; kritische Aufrufe entscheidest du immer einzeln.
 
+### Probelauf des TOC-Workflows
+
+Nur zum Test dieses Zweigs: der Abschnitt wird gleich wieder entfernt.
+
 ## Tests
 
 ```text
