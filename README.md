@@ -32,6 +32,7 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
   - [Starten](#starten)
   - [Was der Desktop darf](#was-der-desktop-darf)
   - [Agenten-CLIs als Antrieb](#agenten-clis-als-antrieb)
+  - [Probelauf des TOC-Workflows](#probelauf-des-toc-workflows)
 - [Tests](#tests)
 - [Nächste Schritte](#nachste-schritte)
 - [Diskussion](#diskussion)
