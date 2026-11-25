@@ -2,6 +2,8 @@
 
 Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) zur maschinellen Durchsetzung von **Spec-Driven Development** (`sdd_process_3`) über einen gemeinsamen, selbstprüfenden Regelkatalog und ein eingebettetes Handbuch. Dazu kommt der optionale KI-Desktop **`sdd-desk`**, der im Gespräch durch den Prozess führt.
 
+**Version `0.11.0`** · Regelkatalog `1.3.0` mit 26 Regeln · Historie im [CHANGELOG](CHANGELOG.md)
+
 ## Leitprinzip
 
 > Es gibt **einen Regelkatalog** ([`catalog/catalog.yaml`](catalog/catalog.yaml)). Das [Handbuch](handbuch/03-mechanismen.md) erklärt ihn, das Programm setzt ihn durch. Beide sind Ausgaben derselben Quelle — und diese Quelle wird über `SDD-070` bis `SDD-073` maschinell geprüft.
@@ -18,8 +20,8 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 <summary>Table of Contents</summary>
 
 - [Leitprinzip](#leitprinzip)
-- [Stand](#stand)
-  - [Regeln](#regeln)
+- [Wo weiter](#wo-weiter)
+- [Regeln](#regeln)
 - [Bauen](#bauen)
   - [Alles bauen und lokal installieren (Linux und macOS)](#alles-bauen-und-lokal-installieren-linux-und-macos)
 - [`sdd` — Kommandos](#sdd-kommandos)
@@ -44,16 +46,15 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 
 ---
 
-## Stand
-
-Letzte Version: **0.11.0** ([CHANGELOG](CHANGELOG.md)) — Regelkatalog `1.3.0` mit 26 Regeln. Neu in 0.11.0: **Bauen und Installieren auf Linux und macOS** — `make` erkennt das System, auf macOS entsteht ein startbares `.app`-Bundle, `make install` kopiert es nach `~/Applications`. Aus 0.10.0: **Agenten-CLIs als Antrieb** — `sdd-desk` wird für `claude` und `codewhale` zum MCP-Proxy, jeder Werkzeugaufruf eine Freigabekarte. Aus 0.9.1: **Security Hardening, MCPClient-Lifecycle & Clean Code** (`POST /api/open` gegen Symlink-Pfadflucht gehärtet, `Origin`-Validierung für `POST /api/*` in `sdd-desk`, Timeout-Cleanup und idempotentes Prozess-Reaping in `MCPClient`, defensives Dispatching und Deduplizierung) sowie **ADR 0010 angenommen** (Headless-Verträge für `claude` und `codewhale` belegt). Aus 0.9.0: **Modelle, die ehrlich verfügbar sind** — der Desktop nennt zu jedem lokalen Modell, ob es Werkzeuge aufrufen kann, kennzeichnet Modelle ohne Werkzeugaufruf in der Auswahl und wählt sie nicht voraus; **Modelle aktualisieren** liest Anbieter und Modellliste ohne Neustart neu; für die Urteilsabläufe `sdd-conflicts` und `sdd-review` steht der Belegstand des gewählten Modells auf der Karte. Aus 0.8.0: **BMAD-Bestand übernehmen** (`sdd adopt` erkennt `_bmad/` und `_bmad-output/`, `sdd init --pipeline bmad`, `sdd new --type initiative|epic`) mit der Makro-Ebene aus Initiative (Anforderungen `R1`, `R2`, …) und Epics, drei Regeln `SDD-080`–`SDD-082` und den Abläufen `sdd-ingest-bmad`, `sdd-architecture`, `sdd-epic-refine`. Die Seitenleiste des Desktops trennt „Vorhaben“ und „Features“. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, Konfiguration ändern, Commit) bestätigt der Mensch jedes Mal einzeln. In CI: `uses: Zheng-Bote/sdd_studio@v0.11.0`.
+## Wo weiter
 
 - **Anleitung:** [`docs/anleitung.md`](docs/anleitung.md) — Einführung in ein neues oder ein bestehendes Projekt, Schritt für Schritt
 - **Entscheidungen & Konzept:** [`docs/sdd_konzept.md`](docs/sdd_konzept.md), [`docs/sdd_process_3.md`](docs/sdd_process_3.md), ADRs unter [`docs/adr`](docs/adr)
 - **Dogfooding:** [`sdd.config.yaml`](sdd.config.yaml), [`constitution.md`](constitution.md); das Werkzeug prüft sich selbst
-- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die von 0.1.0 bis 0.11.0 liegen archiviert unter [`docs/archive`](docs/archive)
+- **Für Agenten:** [`AGENTS.md`](AGENTS.md) — Verfassung, Präzedenz und Arbeitsweise (Issue, Feature-Branch, Pull Request)
+- **Feature-Artefakte des Werkzeugs:** neue Features beginnen unter [`docs/prd`](docs/prd) und [`docs/design`](docs/design); die abgeschlossenen liegen archiviert unter [`docs/archive`](docs/archive)
 
-### Regeln
+## Regeln
 
 | Bereich | Regeln |
 |---|---|
@@ -152,7 +153,7 @@ npm run tauri:dev        # Oberfläche und Sidecars bauen, Anwendung starten
 npm run tauri:build      # Bündel (deb, rpm, AppImage, dmg, msi …) unter src-tauri/target/release/bundle/
 ```
 
-Die Anwendung bringt `sdd-desk` und `sdd` als Sidecars mit; `sdd` heißt dort `sdd-studio-sdd`, damit ein Paket kein zweites `/usr/bin/sdd` installiert. Sie öffnet das Projekt aus dem Startargument, sonst das zuletzt genutzte, sonst einen Ordnerdialog; **Datei → Projekt öffnen …** (Strg+O) wechselt es. Die Modelle stehen in `llm.env` im Konfigurationsordner der Anwendung, unter Linux `~/.config/io.github.zhengbote.sdddesk/llm.env` (Rechte `0600`).
+Die Anwendung bringt `sdd-desk` und `sdd` als Sidecars mit; `sdd` heißt dort `sdd-studio-sdd`, damit ein Paket kein zweites `/usr/bin/sdd` installiert. Sie öffnet das Projekt aus dem Startargument, sonst das zuletzt genutzte, sonst einen Ordnerdialog; **Datei → Projekt öffnen …** (Strg+O) wechselt es. Die Modelle stehen in `llm.env` im Konfigurationsordner der Anwendung — unter Linux `~/.config/io.github.zhengbote.sdddesk/llm.env`, unter macOS `~/Library/Application Support/io.github.zhengbote.sdddesk/llm.env` (Rechte `0600`).
 
 ### Als lokale Web-Oberfläche: bauen
 
@@ -231,7 +232,7 @@ go run ./cmd/sdd lint
 ## Nächste Schritte
 
 - **Kleine lokale Modelle:** Der Ablauf vom leeren Ordner bis zu den Tests je Kriterium ist mit Claude Sonnet 5.5 erprobt (Szenario cert-expiry-watcher). Im Gegentest mit `qwen3:14b` erfand das Modell bei `sdd-conflicts` Pfade, Zeilen und Zitate und fand die eingebauten Widersprüche nicht; `sdd_conflicts_check` hätte jede dieser Meldungen verworfen, und den versuchten Schreibvorgang hielt die Freigabekarte auf. Auch `qwen3:32b` genügte nicht: Es rief die Prüfung auf, ohne Verfassung und Tech Spec gelesen zu haben, und fand nichts (rund 47 Minuten). Für `sdd-conflicts` taugen die getesteten lokalen Modelle nicht; belegt ist bisher nur Claude Sonnet 5.5. Der Desktop nennt diesen Stand jetzt selbst auf der Ablaufkarte (`desk-model-availability`).
-- **Weitere Plattformen:** Die Desktop-Anwendung ist unter Linux (`.deb`) geprüft; macOS, Windows, `.rpm` und AppImage sind ungetestet.
+- **Weitere Plattformen:** Linux (`.deb` und hicolor-Verknüpfung) und macOS (`.app`-Bundle, arm64, ad-hoc signiert) sind gebaut und geprüft; macOS-Artefakte liegen im [Release](https://github.com/Zheng-Bote/sdd_studio/releases) als `.app.zip`. **Ungetestet** sind Windows, Intel-Macs (x86_64), `.rpm` und AppImage.
 
 ## Diskussion
 
