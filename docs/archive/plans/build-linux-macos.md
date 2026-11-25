@@ -1,14 +1,15 @@
 ---
 feature: build-linux-macos
-status: draft
+status: archived
 archive-after:
+release: v0.11.0
 ---
 
 # Plan — Bauen und Installieren auf Linux und macOS (`build-linux-macos`)
 
 Reihenfolge der Umsetzung. Jede Task nennt das Akzeptanzkriterium, auf das sie einzahlt.
 
-PRD: [`docs/prd/build-linux-macos.md`](../prd/build-linux-macos.md) · Issue: [#31](https://github.com/Zheng-Bote/sdd_studio/issues/31)
+PRD: `docs/archive/prd/build-linux-macos.md` · Issue: [#31](https://github.com/Zheng-Bote/sdd_studio/issues/31)
 
 ## Tasks
 

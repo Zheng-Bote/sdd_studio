@@ -1,6 +1,6 @@
 ---
 feature: build-linux-macos
-status: draft
+status: archived
 archive-after:
 touches:
   - Makefile
@@ -8,6 +8,7 @@ touches:
   - handbuch/**
   - CHANGELOG.md
   - apps/desk/**
+release: v0.11.0
 ---
 
 # PRD — Bauen und Installieren auf Linux und macOS (`build-linux-macos`)

@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-11-25
+
+Regelkatalog unverändert `1.3.0` mit 26 Regeln. Grundlage ist das Feature `build-linux-macos` ([PRD](docs/archive/prd/build-linux-macos.md), [Tech Spec](docs/archive/design/build-linux-macos.md), [Plan](docs/archive/plans/build-linux-macos.md)).
+
 ### Behoben
 
 - **Build-Ziele hängen jetzt an ihren Quellen** (Issue [#35](https://github.com/Zheng-Bote/sdd_studio/issues/35)): `make install` kopierte vorhandene, aber veraltete Dateien — `bin/sdd`, `bin/sdd-desk` und das `.app`-Bundle hatten keine Voraussetzungen, galten damit als aktuell und wurden unverändert installiert. Wer eine Quelle änderte und `make install` fuhr, bekam das alte Ergebnis ohne jeden Hinweis. Jetzt hängen die Programme an ihren Go-Quellen sowie an `catalog/`, `handbuch/` und `templates/` (die `embed.go` einbettet), das Linux-Programm und das Bundle zusätzlich an den Tauri-Quellen; `make install` baut vor dem Kopieren. Ein Test hält die Abhängigkeiten fest.
@@ -13,7 +17,11 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 - **Arbeitsweise über Issues und Feature-Branches** (Issue [#33](https://github.com/Zheng-Bote/sdd_studio/issues/33)): `AGENTS.md` nennt jetzt neben dem SDD-Ablauf, **wie** gearbeitet wird — Issue mit Vorlage, Feature-Branch, Pull Request mit `Closes #<n>`, nie direkt auf dem Standard-Branch; gemergt wird vom Menschen. Die Regel steht im Template `templates/agents.md.tmpl` (also in jedem neuen Projekt, das `sdd init` oder `sdd adopt` anlegt), im Kurzblock für bestehende Agenten-Dateien und in der `AGENTS.md` dieses Repositories. Dazu der Grund: `pre-merge` läuft in CI nur bei einem Pull Request, ein Push auf `main` löst das Gate nicht aus.
 - **Issue-Vorlage auf SDD umgestellt** (Issue [#33](https://github.com/Zheng-Bote/sdd_studio/issues/33)): `.github/ISSUE_TEMPLATE/feature.md` fragt Feature-Slug, Problem, Ziel, Umfang, Nicht-Ziele, Akzeptanzkriterien als `AC-<n>` und die betroffenen Schichten ab und verweist auf Verfassung und Arbeitsweise. Die Vorlage `feature_spec.md` stammte aus einem anderen Projekt (EARS-Syntax, PostgreSQL-Schemata, Envelope Encryption, SPDX je Layer) und ist entfernt; ein Test hält ihre Begriffe draußen.
 
-- **Bauen und Installieren auf Linux und macOS** (`build-linux-macos`, Issue [#31](https://github.com/Zheng-Bote/sdd_studio/issues/31), [PRD](docs/prd/build-linux-macos.md), [Plan](docs/plans/build-linux-macos.md)): `make` erkennt das System über `uname -s` (`OS=` erzwingt eines, `make print-os` zeigt es). Auf macOS baut es mit `tauri build --bundles app`, also ein startbares „SDD Studio Desktop.app“ statt nur eines nackten Programms, und `make install` kopiert das Bundle nach `$(APPDIR)` (Standard `~/Applications`, überschreibbar). `make install` schreibt auf macOS **keine** `.desktop`-Datei und kein hicolor-Icon-Thema mehr — macOS liest beides nicht — und räumt ein früher dort abgelegtes `sdd-desk-app`-Binary weg. Linux bleibt unverändert: Binaries, Desktop-Verknüpfung, Icons. `make uninstall` entfernt je System genau das, was `make install` angelegt hat. Tests prüfen die Zielpfade beider Systeme über einen Probelauf von `make`.
+- **Bauen und Installieren auf Linux und macOS** (`build-linux-macos`, Issue [#31](https://github.com/Zheng-Bote/sdd_studio/issues/31), [PRD](docs/archive/prd/build-linux-macos.md), [Tech Spec](docs/archive/design/build-linux-macos.md), [Plan](docs/archive/plans/build-linux-macos.md)): `make` erkennt das System über `uname -s` (`OS=` erzwingt eines, `make print-os` zeigt es). Auf macOS baut es mit `tauri build --bundles app`, also ein startbares „SDD Studio Desktop.app“ statt nur eines nackten Programms, und `make install` kopiert das Bundle nach `$(APPDIR)` (Standard `~/Applications`, überschreibbar). `make install` schreibt auf macOS **keine** `.desktop`-Datei und kein hicolor-Icon-Thema mehr — macOS liest beides nicht — und räumt ein früher dort abgelegtes `sdd-desk-app`-Binary weg. Linux bleibt unverändert: Binaries, Desktop-Verknüpfung, Icons. `make uninstall` entfernt je System genau das, was `make install` angelegt hat. Tests prüfen die Zielpfade beider Systeme über einen Probelauf von `make`.
+
+### Archiviert
+
+Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.11.0`): `build-linux-macos`.
 
 ## [0.10.0] — 2026-11-25
 

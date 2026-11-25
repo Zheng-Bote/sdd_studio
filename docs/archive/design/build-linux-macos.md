@@ -1,17 +1,18 @@
 ---
 feature: build-linux-macos
-status: draft
+status: archived
 archive-after:
 touches:
   - Makefile
   - README.md
   - handbuch/**
   - CHANGELOG.md
+release: v0.11.0
 ---
 
 # Tech Spec — Bauen und Installieren auf Linux und macOS (`build-linux-macos`)
 
-Setzt das PRD [`docs/prd/build-linux-macos.md`](../prd/build-linux-macos.md) um. Die Verfassung hat Vorrang; diese Tech Spec darf sie präzisieren, nie lockern.
+Setzt das PRD `docs/archive/prd/build-linux-macos.md` um. Die Verfassung hat Vorrang; diese Tech Spec darf sie präzisieren, nie lockern.
 
 ## Architektur
 
