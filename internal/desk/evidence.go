@@ -106,3 +106,64 @@ func annotateEvidence(protocol string, models []modelView) {
 		}
 	}
 }
+
+// CLIEvidence is the recorded state of one agent CLI. Status covers the two ADR 0010 conditions (headless and MCP,
+// effective write lock); ProxyProven covers the run against the desktop's own MCP endpoint. The two are separate on
+// purpose: a documented headless contract says nothing about whether the CLI can talk to the proxy.
+type CLIEvidence struct {
+	CLI    string `json:"cli"`
+	Status string `json:"status"`
+	// ProxyProven is true only after a run against the desktop's endpoint is written down in Source.
+	ProxyProven bool   `json:"proxy_proven"`
+	Note        string `json:"note,omitempty"`
+	Source      string `json:"source"`
+}
+
+// CLIEvidenceTable is the record behind the desktop's statements about an agent CLI. Like FlowEvidence it is a fixed
+// table: a claim is a claim someone tested. An entry without a source counts as no entry.
+//
+// agenten-cli-proxy AC-8
+var CLIEvidenceTable = []CLIEvidence{
+	{
+		CLI:         "claude",
+		Status:      EvidenceProven,
+		ProxyProven: true,
+		Note:        "Headless, Schreibsperre, HTTP-Transport und Werkzeugaufruf durch ein Modell belegt (PROBE-OK:sdd_next, keine Verweigerung)",
+		Source:      "docs/notes/headless-vertraege-agenten-clis.md (claude 2.1.330, Beleg 2026-11-25)",
+	},
+	{
+		CLI:         "codewhale",
+		Status:      EvidenceProven,
+		ProxyProven: true,
+		Note:        "Headless, OS-Schreibsperre und HTTP-Transport belegt; ein Werkzeugaufruf durch ein Modell ist nicht belegt — ohne Cloud-Schlüssel nutzt codewhale lokales Ollama, und das Modell erfand das Ergebnis, ohne das Werkzeug aufzurufen",
+		Source:      "docs/notes/headless-vertraege-agenten-clis.md (codewhale 0.10.3, Beleg 2026-11-25)",
+	},
+	{
+		CLI:    "agy",
+		Status: EvidenceUnproven,
+		Note:   "keine wirksame Schreibsperre belegt (Modus, der Schreiben sperrt, sperrt auch MCP)",
+		Source: "docs/notes/headless-vertraege-agenten-clis.md (agy 1.5.9)",
+	},
+}
+
+// validCLIEvidence says whether an entry may be shown: a known status and a source. Without a source it is an
+// unbacked claim, not evidence.
+func validCLIEvidence(e CLIEvidence) bool {
+	if strings.TrimSpace(e.Source) == "" || strings.TrimSpace(e.CLI) == "" {
+		return false
+	}
+	return e.Status == EvidenceProven || e.Status == EvidenceFailed
+}
+
+// EvidenceForCLI returns the recorded state of one CLI. A CLI without a valid entry is "unproven" with an empty
+// note — never "proven".
+//
+// agenten-cli-proxy AC-8
+func EvidenceForCLI(cli string) CLIEvidence {
+	for _, e := range CLIEvidenceTable {
+		if e.CLI == cli && validCLIEvidence(e) {
+			return e
+		}
+	}
+	return CLIEvidence{CLI: cli, Status: EvidenceUnproven}
+}

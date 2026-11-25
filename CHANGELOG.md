@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Agenten-CLIs im Desktop über einen MCP-Proxy** (`agenten-cli-proxy`, [PRD](docs/prd/agenten-cli-proxy.md), [Tech Spec](docs/design/agenten-cli-proxy.md), [Plan](docs/plans/agenten-cli-proxy.md), [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md)): `sdd-desk` stellt einen MCP-Endpunkt auf `127.0.0.1` bereit, über den eine lokal installierte Agenten-CLI (`claude`, `codewhale`) die Werkzeuge von `sdd mcp` erreicht. Jeder `tools/call` wird zur Freigabekarte, korreliert über eine Kennung je Aufruf und mit eigener Frist; ohne Entscheidung liefert der Proxy kein Ergebnis, eine kritische Aktion läuft nur einzeln, und ein Ende der CLI-Sitzung nimmt offene Karten zurück. Jede CLI-Sitzung hat ein eigenes Bearer-Token; die CLI erhält nie `--allow-critical`. Angeboten wird nur, was belegt ist: der Belegstand je CLI steht in `internal/desk/evidence.go`, und ohne belegten Lauf gegen den Proxy wird eine CLI als „nicht belegt“ geführt und nicht angeboten — `agy` bleibt wegen der fehlenden Schreibsperre zurückgestellt. Die README-Zusage ist entsprechend auf Aktionen über `sdd` eingeschränkt.
+
+  **Belegt:** `claude` ist durchgehend belegt — Transport über HTTP und ein echter Werkzeugaufruf durch das Modell samt Freigabekarte (`PROBE-OK:sdd_next`, keine Verweigerung, 0,12 USD). **Offen:** `codewhale` hat den Transport belegt, aber keinen Werkzeugaufruf: ohne Cloud-Schlüssel nutzt es lokales Ollama, und das Modell erfand das Ergebnis, ohne das Werkzeug aufzurufen — der Belegstand nennt das auf der Karte. Belege: [`docs/notes/headless-vertraege-agenten-clis.md`](docs/notes/headless-vertraege-agenten-clis.md).
+
+  Die Oberfläche hat dafür einen eigenen Abschnitt in der Seitenleiste: CLI-Auswahl mit Begründung, warum eine CLI nicht angeboten wird, Belegstand je CLI, der Cloud-Hinweis vor dem ersten Lauf und die offenen Aufrufe mit Kennung, Sitzung und Frist; eine Sitzungsfreigabe wird für kritische Karten gar nicht erst angeboten.
+
+### Behoben
+
+- **Startzeile von `claude` hätte den Auftrag verschluckt:** `--mcp-config` und `--allowedTools` sind variadisch; ein dahinter stehender Prompt wäre als weitere Konfigurationsdatei bzw. als weiterer Werkzeugname gelesen worden. Der Prompt steht jetzt direkt hinter `-p`, und ein Lauf ohne Auftrag wird abgelehnt statt mit verrutschten Argumenten gestartet. Gefunden im Transportbeleg, festgehalten in `TestCLIStartFlags`.
+
+- **Der CI-Workflow aus `sdd init` zeigt auf den erzeugenden Release-Tag:** `templates/workflow.yml.tmpl` trug den Action-Pin als Literal (`v0.7.0`) und blieb seit 0.7.0 stehen — ein frisch initialisiertes Projekt prüfte also mit einem zwei Minor-Versionen alten Stand. Das Template setzt den Tag jetzt aus `report.ToolVersion` (`uses: Zheng-Bote/sdd_studio@v<Version>`), und `TestInitWorkflowPinsToolVersion` hält beide Vorkommen im gerenderten Workflow fest.
+
 ## [0.9.1] — 2026-11-22
 
 Regelkatalog unverändert `1.3.0` mit 26 Regeln. Grundlage sind die Features `web-api-hardening` ([PRD](docs/archive/prd/web-api-hardening.md), [Tech Spec](docs/archive/design/web-api-hardening.md), [Plan](docs/archive/plans/web-api-hardening.md)), `mcpclient-lifecycle` ([PRD](docs/archive/prd/mcpclient-lifecycle.md), [Tech Spec](docs/archive/design/mcpclient-lifecycle.md), [Plan](docs/archive/plans/mcpclient-lifecycle.md)) und `clean-code-refactoring` ([PRD](docs/archive/prd/clean-code-refactoring.md), [Tech Spec](docs/archive/design/clean-code-refactoring.md), [Plan](docs/archive/plans/clean-code-refactoring.md)) sowie [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md).

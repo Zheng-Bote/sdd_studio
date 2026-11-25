@@ -31,6 +31,7 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
   - [Modelle einrichten](#modelle-einrichten)
   - [Starten](#starten)
   - [Was der Desktop darf](#was-der-desktop-darf)
+  - [Agenten-CLIs als Antrieb](#agenten-clis-als-antrieb)
 - [Tests](#tests)
 - [Nächste Schritte](#nachste-schritte)
 - [Diskussion](#diskussion)
@@ -132,6 +133,8 @@ Baseline, Befunde quittieren, ADR-Lockfile, `sdd adopt --apply`, das Entscheiden
 
 `sdd-desk` führt im Gespräch mit einem frei wählbaren Sprachmodell durch den Prozess: vom Projektstart (Übernahme eines bestehenden oder Anlage eines neuen Projekts) über Verfassung, PRD, Tech Spec, ADR, Plan und Tests bis zu Gate und Archiv. Es ist ein **getrenntes Programm**: Werkzeuge erreicht es nur über einen selbst gestarteten `sdd mcp --allow-write --allow-critical`, jeder Aufruf braucht deine Erlaubnis, jede kritische Aktion jedes Mal aufs Neue.
 
+![SDD Studio Desktop: links die geführten Abläufe, rechts das Gespräch mit dem Modell](docs/img/mcp.png)
+
 ### Als Desktop-Anwendung (Tauri v2)
 
 Voraussetzung zusätzlich: Rust und die [Tauri-Systemabhängigkeiten](https://v2.tauri.app/start/prerequisites/).
@@ -192,13 +195,22 @@ In der Oberfläche Anbieter und Modell wählen — „LLM testen“ prüft vorab
 
 ### Was der Desktop darf
 
-- **Nur die Werkzeuge von `sdd mcp`**, keine eigenen, kein Dateizugriff daran vorbei.
+- **Über `sdd` nur die Werkzeuge von `sdd mcp`**, keine eigenen — und kein Dateizugriff an `sdd` vorbei.
+  Gestartete Agenten-CLIs bringen dagegen **eigene** Werkzeuge mit (siehe „Agenten-CLIs als Antrieb“). Was sie damit schreiben, sieht keine Karte, keine Regelprüfung und kein Gate; der Proxy reicht ausschließlich die Werkzeuge von `sdd mcp` an sie durch.
 - **Jeder Aufruf braucht eine Freigabe:** einmal, für die Sitzung (je Werkzeug) oder ablehnen. `sdd_new` und `sdd_write` mit `apply` zeigen vorher Inhalt bzw. Diff; auf einer solchen Karte für die Sitzung freigegeben, schreiben sie ohne weitere Rückfrage und melden im Ergebnis, was sie geschrieben haben. Eine Freigabe auf einer reinen Vorschau („nur Vorschau“) erlaubt nur weitere Vorschauen. Artefakte werden vor dem Schreiben mit den Regeln geprüft. Kritische Aktionen (Baseline, Lockfile, `adopt --apply`, ADR entscheiden, `sdd.config.yaml` ändern) brauchen jedes Mal eine einzelne Bestätigung, nie eine Freigabe für die Sitzung (ADR 0003, ADR 0004); bei der Konfiguration zeigt die Karte, welche Befunde wegfallen oder hinzukommen.
 - **Cloud-Anbieter erst nach Bestätigung**, dass Inhalte das Gerät verlassen. Inhalte werden **nicht geschwärzt**; mit lokalem Ollama bleibt alles auf dem Rechner.
 - **Lokaler Server** nur auf `127.0.0.1`, `Host`-Prüfung, Sitzungstoken, Content-Security-Policy ohne Inline-Skripte; keine Telemetrie.
 - **Desktop-Anwendung:** Das Fenster zeigt nur die eigene Startseite und den laufenden Sidecar, andere Web-Adressen öffnet der Standardbrowser; keine Seite erhält Tauri-Rechte. Stirbt die Anwendung, enden `sdd-desk` und `sdd mcp` mit ihr.
 
 Entwicklung der Oberfläche mit Live-Reload: `bin/sdd-desk --port 47900` starten, dann `cd apps/desk && npm start` (leitet `/api` an `127.0.0.1:47900` weiter) und die ausgegebene `?token=…` an `http://localhost:4200/` anhängen. Details: [`apps/desk/README.md`](apps/desk/README.md), [Handbuch: KI-Desktop](handbuch/04-agenten.md#sdd-desk).
+
+### Agenten-CLIs als Antrieb
+
+Der Desktop kann eine lokal installierte Agenten-CLI (`claude`, `codewhale`) führen, statt selbst ein Sprachmodell aufzurufen ([ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md)). Die CLI ist dann **selbst der Agent**: Sie plant und ruft Werkzeuge auf. Damit die Freigabehoheit im Desktop bleibt, spricht sie nicht direkt mit `sdd mcp`, sondern mit einem MCP-Endpunkt von `sdd-desk` auf `127.0.0.1`; **jeder** `tools/call` wird dort zur Freigabekarte, korreliert über eine Kennung je Aufruf, mit eigener Frist. Ohne Entscheidung läuft nichts; ein Ende der CLI-Sitzung nimmt offene Karten zurück. `sdd` bleibt KI-frei, und die CLI bekommt `--allow-critical` nie zu sehen.
+
+Was das **nicht** abdeckt: Die CLI bringt eigene Werkzeuge mit. Ihre Schreibzugriffe sind nur so weit verhindert, wie der belegte Mechanismus je CLI reicht (`claude`: `--allowedTools` als Allowlist; `codewhale`: `--sandbox read-only`). Beide sind Cloud-Anbieter; der Hinweis „Inhalte verlassen das Gerät“ gilt vor dem ersten Lauf. Ob eine CLI angeboten wird, hängt am Belegstand in `internal/desk/evidence.go` — ohne belegten Lauf gegen den Proxy erscheint sie als „nicht belegt“ und wird nicht angeboten.
+
+In der Seitenleiste gibt es dafür den Abschnitt **Agenten-CLI**: Auswahl der angebotenen CLI mit Begründung, wenn eine fehlt, der Belegstand je CLI, der Cloud-Hinweis vor dem ersten Lauf und die offenen Aufrufe mit Kennung, Sitzung und Frist. Eine Sitzungsfreigabe wird dort nur für lesende und schreibende Karten angeboten; kritische Aufrufe entscheidest du immer einzeln.
 
 ## Tests
 

@@ -1,6 +1,7 @@
 import { Component, inject, viewChild } from '@angular/core';
 import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { CliPanel } from './cli/cli-panel';
 import { ChatPanel } from './chat/chat-panel';
 import { ChatSession } from './core/chat-session';
 import { ModelOption, ModelTest } from './core/types';
@@ -9,7 +10,7 @@ import { ProcessPanel } from './process/process-panel';
 /** Shell: provider and model selection, process sidebar, conversation. */
 @Component({
   selector: 'desk-root',
-  imports: [ChatPanel, ProcessPanel, HlmButtonImports, HlmBadgeImports],
+  imports: [ChatPanel, ProcessPanel, CliPanel, HlmButtonImports, HlmBadgeImports],
   host: { class: 'flex h-dvh flex-col bg-background text-foreground' },
   template: `
     <header class="flex flex-wrap items-center gap-3 border-b px-4 py-2">
@@ -68,6 +69,7 @@ import { ProcessPanel } from './process/process-panel';
     <div class="flex min-h-0 flex-1">
       <aside class="w-80 shrink-0 overflow-y-auto border-r max-md:hidden" aria-label="Prozess">
         <desk-process-panel (started)="chat()?.prefill($event)" />
+        <desk-cli-panel />
       </aside>
       <main class="flex min-h-0 min-w-0 flex-1 flex-col"><desk-chat-panel /></main>
     </div>

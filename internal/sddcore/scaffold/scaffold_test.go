@@ -13,6 +13,7 @@ import (
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/report"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scaffold"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/scan"
 )
@@ -83,6 +84,29 @@ func TestInitRejectsUnknownProfile(t *testing.T) {
 		if err != nil || cfg.Profile != p {
 			t.Errorf("profile %s: got %+v, %v", p, cfg, err)
 		}
+	}
+}
+
+// sdd-init-new AC-1: the generated CI workflow pins the release tag of the tool that wrote it.
+func TestInitWorkflowPinsToolVersion(t *testing.T) {
+	root := initProject(t, "standard")
+	got := readFile(t, root, scaffold.WorkflowPath)
+	want := "- uses: Zheng-Bote/sdd_studio@v" + report.ToolVersion
+	var pins int
+	for _, line := range strings.Split(got, "\n") {
+		if !strings.Contains(line, "Zheng-Bote/sdd_studio@") {
+			continue
+		}
+		pins++
+		if strings.TrimSpace(line) != want {
+			t.Errorf("workflow pins %q, want %q", strings.TrimSpace(line), want)
+		}
+	}
+	if pins == 0 {
+		t.Errorf("workflow names no release tag:\n%s", got)
+	}
+	if strings.Contains(got, "{{") {
+		t.Errorf("workflow still contains template markers:\n%s", got)
 	}
 }
 

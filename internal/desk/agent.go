@@ -306,6 +306,20 @@ func (a *Agent) decide(tc ToolCall, req TurnRequest, msgs []Message) (string, *P
 	return res.Text, nil, nil
 }
 
+// PreviewTool runs a write or critical call with apply=false so the proxy can show the effect on its card without
+// changing anything. It is the same preview the desktop's own loop uses.
+func (a *Agent) PreviewTool(name string, args json.RawMessage) (json.RawMessage, string, error) {
+	res, err := a.preview(ToolCall{Name: name, Arguments: args})
+	if err != nil {
+		return nil, "", err
+	}
+	var head struct {
+		Summary string `json:"summary"`
+	}
+	_ = json.Unmarshal(res, &head)
+	return res, head.Summary, nil
+}
+
 // preview runs a write call with apply=false so the user sees files and content before approving.
 func (a *Agent) preview(tc ToolCall) (json.RawMessage, error) {
 	var args map[string]any

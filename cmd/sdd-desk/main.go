@@ -87,6 +87,24 @@ func run() int {
 	token := hex.EncodeToString(b)
 	srv := &desk.Server{Addr: ln.Addr().String(), Token: token, Project: filepath.Base(root), Config: cfg, Agent: agent, MCP: mcp,
 		HTTP: &http.Client{Timeout: 3 * time.Second}}
+
+	// Agent CLIs reach sdd only through this proxy: one bearer token per run, every tools/call as a card
+	// (ADR 0010). sdd itself stays AI-free; the child `sdd mcp` stays under this process.
+	approvals := desk.NewApprovals(10 * time.Minute)
+	sessions := desk.NewCLISessions()
+	srv.Proxy = &desk.Proxy{
+		Approvals: approvals,
+		Sessions:  sessions,
+		Tools:     func() ([]desk.ToolDef, error) { return mcp.Tools() },
+		Preview:   agent.PreviewTool,
+		CallTool:  mcp.CallTool,
+	}
+	srv.CLIs = desk.NewCLIManager(&desk.CLIProxy{
+		Approvals: approvals,
+		Sessions:  sessions,
+		URL:       "http://" + srv.Addr + "/mcp",
+	}, root)
+	defer srv.CLIs.CloseAll()
 	httpSrv := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 5 * time.Second}
 
 	// The URL line is an interface: the Tauri shell recognises it and loads it into its window.

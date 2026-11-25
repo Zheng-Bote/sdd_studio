@@ -29,6 +29,11 @@ type Server struct {
 	MCP     interface {
 		Call(method string, params any) (json.RawMessage, error)
 	}
+	// Proxy is the MCP endpoint for agent CLIs; nil disables that mode.
+	Proxy *Proxy
+	// CLIs starts and tracks agent CLI sessions; nil disables that mode.
+	CLIs *CLIManager
+
 	HTTP *http.Client // for model discovery of local Ollama
 
 	mux *http.ServeMux
@@ -55,6 +60,15 @@ func (s *Server) Handler() http.Handler {
 	m.HandleFunc("POST /api/turn", s.handleTurn)
 	m.HandleFunc("POST /api/turn/stream", s.handleTurnStream)
 	m.HandleFunc("POST /api/model/test", s.handleModelTest)
+	if s.Proxy != nil {
+		m.Handle("POST /mcp", s.Proxy)
+	}
+	if s.CLIs != nil {
+		m.HandleFunc("GET /api/cli", s.handleCLIList)
+		m.HandleFunc("GET /api/cli/cards", s.handleCLICards)
+		m.HandleFunc("POST /api/cli/decide", s.handleCLIDecide)
+		m.HandleFunc("POST /api/cli/start", s.handleCLIStart)
+	}
 	s.mux = m
 	return s
 }
@@ -85,6 +99,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
+	}
+	// The proxy authenticates itself with a per-session bearer token, so the desk token and the Origin header do
+	// not apply here; the body limit does.
+	if r.URL.Path == "/mcp" {
 		r.Body = http.MaxBytesReader(w, r.Body, maxBody)
 	}
 	s.mux.ServeHTTP(w, r)

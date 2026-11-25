@@ -8,6 +8,7 @@ import (
 
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/baseline"
 	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/config"
+	"github.com/Zheng-Bote/sdd_studio/internal/sddcore/report"
 )
 
 // WorkflowPath is where `sdd init` places the CI workflow.
@@ -87,7 +88,9 @@ func InitPlan(opts InitOptions) (Plan, error) {
 	}
 
 	if opts.CI {
-		content, err := render("workflow.yml.tmpl", nil)
+		// Der Workflow pinnt den Release-Tag des Programms, das ihn schreibt, statt eines Literals,
+		// das beim nächsten Release vergessen wird.
+		content, err := render("workflow.yml.tmpl", struct{ Version string }{report.ToolVersion})
 		if err != nil {
 			return Plan{}, err
 		}
