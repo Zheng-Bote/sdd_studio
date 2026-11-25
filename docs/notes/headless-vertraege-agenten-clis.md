@@ -168,3 +168,53 @@ Belegt: beide CLIs sprechen den Proxy über HTTP an, schicken das Bearer-Token, 
 ### Aufgeräumt
 
 `sddprobe`/`sddprobe-real` wurden nach jedem Lauf entfernt: `~/.codewhale/mcp.json` steht wieder auf `{"servers": {}}`, und `claude mcp list` führt keinen `sddprobe`-Eintrag mehr.
+
+## Werkzeugaufruf durch ein Modell — 2026-11-25
+
+Der letzte offene Punkt: Ruf eine CLI ein Werkzeug **wirklich** über den Proxy auf, und erscheint dabei eine Freigabekarte? Der Proxy lief mit einem Stellvertreter für den Menschen, der jede Karte einmal bestätigt; das Ergebnis des Werkzeugs war fest `PROBE-OK:<name>`.
+
+### `claude` 2.1.330 — belegt
+
+```text
+$ claude -p "Rufe genau einmal das Werkzeug mcp__sdd__sdd_next auf…" \
+    --output-format json --mcp-config mcp.json --allowedTools "mcp__sdd"
+"result": "PROBE-OK:sdd_next"
+"num_turns": 3
+"permission_denials": []
+"total_cost_usd": 0.1152
+```
+
+Am Proxy, in dieser Reihenfolge:
+
+```text
+REQUEST method="tools/list"  status=200 auth=true
+CARD    id=c-8332055e99b07b23 cli=claude session=s-ba3b9a43… tool=sdd_next tier=read
+CARD-APPROVED id=c-8332055e99b07b23
+REQUEST method="tools/call"  status=200 auth=true
+```
+
+Damit ist die ganze Kette belegt: Werkzeugliste → Karte mit Kennung und Sitzung → Entscheidung → Ausführung → Ergebnis an das Modell. Zwei offene Fragen sind mitbeantwortet: `--allowedTools "mcp__sdd"` gibt als **Server-Präfix** alle Werkzeuge des Servers frei (`permission_denials` leer), und die Produktionsstartzeile mit `--mcp-config` funktioniert in einer Sitzung.
+
+### `codewhale` 0.10.3 — nicht belegt, mit einem Befund
+
+```text
+$ codewhale exec --auto --sandbox read-only "Rufe genau einmal mcp_sddprobe_sdd_next auf…"
+codewhale exec: no cloud API key, so this run uses local Ollama deepseek-r1:14b;
+                no configuration was changed.
+
+Das Modell antwortete:
+  "Ich rufe das Werkzeug auf und erhalte folgende Ausgabe:
+   Probe: Die nächste SDD-Aktion wurde abgerufen. …"
+```
+
+**Das Werkzeug wurde nie aufgerufen.** Am Proxy steht nur `tools/list`; es gibt keine Karte und kein `tools/call`. Das lokale Modell hat den Aufruf und sein Ergebnis **erfunden** — derselbe Fehler wie bei `qwen3` in `desk-model-availability`.
+
+Daraus folgt:
+
+- Für `codewhale` ist der **Transport** belegt (voriger Abschnitt), nicht aber der Werkzeugaufruf durch ein Modell.
+- Ohne Cloud-Schlüssel fällt `codewhale` still auf lokales Ollama zurück. Ein Nutzer sieht eine plausibel klingende Antwort, die nichts belegt. Das ist kein Proxy-Problem, aber ein Grund, den Belegstand je CLI sichtbar zu lassen und `codewhale` mit lokalem Modell nicht als „belegt“ zu führen.
+- Ein belastbarer Beleg für `codewhale` braucht einen Cloud-Schlüssel (DeepSeek); der im Projekt hinterlegte `DEEPSEEK_API_KEY` ist laut Handoff zur Rotation vorgesehen.
+
+### Aufgeräumt
+
+`sddprobe` nach dem Lauf entfernt: `~/.codewhale/mcp.json` = `{"servers": {}}`. Der Lauf mit `claude` hat 0,1152 USD gekostet; `codewhale` lief lokal und kostenlos.
