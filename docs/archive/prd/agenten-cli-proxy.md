@@ -1,6 +1,6 @@
 ---
 feature: agenten-cli-proxy
-status: draft
+status: archived
 archive-after:
 touches:
   - internal/desk/**
@@ -9,6 +9,7 @@ touches:
   - README.md
   - CHANGELOG.md
   - docs/arc42.md
+release: v0.10.0
 ---
 
 # PRD — Lokale Agenten-CLIs im Desktop, über einen MCP-Proxy (`agenten-cli-proxy`)

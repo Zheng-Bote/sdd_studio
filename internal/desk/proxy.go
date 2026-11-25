@@ -123,7 +123,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeRPCResult(w, req.ID, map[string]any{
 			"protocolVersion": "2025-06-18",
 			"capabilities":    map[string]any{"tools": map[string]any{}},
-			"serverInfo":      map[string]any{"name": "sdd-desk", "version": "0.9.1"},
+			"serverInfo":      map[string]any{"name": "sdd-desk", "version": "0.10.0"},
 		})
 	case "notifications/initialized", "notifications/cancelled":
 		w.WriteHeader(http.StatusAccepted)

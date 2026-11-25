@@ -1,6 +1,6 @@
 ---
 feature: agenten-cli-proxy
-status: draft
+status: archived
 archive-after:
 touches:
   - internal/desk/**
@@ -9,11 +9,12 @@ touches:
   - README.md
   - CHANGELOG.md
   - docs/arc42.md
+release: v0.10.0
 ---
 
 # Tech Spec — Lokale Agenten-CLIs im Desktop, über einen MCP-Proxy (`agenten-cli-proxy`)
 
-Setzt das PRD [`docs/prd/agenten-cli-proxy.md`](../prd/agenten-cli-proxy.md) um. Die Verfassung hat Vorrang; diese Tech Spec darf sie präzisieren, nie lockern.
+Setzt das PRD `docs/archive/prd/agenten-cli-proxy.md` um. Die Verfassung hat Vorrang; diese Tech Spec darf sie präzisieren, nie lockern.
 
 ## Architektur
 

@@ -9,7 +9,7 @@ import (
 
 const (
 	SchemaVersion = 1
-	ToolVersion   = "0.9.1"
+	ToolVersion   = "0.10.0"
 )
 
 type BaselineSummary struct {

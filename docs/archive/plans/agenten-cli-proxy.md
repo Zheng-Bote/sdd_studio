@@ -1,14 +1,15 @@
 ---
 feature: agenten-cli-proxy
-status: draft
+status: archived
 archive-after:
+release: v0.10.0
 ---
 
 # Plan — agenten-cli-proxy (`agenten-cli-proxy`)
 
 Reihenfolge der Umsetzung. Jede Task nennt das Akzeptanzkriterium, auf das sie einzahlt.
 
-PRD: [`docs/prd/agenten-cli-proxy.md`](../prd/agenten-cli-proxy.md) · Tech Spec: [`docs/design/agenten-cli-proxy.md`](../design/agenten-cli-proxy.md)
+PRD: `docs/archive/prd/agenten-cli-proxy.md` · Tech Spec: `docs/archive/design/agenten-cli-proxy.md`
 
 ## Vorbemerkung: was zuerst belegt werden muss
 

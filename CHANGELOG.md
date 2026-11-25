@@ -4,9 +4,13 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-11-25
+
+Regelkatalog unverändert `1.3.0` mit 26 Regeln. Grundlage ist das Feature `agenten-cli-proxy` ([PRD](docs/archive/prd/agenten-cli-proxy.md), [Tech Spec](docs/archive/design/agenten-cli-proxy.md), [Plan](docs/archive/plans/agenten-cli-proxy.md)) sowie [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md).
+
 ### Hinzugefügt
 
-- **Agenten-CLIs im Desktop über einen MCP-Proxy** (`agenten-cli-proxy`, [PRD](docs/prd/agenten-cli-proxy.md), [Tech Spec](docs/design/agenten-cli-proxy.md), [Plan](docs/plans/agenten-cli-proxy.md), [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md)): `sdd-desk` stellt einen MCP-Endpunkt auf `127.0.0.1` bereit, über den eine lokal installierte Agenten-CLI (`claude`, `codewhale`) die Werkzeuge von `sdd mcp` erreicht. Jeder `tools/call` wird zur Freigabekarte, korreliert über eine Kennung je Aufruf und mit eigener Frist; ohne Entscheidung liefert der Proxy kein Ergebnis, eine kritische Aktion läuft nur einzeln, und ein Ende der CLI-Sitzung nimmt offene Karten zurück. Jede CLI-Sitzung hat ein eigenes Bearer-Token; die CLI erhält nie `--allow-critical`. Angeboten wird nur, was belegt ist: der Belegstand je CLI steht in `internal/desk/evidence.go`, und ohne belegten Lauf gegen den Proxy wird eine CLI als „nicht belegt“ geführt und nicht angeboten — `agy` bleibt wegen der fehlenden Schreibsperre zurückgestellt. Die README-Zusage ist entsprechend auf Aktionen über `sdd` eingeschränkt.
+- **Agenten-CLIs im Desktop über einen MCP-Proxy** (`agenten-cli-proxy`, [PRD](docs/archive/prd/agenten-cli-proxy.md), [Tech Spec](docs/archive/design/agenten-cli-proxy.md), [Plan](docs/archive/plans/agenten-cli-proxy.md), [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md)): `sdd-desk` stellt einen MCP-Endpunkt auf `127.0.0.1` bereit, über den eine lokal installierte Agenten-CLI (`claude`, `codewhale`) die Werkzeuge von `sdd mcp` erreicht. Jeder `tools/call` wird zur Freigabekarte, korreliert über eine Kennung je Aufruf und mit eigener Frist; ohne Entscheidung liefert der Proxy kein Ergebnis, eine kritische Aktion läuft nur einzeln, und ein Ende der CLI-Sitzung nimmt offene Karten zurück. Jede CLI-Sitzung hat ein eigenes Bearer-Token; die CLI erhält nie `--allow-critical`. Angeboten wird nur, was belegt ist: der Belegstand je CLI steht in `internal/desk/evidence.go`, und ohne belegten Lauf gegen den Proxy wird eine CLI als „nicht belegt“ geführt und nicht angeboten — `agy` bleibt wegen der fehlenden Schreibsperre zurückgestellt. Die README-Zusage ist entsprechend auf Aktionen über `sdd` eingeschränkt.
 
   **Belegt:** `claude` ist durchgehend belegt — Transport über HTTP und ein echter Werkzeugaufruf durch das Modell samt Freigabekarte (`PROBE-OK:sdd_next`, keine Verweigerung, 0,12 USD). **Offen:** `codewhale` hat den Transport belegt, aber keinen Werkzeugaufruf: ohne Cloud-Schlüssel nutzt es lokales Ollama, und das Modell erfand das Ergebnis, ohne das Werkzeug aufzurufen — der Belegstand nennt das auf der Karte. Belege: [`docs/notes/headless-vertraege-agenten-clis.md`](docs/notes/headless-vertraege-agenten-clis.md).
 
@@ -17,6 +21,12 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 - **Startzeile von `claude` hätte den Auftrag verschluckt:** `--mcp-config` und `--allowedTools` sind variadisch; ein dahinter stehender Prompt wäre als weitere Konfigurationsdatei bzw. als weiterer Werkzeugname gelesen worden. Der Prompt steht jetzt direkt hinter `-p`, und ein Lauf ohne Auftrag wird abgelehnt statt mit verrutschten Argumenten gestartet. Gefunden im Transportbeleg, festgehalten in `TestCLIStartFlags`.
 
 - **Der CI-Workflow aus `sdd init` zeigt auf den erzeugenden Release-Tag:** `templates/workflow.yml.tmpl` trug den Action-Pin als Literal (`v0.7.0`) und blieb seit 0.7.0 stehen — ein frisch initialisiertes Projekt prüfte also mit einem zwei Minor-Versionen alten Stand. Das Template setzt den Tag jetzt aus `report.ToolVersion` (`uses: Zheng-Bote/sdd_studio@v<Version>`), und `TestInitWorkflowPinsToolVersion` hält beide Vorkommen im gerenderten Workflow fest.
+
+- **`update-toc` scheiterte an `git push`:** Bei `pull_request` checkt `actions/checkout` den Merge-Commit in einem detached HEAD aus. Der Commit-Schritt committete dort und rief dann `git push` ohne Refspec — `fatal: You are not currently on a branch`, Exit 128. Der Fehler war latent, weil anfangs nie etwas zu committen war. Der Checkout nimmt jetzt den Head-Commit des PR, der Push nennt sein Ziel ausdrücklich, und für Pull Requests aus einem Fork ist der Commit-Schritt ausgesetzt. Belegt auf dem Runner: der Bot hat einen TOC-Commit selbst gepusht.
+
+### Archiviert
+
+Die Feature-Artefakte dieser Version liegen unter `docs/archive/` (`status: archived`, `release: v0.10.0`): `agenten-cli-proxy`.
 
 ## [0.9.1] — 2026-11-22
 
