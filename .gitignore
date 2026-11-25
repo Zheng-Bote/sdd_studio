@@ -1,6 +1,9 @@
 # Schlüssel des KI-Desktops (ADR 0002) — nie einchecken
-config/llm.env
-**/config/llm.env
+# Jede *.env unter config/ ist eine lokale Schlüsseldatei; eingecheckt wird nur die Vorlage.
+config/*.env
+**/config/*.env
+!config/llm.env.example
+!**/config/llm.env.example
 
 # Build-Ausgaben
 /bin/
@@ -22,3 +25,4 @@ config/llm.env
 # Lokale Quellen und Fremd-Bestände (nicht Teil des Projekts)
 /data/
 .DS_Store
+.codewhale/

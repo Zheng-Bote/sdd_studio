@@ -132,6 +132,8 @@ Baseline, Befunde quittieren, ADR-Lockfile, `sdd adopt --apply`, das Entscheiden
 
 `sdd-desk` führt im Gespräch mit einem frei wählbaren Sprachmodell durch den Prozess: vom Projektstart (Übernahme eines bestehenden oder Anlage eines neuen Projekts) über Verfassung, PRD, Tech Spec, ADR, Plan und Tests bis zu Gate und Archiv. Es ist ein **getrenntes Programm**: Werkzeuge erreicht es nur über einen selbst gestarteten `sdd mcp --allow-write --allow-critical`, jeder Aufruf braucht deine Erlaubnis, jede kritische Aktion jedes Mal aufs Neue.
 
+![SDD Studio Desktop: links die geführten Abläufe, rechts das Gespräch mit dem Modell](docs/img/mcp.png)
+
 ### Als Desktop-Anwendung (Tauri v2)
 
 Voraussetzung zusätzlich: Rust und die [Tauri-Systemabhängigkeiten](https://v2.tauri.app/start/prerequisites/).
