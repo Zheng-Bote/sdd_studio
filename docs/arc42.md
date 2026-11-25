@@ -234,6 +234,32 @@ sequenceDiagram
 
 Das Modell liest Verfassung und Tech Spec, übergibt seine Meldungen strukturiert an `sdd_conflicts_check`; das Werkzeug prüft jedes Zitat gegen Datei und Zeile und nennt fehlende Regeln. Die Antwort zeigt nur belegte Meldungen. Das Ergebnis ist ein Hinweis, kein Befund.
 
+## Agenten-CLI über den MCP-Proxy {#_runtime_scenario_3}
+
+Wenn nicht der Desktop das Modell aufruft, sondern eine installierte Agenten-CLI (`claude`, `codewhale`), bleibt die Freigabehoheit im Desktop ([ADR 0010](adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md)). Die CLI ist selbst ein Agent; sie erreicht `sdd` nur über einen Endpunkt, den `sdd-desk` bereitstellt.
+
+```mermaid
+sequenceDiagram
+    actor Mensch
+    participant CLI as Agenten-CLI
+    participant Desk as sdd-desk (Proxy)
+    participant MCP as sdd mcp
+    CLI->>Desk: tools/call (Bearer je Sitzung)
+    Desk->>Desk: Stufe bestimmen, Aufruf mit Kennung und Frist parken
+    Desk->>Mensch: Freigabekarte (CLI, Sitzung, Werkzeug, Stufe)
+    Mensch-->>Desk: einmal, für die Sitzung oder ablehnen
+    Desk->>MCP: Werkzeug nur nach Freigabe
+    MCP-->>Desk: Ergebnis
+    Desk-->>CLI: Werkzeugergebnis oder Verweigerung
+```
+
+1. `sdd-desk` startet die CLI als Kindprozess mit der je CLI belegten Startzeile; die CLI bekommt ein eigenes Sitzungstoken, nicht das des Desktops.
+2. Jeder `tools/call` wird geparkt und als Karte gezeigt. Die Entscheidung ist an eine Kennung je Aufruf gebunden, nicht an die Reihenfolge, und verfällt nach einer Frist.
+3. Ausgeführt wird über denselben `sdd mcp`-Kindprozess wie im eigenen Kreislauf; die CLI sieht `--allow-critical` nie. Kritische Aktionen laufen nur einzeln.
+4. Endet die CLI oder ihr Prozess, werden offene Karten zurückgenommen. Der Belegstand je CLI steht in `internal/desk/evidence.go`; ohne belegten Lauf gegen den Proxy wird die CLI nicht angeboten.
+
+Die CLI bringt eigene Werkzeuge mit. Ihre Schreibzugriffe sind nur über den je CLI belegten Mechanismus verhindert (`claude`: `--allowedTools`; `codewhale`: `--sandbox read-only`) — deshalb schränkt das README seine Zusage auf Aktionen über `sdd` ein.
+
 # Verteilungssicht {#section-deployment-view}
 
 ## Infrastruktur Ebene 1 {#_infrastructure_level_1}

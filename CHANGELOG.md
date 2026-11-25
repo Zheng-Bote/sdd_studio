@@ -4,6 +4,12 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Agenten-CLIs im Desktop über einen MCP-Proxy** (`agenten-cli-proxy`, [PRD](docs/prd/agenten-cli-proxy.md), [Tech Spec](docs/design/agenten-cli-proxy.md), [Plan](docs/plans/agenten-cli-proxy.md), [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md)): `sdd-desk` stellt einen MCP-Endpunkt auf `127.0.0.1` bereit, über den eine lokal installierte Agenten-CLI (`claude`, `codewhale`) die Werkzeuge von `sdd mcp` erreicht. Jeder `tools/call` wird zur Freigabekarte, korreliert über eine Kennung je Aufruf und mit eigener Frist; ohne Entscheidung liefert der Proxy kein Ergebnis, eine kritische Aktion läuft nur einzeln, und ein Ende der CLI-Sitzung nimmt offene Karten zurück. Jede CLI-Sitzung hat ein eigenes Bearer-Token; die CLI erhält nie `--allow-critical`. Angeboten wird nur, was belegt ist: der Belegstand je CLI steht in `internal/desk/evidence.go`, und ohne belegten Lauf gegen den Proxy wird eine CLI als „nicht belegt“ geführt und nicht angeboten — `agy` bleibt wegen der fehlenden Schreibsperre zurückgestellt. Die README-Zusage ist entsprechend auf Aktionen über `sdd` eingeschränkt.
+
+  **Offen:** der Transportbeleg (Lauf einer CLI gegen den HTTP-Endpunkt) steht aus; solange fehlt, sind `claude` und `codewhale` im Desktop als nicht angeboten gekennzeichnet. Die Oberfläche (`apps/desk/src`) zeigt den CLI-Modus noch nicht.
+
 ### Behoben
 
 - **Der CI-Workflow aus `sdd init` zeigt auf den erzeugenden Release-Tag:** `templates/workflow.yml.tmpl` trug den Action-Pin als Literal (`v0.7.0`) und blieb seit 0.7.0 stehen — ein frisch initialisiertes Projekt prüfte also mit einem zwei Minor-Versionen alten Stand. Das Template setzt den Tag jetzt aus `report.ToolVersion` (`uses: Zheng-Bote/sdd_studio@v<Version>`), und `TestInitWorkflowPinsToolVersion` hält beide Vorkommen im gerenderten Workflow fest.
