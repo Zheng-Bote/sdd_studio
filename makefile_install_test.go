@@ -345,9 +345,12 @@ func writeAt(t *testing.T, path string, unix int64) {
 }
 
 // makeQuestion reports whether make considers the target up to date (0) or out of date (1). Recipes do not run.
-func makeQuestion(t *testing.T, dir, target string) int {
+// extra carries make variables, e.g. OS=Darwin for a rule that only exists on macOS.
+func makeQuestion(t *testing.T, dir, target string, extra ...string) int {
 	t.Helper()
-	err := exec.Command("make", "-C", dir, "-q", target).Run()
+	args := append([]string{"-C", dir, "-q"}, extra...)
+	args = append(args, target)
+	err := exec.Command("make", args...).Run()
 	if err == nil {
 		return 0
 	}
@@ -473,19 +476,22 @@ func bundleSandbox(t *testing.T) (dir, bundleRel string) {
 
 // Issue #39: asking whether the bundle is current must answer, not build. With a stale bundle make -q returns 1
 // (out of date) — before the fix it returned 2, because the sub-make it started failed.
+//
+// OS=Darwin is passed because the bundle rule lives inside `ifeq ($(OS),Darwin)`: on a Linux host (CI) it would not
+// exist at all, and make would answer "nothing to be done" (0) for an unknown target.
 func TestMakeQuestionOnStaleBundleDoesNotBuild(t *testing.T) {
 	dir, bundleRel := bundleSandbox(t)
 	bundle := filepath.Join(dir, bundleRel)
 
 	// Bundle newer than everything: current.
 	writeAt(t, bundle, 4_000)
-	if got := makeQuestion(t, dir, bundleRel); got != 0 {
+	if got := makeQuestion(t, dir, bundleRel, "OS=Darwin"); got != 0 {
 		t.Fatalf("aktuelles Bundle: make -q = %d, erwartet 0", got)
 	}
 
 	// A source changed afterwards: stale, and make -q must say so without running anything.
 	writeAt(t, filepath.Join(dir, "templates", "agents.md.tmpl"), 5_000)
-	if got := makeQuestion(t, dir, bundleRel); got != 1 {
+	if got := makeQuestion(t, dir, bundleRel, "OS=Darwin"); got != 1 {
 		t.Errorf("veraltetes Bundle: make -q = %d, erwartet 1 (2 = es wurde gebaut)", got)
 	}
 	// The bundle keeps its old timestamp — nothing rebuilt it.
