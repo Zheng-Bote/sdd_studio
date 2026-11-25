@@ -408,3 +408,109 @@ func TestMakeInstallDependsOnAll(t *testing.T) {
 		}
 	}
 }
+
+// --- Issue #39: make -q and make -n must not build ----------------------------------------------------------------
+
+// Issue #39: no recipe may call the sub-make. GNU make runs a recipe line containing $(MAKE) even under -q and -n, so
+// a question about a target started a full build — and make -q then reported exit 2 instead of 0 or 1.
+func TestNoRecipeCallsSubMake(t *testing.T) {
+	data, err := os.ReadFile("Makefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, line := range strings.Split(string(data), "\n") {
+		if !strings.HasPrefix(line, "\t") {
+			continue
+		}
+		if strings.Contains(line, "$(MAKE)") {
+			t.Errorf("Makefile:%d ruft $(MAKE) im Rezept; make -q und -n führen das aus: %q", i+1, strings.TrimSpace(line))
+		}
+	}
+}
+
+// bundleSandbox is a tree with every file the bundle target depends on. The bundle itself and the sources can be
+// stamped separately, so "stale" is a fact of the test and not of the clock.
+//
+// It returns the tree and the bundle as a path relative to it: the Makefile names its targets relatively, and a
+// question about an absolute path would find no rule and answer "nothing to be done" (exit 0) instead of "stale".
+func bundleSandbox(t *testing.T) (dir, bundleRel string) {
+	t.Helper()
+	dir = t.TempDir()
+	makefile, err := os.ReadFile("Makefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "Makefile"), makefile, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sources := []string{
+		"go.mod",
+		"embed.go",
+		"cmd/sdd/main.go",
+		"cmd/sdd-desk/main.go",
+		"internal/sddcore/x.go",
+		"catalog/catalog.yaml",
+		"handbuch/03-mechanismen.md",
+		"templates/agents.md.tmpl",
+		"apps/desk/src-tauri/src/lib.rs",
+		"apps/desk/src-tauri/tauri.conf.json",
+		"apps/desk/src-tauri/Cargo.toml",
+		"internal/desk/webdist/index.html",
+	}
+	for _, rel := range sources {
+		writeAt(t, filepath.Join(dir, filepath.FromSlash(rel)), 3_000)
+	}
+	bundleRel = filepath.Join("apps", "desk", "src-tauri", "target", "release", "bundle", "macos", "SDD Studio Desktop.app")
+	if err := os.MkdirAll(filepath.Join(dir, bundleRel), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// The Go programs and the app binary are file prerequisites of the bundle too.
+	for _, rel := range []string{"bin/sdd", "bin/sdd-desk", "apps/desk/src-tauri/target/release/sdd-desk-app"} {
+		writeAt(t, filepath.Join(dir, filepath.FromSlash(rel)), 3_000)
+	}
+	return dir, bundleRel
+}
+
+// Issue #39: asking whether the bundle is current must answer, not build. With a stale bundle make -q returns 1
+// (out of date) — before the fix it returned 2, because the sub-make it started failed.
+func TestMakeQuestionOnStaleBundleDoesNotBuild(t *testing.T) {
+	dir, bundleRel := bundleSandbox(t)
+	bundle := filepath.Join(dir, bundleRel)
+
+	// Bundle newer than everything: current.
+	writeAt(t, bundle, 4_000)
+	if got := makeQuestion(t, dir, bundleRel); got != 0 {
+		t.Fatalf("aktuelles Bundle: make -q = %d, erwartet 0", got)
+	}
+
+	// A source changed afterwards: stale, and make -q must say so without running anything.
+	writeAt(t, filepath.Join(dir, "templates", "agents.md.tmpl"), 5_000)
+	if got := makeQuestion(t, dir, bundleRel); got != 1 {
+		t.Errorf("veraltetes Bundle: make -q = %d, erwartet 1 (2 = es wurde gebaut)", got)
+	}
+	// The bundle keeps its old timestamp — nothing rebuilt it.
+	info, err := os.Stat(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.ModTime().Unix() != 4_000 {
+		t.Errorf("make -q hat das Bundle angefasst: mtime %d, erwartet 4000", info.ModTime().Unix())
+	}
+}
+
+// Issue #39: the same for the Linux program. Its recipe used to be $(MAKE) all as well.
+func TestMakeQuestionOnStaleAppBinaryDoesNotBuild(t *testing.T) {
+	dir, _ := bundleSandbox(t)
+	appRel := filepath.Join("apps", "desk", "src-tauri", "target", "release", "sdd-desk-app")
+	appOut := filepath.Join(dir, appRel)
+
+	writeAt(t, appOut, 4_000)
+	if got := makeQuestion(t, dir, appRel); got != 0 {
+		t.Fatalf("aktuelles Programm: make -q = %d, erwartet 0", got)
+	}
+
+	writeAt(t, filepath.Join(dir, "internal", "sddcore", "x.go"), 5_000)
+	if got := makeQuestion(t, dir, appRel); got != 1 {
+		t.Errorf("veraltetes Programm: make -q = %d, erwartet 1 (2 = es wurde gebaut)", got)
+	}
+}

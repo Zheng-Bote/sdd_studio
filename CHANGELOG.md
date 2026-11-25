@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Behoben
+
+- **`make -q` und `make -n` bauen nicht mehr** (Issue [#39](https://github.com/Zheng-Bote/sdd_studio/issues/39)): Die Ziele für das Linux-Programm und das macOS-Bundle hatten als Rezept `$(MAKE) all`. GNU make führt Zeilen mit `$(MAKE)` auch im Frage- und Trockenlauf-Modus aus — eine Frage nach dem Zustand startete also einen vollen Bau und antwortete mit Exit-Code `2` statt `0`/`1`. Beide Ziele bauen jetzt selbst (gemeinsamer Befehl als `TAURI_BUILD`), und ihre Voraussetzungen sind die Go-Programme statt der Quellen, damit `make -q` auch dort 0 beziehungsweise 1 liefert. Zwei Tests halten es fest: kein Rezept enthält mehr `$(MAKE)`, und `make -q` auf ein veraltetes Ziel antwortet `1` und lässt den Zeitstempel unberührt.
+
 ### Geändert
 
 - **README aufgeräumt** (Issue [#37](https://github.com/Zheng-Bote/sdd_studio/issues/37)): Der Abschnitt „Stand" entfällt. Er erzählte die Versionshistorie nach, die der CHANGELOG führt („Neu in … Aus … Aus …"). Version und Regelkatalog stehen jetzt als eine Zeile im Kopf, die Linkliste liegt unter „Wo weiter", die Regeltabelle unter „Regeln". Dabei zwei veraltete Aussagen berichtigt: „Nächste Schritte" nannte macOS als ungetestet, obwohl die App seit 0.11.0 als `.app` im Release liegt; und der `llm.env`-Pfad der Desktop-Anwendung war nur für Linux genannt. Zwei Tests halten den Zustand fest — die Versionszeile muss zu `report.ToolVersion` passen, und „Stand" darf nicht zurückkehren.

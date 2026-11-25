@@ -113,19 +113,28 @@ bin/sdd-desk: $(GO_SOURCES) $(EMBEDDED) $(WEBDIST)
 # Auf macOS entsteht hier das .app-Bundle, auf Linux nur das Programm — deshalb $(BUNDLE_ARG).
 # desk-app bleibt ohne Dateiziel: Tauri entscheidet selbst, was neu kompiliert wird; ein Bundle-Ziel würde
 # `make` bei jedem Aufruf ausbremsen (Issue #35).
-desk-app: $(DESK_DIR)/node_modules/.package-lock.json
+#
+# Der Befehl steht als Variable, weil ihn zwei Stellen brauchen: desk-app und die Dateiziele darunter. Er darf kein
+# $(MAKE) enthalten — GNU make führt solche Zeilen auch unter -q und -n aus (Issue #39).
+define TAURI_BUILD
 	@test -f $(WEBDIST) || { echo "Oberfläche fehlt: zuerst 'make ui' oder 'make'"; exit 1; }
 	cd $(DESK_DIR) && $(NPM) run tauri -- build $(BUNDLE_ARG) \
 		--config '{"build":{"beforeBuildCommand":"node scripts/build-sidecars.mjs"}}'
+endef
+
+desk-app: $(DESK_DIR)/node_modules/.package-lock.json
+	$(TAURI_BUILD)
 
 # Wer ein Dateiziel direkt anspricht (install-cli, install-desktop-linux, install-bundle-macos), bekommt es aktuell:
 # die Programme hängen an ihren Quellen, das Linux-Programm und das Bundle zusätzlich an allem, was Tauri einpackt.
-$(APP_OUT): $(GO_SOURCES) $(EMBEDDED) $(TAURI_SRC) $(WEBDIST)
-	$(MAKE) all
+# Das Rezept baut selbst, statt einen Sub-Make zu rufen — sonst würde `make -q` auf ein veraltetes Ziel einen vollen
+# Bau starten und einen Fehlercode liefern, statt 0 oder 1 zu antworten (Issue #39).
+$(APP_OUT): $(GO_BINS) $(EMBEDDED) $(TAURI_SRC) $(WEBDIST)
+	$(TAURI_BUILD)
 
 ifeq ($(OS),Darwin)
-$(APP_BUNDLE_GOAL): $(GO_SOURCES) $(EMBEDDED) $(TAURI_SRC) $(WEBDIST)
-	$(MAKE) all
+$(APP_BUNDLE_GOAL): $(GO_BINS) $(EMBEDDED) $(TAURI_SRC) $(WEBDIST)
+	$(TAURI_BUILD)
 endif
 
 # --- Installation -----------------------------------------------------------------------------------------------
