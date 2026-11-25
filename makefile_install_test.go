@@ -11,16 +11,43 @@ import (
 
 // makeDryRun runs `make -n <target>` for one system and returns the commands it would run.
 //
-// The file prerequisites are declared up to date with --old-file: without that, make -n would print the recursive
-// `$(MAKE) all` line (and -n does execute lines that contain $(MAKE)) instead of the install commands.
+// It runs in a temporary copy of the Makefile with every file target created, so the dry run shows the install
+// commands instead of a build. A fresh checkout (CI) has none of those files; relying on `--old-file` did not help
+// there, because make still considers a missing file out of date.
 func makeDryRun(t *testing.T, osName, target string) string {
 	t.Helper()
+	dir := t.TempDir()
+	makefile, err := os.ReadFile("Makefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "Makefile"), makefile, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Everything `make` would otherwise build or fetch: the Go binaries, the app, the Tauri node_modules marker,
+	// the embedded UI and the macOS bundle.
+	for _, rel := range []string{
+		"bin/sdd",
+		"bin/sdd-desk",
+		"apps/desk/src-tauri/target/release/sdd-desk-app",
+		"apps/desk/package-lock.json",
+		"apps/desk/node_modules/.package-lock.json",
+		"internal/desk/webdist/index.html",
+		"apps/desk/src-tauri/target/release/bundle/macos/SDD Studio Desktop.app/Contents/Info.plist",
+	} {
+		p := filepath.Join(dir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	bin := t.TempDir()
 	args := []string{
+		"-C", dir,
 		"-n",
-		"--old-file=bin/sdd",
-		"--old-file=bin/sdd-desk",
-		"--old-file=" + filepath.Join("apps", "desk", "src-tauri", "target", "release", "sdd-desk-app"),
 		"OS=" + osName,
 		"BINDIR=" + filepath.Join(bin, "bin"),
 		"DATADIR=" + filepath.Join(bin, "share"),

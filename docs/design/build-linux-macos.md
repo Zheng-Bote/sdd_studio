@@ -68,10 +68,10 @@ Kein Datenmodell. Neu ist eine Konstante im Makefile, `APP_BUNDLE_NAME := SDD St
 | AC-4 | `APP_BUNDLE_NAME` = `productName` + `.app`; `Contents/MacOS` = `mainBinaryName` + `externalBin` | `TestMacOSBundleMatchesTauriConfig` |
 | AC-5 | `uninstall-*` je System, auf macOS zusätzlich `rm -f $(BINDIR)/sdd-desk-app` | `TestMakeUninstallPerSystem` |
 | AC-6 | `OS ?= $(shell uname -s)`, `print-os`, überschreibbare Pfade | `TestMakeSystemIsDetectedAndOverridable` |
-| AC-7 | Probelauf `make -n` mit `--old-file` für die Dateiziele | alle vier `TestMake*` |
+| AC-7 | Probelauf `make -n` in einer Kopie des Makefile, deren Dateiziele angelegt sind | alle vier `TestMake*` |
 | AC-8 | README-Abschnitt „Alles bauen und lokal installieren (Linux und macOS)“, Handbuchabschnitt | `TestInstallDocsCoverBothSystems` |
 
-**Warum der Probelauf mit `--old-file`:** `make -n` führt Befehlszeilen aus, die `$(MAKE)` enthalten. Ohne die Dateiziele als „aktuell“ zu deklarieren, würde der Test einen vollständigen Bau auslösen, statt die Installationsbefehle zu zeigen.
+**Warum der Probelauf in einer Kopie:** `make -n` führt Befehlszeilen aus, die `$(MAKE)` enthalten, und ein fehlendes Dateiziel gilt als veraltet — auf einem frischen Checkout (CI) zeigte der Probelauf deshalb den ganzen Bau statt der Installationsbefehle, und ein Testsatz hing an Artefakten, die nur lokal vorhanden waren. Der Test legt daher eine Kopie des Makefile in ein temporäres Verzeichnis und erzeugt dort alle Dateiziele; der Probelauf ist damit unabhängig vom Zustand des Arbeitsbaums. (Gefunden im ersten CI-Lauf des PR.)
 
 ## Sicherheit
 
