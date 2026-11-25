@@ -380,6 +380,30 @@ func TestCLIStartFlags(t *testing.T) {
 	}
 }
 
+// agenten-cli-proxy AC-1: the table that ships keeps every CLI honest — no CLI is offered without a proven run
+// against the proxy, and agy stays unoffered because its write lock is not proven. This checks CLIEvidenceTable as
+// compiled, not a fixture: the other tests replace the table, so without this one a wrong entry could ship.
+func TestShippedEvidenceKeepsCLIsHonest(t *testing.T) {
+	for _, spec := range CLISpecs {
+		ev := EvidenceForCLI(spec.ID)
+		offered := spec.Offerable(true)
+		if offered && (!ev.ProxyProven || ev.Status != EvidenceProven) {
+			t.Errorf("%s is offered without a proven run against the proxy (evidence %+v)", spec.ID, ev)
+		}
+		if ev.Status == EvidenceUnproven && offered {
+			t.Errorf("%s is unproven but offered", spec.ID)
+		}
+	}
+	if agy, ok := CLISpecByID("agy"); !ok || agy.Offerable(true) {
+		t.Error("agy must not be offered while its write lock is unproven")
+	}
+	for _, e := range CLIEvidenceTable {
+		if e.Status == EvidenceProven && !e.ProxyProven && strings.TrimSpace(e.Note) == "" {
+			t.Errorf("%s: a proven contract without the proxy run must say so in the note", e.CLI)
+		}
+	}
+}
+
 // agenten-cli-proxy AC-8: a CLI without a valid entry is "unproven"; an entry without a source is no entry.
 func TestCLIEvidenceRequiresSource(t *testing.T) {
 	testEvidence(t, CLIEvidence{CLI: "without-source", Status: EvidenceProven})
