@@ -209,6 +209,8 @@ Der Desktop kann eine lokal installierte Agenten-CLI (`claude`, `codewhale`) fü
 
 Was das **nicht** abdeckt: Die CLI bringt eigene Werkzeuge mit. Ihre Schreibzugriffe sind nur so weit verhindert, wie der belegte Mechanismus je CLI reicht (`claude`: `--allowedTools` als Allowlist; `codewhale`: `--sandbox read-only`). Beide sind Cloud-Anbieter; der Hinweis „Inhalte verlassen das Gerät“ gilt vor dem ersten Lauf. Ob eine CLI angeboten wird, hängt am Belegstand in `internal/desk/evidence.go` — ohne belegten Lauf gegen den Proxy erscheint sie als „nicht belegt“ und wird nicht angeboten.
 
+In der Seitenleiste gibt es dafür den Abschnitt **Agenten-CLI**: Auswahl der angebotenen CLI mit Begründung, wenn eine fehlt, der Belegstand je CLI, der Cloud-Hinweis vor dem ersten Lauf und die offenen Aufrufe mit Kennung, Sitzung und Frist. Eine Sitzungsfreigabe wird dort nur für lesende und schreibende Karten angeboten; kritische Aufrufe entscheidest du immer einzeln.
+
 ## Tests
 
 ```text

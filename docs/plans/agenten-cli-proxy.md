@@ -23,7 +23,7 @@ Die Tech Spec hängt an einer Annahme, die noch kein Beleg deckt: dass eine CLI 
 - [x] **AC-2, AC-3, AC-7, AC-10** `internal/desk/proxy.go`: JSON-RPC über HTTP (`initialize`, `notifications/initialized`, `tools/list`, `tools/call`). `tools/list` aus `MCPClient.Tools()`. `tools/call` → Register → Karte → Entscheidung → `tier()`-Prüfung → `MCPClient.CallTool`. Sitzungskennung an jeder Karte.
 - [x] **AC-5, AC-6, AC-7** `internal/desk/clirun.go`: CLI als Kindprozess mit der Startzeile aus `cli.go`; Token über Datei (0600, danach gelöscht) bzw. Umgebungsvariable; Prozessende bricht wartende Aufrufe ab und zieht Karten zurück; umgehende Flags sind ausgeschlossen.
 - [x] **AC-2, AC-3, AC-4, AC-10** `internal/desk/server.go`: Routen `POST /mcp` (Bearer statt `X-SDD-Token`), `GET /api/cli`, `GET /api/cli/cards`, `POST /api/cli/decide`. Sitzungsfreigabe für `critical` wird mit HTTP 400 abgewiesen.
-- [ ] **AC-6** `apps/desk/src/**`: CLI-Auswahl, Cloud-Hinweis vor dem ersten Lauf, dauerhafte Kennzeichnung des CLI-Modus, Karten mit CLI und Sitzung.
+- [x] **AC-6** `apps/desk/src/**`: CLI-Auswahl mit Begründung, Belegstand je CLI, Cloud-Hinweis vor dem ersten Lauf, Karten mit CLI/Kennung/Sitzung/Frist, Entscheidung je Karte (`Einmal`, `Für die Sitzung` nur bei lesend/schreibend, `Ablehnen`). — `cli/cli-panel.ts`, `cli/cli-session.ts`, Typen und API in `core/`.
 - [x] **AC-9** `README.md`: Abschnitt „Was der Desktop darf“ einschränken („kein Dateizugriff an `sdd` vorbei“), CLI-Modus als Betriebsart nennen. `docs/arc42.md` und `CHANGELOG.md` nachziehen.
 
 ## Abschluss (gilt für alle Kriterien)
@@ -32,12 +32,13 @@ Die Tech Spec hängt an einer Annahme, die noch kein Beleg deckt: dass eine CLI 
 
 ## Stand 2026-11-25
 
-Umgesetzt und getestet: `internal/desk/approval.go` (Register, Kennung, Frist, Sitzungsfreigaben), `internal/desk/cli.go` (Registry, Startzeilen, verbotene Flags), `internal/desk/proxy.go` (JSON-RPC über HTTP, `tools/list`, `tools/call`), `internal/desk/clirun.go` (Kindprozess, Sitzungsende), `internal/desk/cliapi.go` und Routen in `server.go`, `CLIEvidence` in `evidence.go`, Verdrahtung in `cmd/sdd-desk/main.go`, README, arc42, CHANGELOG. Tests: `internal/desk/cli_proxy_test.go`, je Kriterium mindestens eine Zeile mit Kennung.
+Umgesetzt und getestet: `internal/desk/approval.go` (Register, Kennung, Frist, Sitzungsfreigaben), `internal/desk/cli.go` (Registry, Startzeilen, verbotene Flags), `internal/desk/proxy.go` (JSON-RPC über HTTP, `tools/list`, `tools/call`), `internal/desk/clirun.go` (Kindprozess, Sitzungsende), `internal/desk/cliapi.go` und Routen in `server.go`, `CLIEvidence` in `evidence.go`, Verdrahtung in `cmd/sdd-desk/main.go`, Oberfläche (`apps/desk/src/app/cli/`), README, arc42, CHANGELOG. Tests: `internal/desk/cli_proxy_test.go` (Go, je Kriterium mindestens eine Zeile mit Kennung) und `apps/desk/src/app/cli/cli-session.spec.ts` (Vitest, 10 Tests).
 
 Offen und bewusst nicht behauptet:
 
+- **Werkzeugaufruf durch `codewhale`.** Der Transport ist belegt, ein Aufruf durch ein Modell nicht: ohne Cloud-Schlüssel nutzt `codewhale` lokales Ollama, und das Modell erfand das Ergebnis. Der Belegstand nennt das auf der Karte.
 - **Transportbeleg (Task 0).** Erhoben am 2026-11-25 ohne Modellaufruf: beide CLIs sprechen den echten Proxy über HTTP an und lesen `tools/list`. `ProxyProven` steht deshalb auf `true`, beide CLIs sind angeboten. **Offen bleibt der Werkzeugaufruf durch ein Modell** — der kostet und braucht eine Freigabe des Menschen.
-- **Oberfläche** (`apps/desk/src`): CLI-Auswahl, Cloud-Hinweis, Kennzeichnung des Modus. Die API steht (`GET /api/cli`, `POST /api/cli/start`, Karten, Entscheidung); die Oberfläche fehlt noch.
+- **Oberfläche** ist fertig (`apps/desk/src/app/cli/`). Offen bleibt nur der Beleg für `codewhale` mit Cloud-Schlüssel und ein Durchlauf im gebündelten Programm (das Webdist muss dafür mit `npm run build:desk` erneuert werden).
 - **Codewhale-Konfiguration.** `codewhale` kennt Server nur über seine eigene Konfiguration; die Startzeile fügt sie für den Lauf hinzu und entfernt sie danach. Das berührt die Nutzerkonfiguration und ist im Beleglauf zu prüfen.
 
 ## Reihenfolge und Abhängigkeiten

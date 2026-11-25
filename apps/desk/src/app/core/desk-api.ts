@@ -1,5 +1,5 @@
 import { Service } from '@angular/core';
-import { Guide, Meta, ModelTestRequest, ModelTestResult, PromptInfo, StreamEvent, TurnRequest } from './types';
+import { CliCard, CliDecision, CliList, Guide, Meta, ModelTestRequest, ModelTestResult, PromptInfo, StreamEvent, TurnRequest } from './types';
 
 const TOKEN_KEY = 'sdd-desk-token';
 
@@ -81,6 +81,26 @@ export class DeskApi {
       lines.push(value).forEach(onEvent);
     }
     lines.end().forEach(onEvent);
+  }
+
+  /** Which agent CLIs exist and which may be offered (agenten-cli-proxy AC-1, AC-8). */
+  clis(): Promise<CliList> {
+    return this.request<CliList>('GET', '/api/cli');
+  }
+
+  /** Cards of the running CLI sessions, oldest first (AC-3, AC-10). */
+  cliCards(): Promise<{ cloud_notice: string; cards: CliCard[] }> {
+    return this.request('GET', '/api/cli/cards');
+  }
+
+  /** Answers one card by its call id (AC-2, AC-3). */
+  decideCli(callId: string, decision: CliDecision): Promise<{ call_id: string; decision: string }> {
+    return this.request('POST', '/api/cli/decide', { call_id: callId, decision });
+  }
+
+  /** Starts one CLI session; the backend refuses without disclosure_ack (AC-6). */
+  startCli(cli: string, prompt: string): Promise<{ session: string; cli: string }> {
+    return this.request('POST', '/api/cli/start', { cli, prompt, disclosure_ack: true });
   }
 
   private async request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {

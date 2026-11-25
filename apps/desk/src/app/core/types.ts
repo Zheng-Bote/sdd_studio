@@ -212,3 +212,48 @@ export interface PromptInfo {
 
 /** A decision on a pending tool call. */
 export type Decision = 'once' | 'session' | 'deny';
+
+/**
+ * Recorded state of one agent CLI (agenten-cli-proxy AC-8). status covers the two ADR 0010 conditions, proxy_proven
+ * the run against the desktop's own endpoint; both are separate because a headless contract says nothing about
+ * whether the CLI reaches the proxy.
+ */
+export interface CliEvidence {
+  cli: string;
+  status: 'proven' | 'failed' | 'unproven';
+  proxy_proven: boolean;
+  note?: string;
+  source: string;
+}
+
+/** One agent CLI as the desktop offers it. block_reason names in plain words why it is not offered (AC-1). */
+export interface CliInfo {
+  id: string;
+  name: string;
+  cloud: boolean;
+  installed: boolean;
+  offerable: boolean;
+  blocked_because?: string;
+  evidence: CliEvidence;
+}
+
+export interface CliList {
+  cloud_notice: string;
+  clis: CliInfo[];
+}
+
+/** A tool call of an agent CLI waiting for the user's decision (AC-2, AC-3, AC-10). */
+export interface CliCard {
+  call_id: string;
+  cli: string;
+  session: string;
+  tool: string;
+  tier: 'read' | 'write' | 'critical';
+  arguments?: unknown;
+  summary?: string;
+  deadline: string;
+}
+
+/** A decision on a card: once, for the session at the card's tier, or refuse. A session scope never covers a
+ * critical call — the backend refuses it with 400 rather than narrowing it silently (AC-2). */
+export type CliDecision = 'allow' | 'deny' | 'allow_tool_session' | 'allow_write_session';
