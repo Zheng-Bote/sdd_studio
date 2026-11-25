@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Geändert
+
+- **Bauen und Installieren auf Linux und macOS** (`build-linux-macos`, Issue [#31](https://github.com/Zheng-Bote/sdd_studio/issues/31), [PRD](docs/prd/build-linux-macos.md), [Plan](docs/plans/build-linux-macos.md)): `make` erkennt das System über `uname -s` (`OS=` erzwingt eines, `make print-os` zeigt es). Auf macOS baut es mit `tauri build --bundles app`, also ein startbares „SDD Studio Desktop.app“ statt nur eines nackten Programms, und `make install` kopiert das Bundle nach `$(APPDIR)` (Standard `~/Applications`, überschreibbar). `make install` schreibt auf macOS **keine** `.desktop`-Datei und kein hicolor-Icon-Thema mehr — macOS liest beides nicht — und räumt ein früher dort abgelegtes `sdd-desk-app`-Binary weg. Linux bleibt unverändert: Binaries, Desktop-Verknüpfung, Icons. `make uninstall` entfernt je System genau das, was `make install` angelegt hat. Tests prüfen die Zielpfade beider Systeme über einen Probelauf von `make`.
+
 ## [0.10.0] — 2026-11-25
 
 Regelkatalog unverändert `1.3.0` mit 26 Regeln. Grundlage ist das Feature `agenten-cli-proxy` ([PRD](docs/archive/prd/agenten-cli-proxy.md), [Tech Spec](docs/archive/design/agenten-cli-proxy.md), [Plan](docs/archive/plans/agenten-cli-proxy.md)) sowie [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md).

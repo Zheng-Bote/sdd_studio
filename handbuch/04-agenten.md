@@ -94,6 +94,13 @@ npm run tauri:dev        # Entwicklung: baut Oberfläche und Sidecars, startet d
 npm run tauri:build      # Bündel unter src-tauri/target/release/bundle/
 ```
 
+**Installieren je System.** Im Wurzelverzeichnis bauen `make` und `make install` alles; das System wird über `uname -s` erkannt und lässt sich mit `OS=` erzwingen:
+
+- **Linux:** `make install` legt `sdd`, `sdd-desk` und `sdd-desk-app` nach `~/.local/bin`, dazu die `.desktop`-Verknüpfung und das hicolor-Icon-Thema.
+- **macOS:** `make` baut zusätzlich „SDD Studio Desktop.app“ (Info.plist, Icon, drei Binaries in `Contents/MacOS`); `make install` kopiert es nach `~/Applications` (`APPDIR=…` überschreibt das) und legt `sdd` und `sdd-desk` nach `~/.local/bin`. Keine `.desktop`-Datei, kein hicolor-Thema — macOS liest beides nicht.
+
+`make uninstall` entfernt je System genau das wieder. Schlüssel legt `make` auf keinem System an; auf macOS liest die Anwendung `~/Library/Application Support/io.github.zhengbote.sdddesk/llm.env`. Details im [README, „Alles bauen und lokal installieren“](../README.md#bauen).
+
 **Als lokale Web-Oberfläche** im Browser:
 
 ```text
