@@ -30,7 +30,9 @@ func TestAgentFilesCreate(t *testing.T) {
 	agents := readFile(t, root, "AGENTS.md")
 	for _, want := range []string{scaffold.AgentsMarker, "[`constitution.md`](constitution.md) ist das ranghöchste Artefakt",
 		"Verfassung → ADR (`docs/adr`) → Tech Spec (`docs/design`) → PRD (`docs/prd`) → Plan (`docs/plans`)",
-		"Tests je Kriterium → Umsetzung", "// <slug> AC-<n>: …", "Der Mensch entscheidet", `"args": ["mcp"]`} {
+		"Tests je Kriterium → Umsetzung", "// <slug> AC-<n>: …", "Der Mensch entscheidet", `"args": ["mcp"]`,
+		// Issue #33: the template has to carry the working mode too, not only this repository's own AGENTS.md.
+		"## Arbeitsweise", "Feature-Branch", "Closes #<n>"} {
 		if !strings.Contains(agents, want) {
 			t.Errorf("AGENTS.md misses %q", want)
 		}

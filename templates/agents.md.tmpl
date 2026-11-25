@@ -19,6 +19,15 @@ Idee → PRD → Tech Spec (wenn nötig) → Plan → Tests je Kriterium → Ums
 - Eine Änderung der Verfassung braucht ein ADR, das sie in `references` nennt.
 - Der Mensch entscheidet: Baseline (`sdd baseline`), ADR-Lockfile, `sdd adopt --apply` und das Entscheiden eines ADR (`status: accepted`).
 
+## Arbeitsweise
+
+**Issue zuerst, Feature-Branch, Pull Request — nie direkt auf dem Standard-Branch.**
+
+1. **Issue anlegen** mit der Vorlage in `.github/ISSUE_TEMPLATE/`: Problem, Ziel, Umfang, Nicht-Ziele, Akzeptanzkriterien als `AC-<n>`. Der Feature-Slug im PRD ist derselbe wie im Issue.
+2. **Feature-Branch** vom Standard-Branch, benannt nach dem Feature (`feature/<slug>`). Kein Commit direkt auf `main` — das Gate `pre-merge` läuft in CI **nur bei einem Pull Request**; ein Push auf `main` löst es nicht aus.
+3. **Pull Request** mit `Closes #<n>` in der Beschreibung. GitHub erkennt beim Merge nur die englischen Schlüsselwörter (`close`, `closes`, `fix`, `fixes`, `resolve`, `resolves`) — eine deutsche Formulierung schließt das Issue nicht.
+4. **Mergen entscheidet der Mensch.** Der Agent legt Branch und PR an, prüft `sdd lint` und `sdd gate pre-merge` und meldet das Ergebnis; er merged nicht selbst.
+
 ## Werkzeuge
 
 `sdd mcp` stellt die Prüfungen als MCP-Werkzeuge bereit (`sdd_next`, `sdd_lint`, `sdd_check_intent`, `sdd_context`, `sdd_validate_draft` …):
