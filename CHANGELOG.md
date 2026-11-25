@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Geändert
+
+- **README aufgeräumt** (Issue [#37](https://github.com/Zheng-Bote/sdd_studio/issues/37)): Der Abschnitt „Stand" entfällt. Er erzählte die Versionshistorie nach, die der CHANGELOG führt („Neu in … Aus … Aus …"). Version und Regelkatalog stehen jetzt als eine Zeile im Kopf, die Linkliste liegt unter „Wo weiter", die Regeltabelle unter „Regeln". Dabei zwei veraltete Aussagen berichtigt: „Nächste Schritte" nannte macOS als ungetestet, obwohl die App seit 0.11.0 als `.app` im Release liegt; und der `llm.env`-Pfad der Desktop-Anwendung war nur für Linux genannt. Zwei Tests halten den Zustand fest — die Versionszeile muss zu `report.ToolVersion` passen, und „Stand" darf nicht zurückkehren.
+
 ## [0.11.0] — 2026-11-25
 
 Regelkatalog unverändert `1.3.0` mit 26 Regeln. Grundlage ist das Feature `build-linux-macos` ([PRD](docs/archive/prd/build-linux-macos.md), [Tech Spec](docs/archive/design/build-linux-macos.md), [Plan](docs/archive/plans/build-linux-macos.md)).
