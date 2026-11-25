@@ -31,6 +31,7 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
   - [Modelle einrichten](#modelle-einrichten)
   - [Starten](#starten)
   - [Was der Desktop darf](#was-der-desktop-darf)
+  - [Agenten-CLIs als Antrieb](#agenten-clis-als-antrieb)
 - [Tests](#tests)
 - [Nächste Schritte](#nachste-schritte)
 - [Diskussion](#diskussion)
