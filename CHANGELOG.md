@@ -4,9 +4,13 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+## [0.11.1] — 2026-11-25
+
+Regelkatalog unverändert `1.3.0` mit 26 Regeln. Patch: Doku und Bauwerkzeug, keine neue Funktion, keine Änderung an `sdd` selbst.
+
 ### Behoben
 
-- **`make -q` und `make -n` bauen nicht mehr** (Issue [#39](https://github.com/Zheng-Bote/sdd_studio/issues/39)): Die Ziele für das Linux-Programm und das macOS-Bundle hatten als Rezept `$(MAKE) all`. GNU make führt Zeilen mit `$(MAKE)` auch im Frage- und Trockenlauf-Modus aus — eine Frage nach dem Zustand startete also einen vollen Bau und antwortete mit Exit-Code `2` statt `0`/`1`. Beide Ziele bauen jetzt selbst (gemeinsamer Befehl als `TAURI_BUILD`), und ihre Voraussetzungen sind die Go-Programme statt der Quellen, damit `make -q` auch dort 0 beziehungsweise 1 liefert. Zwei Tests halten es fest: kein Rezept enthält mehr `$(MAKE)`, und `make -q` auf ein veraltetes Ziel antwortet `1` und lässt den Zeitstempel unberührt.
+- **`make -q` und `make -n` bauen nicht mehr** (Issue [#39](https://github.com/Zheng-Bote/sdd_studio/issues/39)): Die Ziele für das Linux-Programm und das macOS-Bundle hatten als Rezept `$(MAKE) all`. GNU make führt Zeilen mit `$(MAKE)` auch im Frage- und Trockenlauf-Modus aus — eine Frage nach dem Zustand startete also einen vollen Bau und antwortete mit Exit-Code `2` statt `0`/`1`. Beide Ziele bauen jetzt selbst (gemeinsamer Befehl als `TAURI_BUILD`), und ihre Voraussetzungen sind die Go-Programme statt der Quellen, damit `make -q` auch dort 0 beziehungsweise 1 liefert. Drei Tests halten es fest: kein Rezept enthält mehr `$(MAKE)`, und `make -q` antwortet `0` bzw. `1`, ohne den Zeitstempel des Ziels anzufassen.
 
 ### Geändert
 

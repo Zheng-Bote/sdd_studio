@@ -2,7 +2,7 @@
 
 Sprachneutrales CLI-Werkzeug (`sdd`) und Go-Kernbibliothek (`internal/sddcore`) zur maschinellen Durchsetzung von **Spec-Driven Development** (`sdd_process_3`) über einen gemeinsamen, selbstprüfenden Regelkatalog und ein eingebettetes Handbuch. Dazu kommt der optionale KI-Desktop **`sdd-desk`**, der im Gespräch durch den Prozess führt.
 
-**Version `0.11.0`** · Regelkatalog `1.3.0` mit 26 Regeln · Historie im [CHANGELOG](CHANGELOG.md)
+**Version `0.11.1`** · Regelkatalog `1.3.0` mit 26 Regeln · Historie im [CHANGELOG](CHANGELOG.md)
 
 ## Leitprinzip
 
@@ -120,7 +120,7 @@ Artefaktpfade dürfen Ordner oder Globs sein, z. B. GitHub Spec Kit `specs/featu
 Die [GitHub Action](action.yml) baut `sdd`, führt `sdd gate <gate>` aus und schreibt den Bericht in die Job-Zusammenfassung:
 
 ```yaml
-- uses: Zheng-Bote/sdd_studio@v0.11.0
+- uses: Zheng-Bote/sdd_studio@v0.11.1
   with:
     gate: pre-merge
 ```
