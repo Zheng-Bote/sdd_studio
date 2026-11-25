@@ -2,10 +2,12 @@ package desk
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // CloudNotice is the text the desktop shows before the first turn of an agent CLI. Both offered CLIs are cloud
@@ -138,14 +140,19 @@ func claudeStart(sc SessionConfig) (CLIStart, error) {
 		_ = os.RemoveAll(dir)
 		return CLIStart{}, fmt.Errorf("MCP-Konfiguration nicht schreibbar: %w", err)
 	}
+	// The prompt goes directly after -p and nothing follows the variadic flags: `--mcp-config` and
+	// `--allowedTools` both swallow the following words as values, so a prompt placed after them would be read
+	// as another config file or another allowed tool (found in the transport proof, 2026-11-25).
+	prompt := strings.TrimSpace(sc.Extra["prompt"])
+	if prompt == "" {
+		_ = os.RemoveAll(dir)
+		return CLIStart{}, errors.New("ohne Auftrag startet keine CLI-Sitzung")
+	}
 	argv := []string{
-		"claude", "-p",
+		"claude", "-p", prompt,
 		"--output-format", "stream-json",
 		"--mcp-config", path,
 		"--allowedTools", "mcp__sdd",
-	}
-	if p := sc.Extra["prompt"]; p != "" {
-		argv = append(argv, p)
 	}
 	return CLIStart{Argv: argv, Cleanup: func() { _ = os.RemoveAll(dir) }}, nil
 }

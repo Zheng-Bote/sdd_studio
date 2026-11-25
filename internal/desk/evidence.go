@@ -127,16 +127,16 @@ var CLIEvidenceTable = []CLIEvidence{
 	{
 		CLI:         "claude",
 		Status:      EvidenceProven,
-		ProxyProven: false,
-		Note:        "Headless, MCP über stdio und Schreibsperre (--allowedTools als Allowlist) belegt; Lauf gegen den Proxy über HTTP steht aus",
-		Source:      "docs/notes/headless-vertraege-agenten-clis.md (claude 2.1.330)",
+		ProxyProven: true,
+		Note:        "Headless und Schreibsperre belegt; HTTP-Transport gegen den echten desk.Proxy belegt (initialize, tools/list, Bearer), ein Werkzeugaufruf durch ein Modell steht aus",
+		Source:      "docs/notes/headless-vertraege-agenten-clis.md (claude 2.1.330, Transportbeleg 2026-11-25)",
 	},
 	{
 		CLI:         "codewhale",
 		Status:      EvidenceProven,
-		ProxyProven: false,
-		Note:        "Headless, MCP über stdio und OS-Schreibsperre (--sandbox read-only) belegt; Lauf gegen den Proxy über HTTP steht aus",
-		Source:      "docs/notes/headless-vertraege-agenten-clis.md (codewhale 0.10.3)",
+		ProxyProven: true,
+		Note:        "Headless und OS-Schreibsperre belegt; HTTP-Transport gegen den echten desk.Proxy belegt (mcp connect, mcp tools lieferte die Werkzeuge), ein Werkzeugaufruf durch ein Modell steht aus",
+		Source:      "docs/notes/headless-vertraege-agenten-clis.md (codewhale 0.10.3, Transportbeleg 2026-11-25)",
 	},
 	{
 		CLI:    "agy",

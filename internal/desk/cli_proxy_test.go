@@ -336,13 +336,28 @@ func TestCLICloudNoticeRequired(t *testing.T) {
 // agenten-cli-proxy AC-7: the start lines carry the proven write lock and never a bypass flag; codewhale gets no
 // --allowed-tools because that allowlist also removes the discovery path.
 func TestCLIStartFlags(t *testing.T) {
-	claude, err := claudeStart(SessionConfig{ProxyURL: "http://127.0.0.1:1/mcp", Token: "t"})
+	claude, err := claudeStart(SessionConfig{ProxyURL: "http://127.0.0.1:1/mcp", Token: "t", Extra: map[string]string{"prompt": "prüfe den Stand"}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer claude.Cleanup()
 	if !contains(claude.Argv, "--allowedTools") || !contains(claude.Argv, "--mcp-config") {
 		t.Errorf("claude must restrict tools and load the proxy config: %v", claude.Argv)
+	}
+	// The prompt must sit directly after -p: --mcp-config and --allowedTools are variadic and would swallow it.
+	pi := indexOf(claude.Argv, "-p")
+	if pi < 0 || pi+1 >= len(claude.Argv) || claude.Argv[pi+1] != "prüfe den Stand" {
+		t.Errorf("prompt must follow -p directly, got %v", claude.Argv)
+	}
+	// Nothing may follow the value of the variadic flags.
+	if ai := indexOf(claude.Argv, "--allowedTools"); ai >= 0 && ai+2 != len(claude.Argv) {
+		t.Errorf("arguments after --allowedTools would be read as tool names: %v", claude.Argv)
+	}
+	if mi := indexOf(claude.Argv, "--mcp-config"); mi >= 0 && claude.Argv[mi+2] != "--allowedTools" {
+		t.Errorf("arguments after --mcp-config would be read as config files: %v", claude.Argv)
+	}
+	if _, err := claudeStart(SessionConfig{ProxyURL: "http://127.0.0.1:1/mcp", Token: "t"}); err == nil {
+		t.Error("a run without a prompt must be refused, not started with a stray flag")
 	}
 
 	cw, err := codewhaleStart(SessionConfig{ProxyURL: "http://127.0.0.1:1/mcp", Token: "t"})
@@ -485,12 +500,17 @@ func TestProxyToolsListComesFromSDD(t *testing.T) {
 }
 
 func contains(list []string, want string) bool {
-	for _, v := range list {
+	return indexOf(list, want) >= 0
+}
+
+// indexOf is the position of want in list, or -1.
+func indexOf(list []string, want string) int {
+	for i, v := range list {
 		if v == want {
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
 }
 
 // A session allowance covers later calls of the same tool without another card.

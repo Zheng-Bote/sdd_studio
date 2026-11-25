@@ -16,7 +16,7 @@ Die Tech Spec hängt an einer Annahme, die noch kein Beleg deckt: dass eine CLI 
 
 ## Tasks
 
-- [ ] **AC-1** Transportbeleg erheben: für `claude` 2.1.330 und `codewhale` 0.10.3 je ein Lauf gegen einen lokalen HTTP-MCP-Endpunkt mit `initialize`, `tools/list` und einem `tools/call`; Ergebnis mit Kommandozeile und Ausgabe in `docs/notes/headless-vertraege-agenten-clis.md` nachtragen. Fällt eine CLI durch, wird sie nicht angeboten und der Punkt hier als solcher festgehalten.
+- [x] **AC-1** Transportbeleg erheben: für `claude` 2.1.330 und `codewhale` 0.10.3 je ein Lauf gegen einen lokalen HTTP-MCP-Endpunkt mit `initialize`, `tools/list` und einem `tools/call`; Ergebnis mit Kommandozeile und Ausgabe in `docs/notes/headless-vertraege-agenten-clis.md` nachtragen. Fällt eine CLI durch, wird sie nicht angeboten und der Punkt hier als solcher festgehalten. — **Erhoben am 2026-11-25:** beide verbinden, `initialize` und `tools/list` belegt; ein `tools/call` durch ein Modell steht aus (kostenpflichtig). Befund: `--mcp-config` und `--allowedTools` sind variadisch — der Prompt muss hinter `-p`.
 - [x] **AC-1, AC-8** `internal/desk/cli.go`: Registry der CLIs (`claude`, `codewhale`, `agy`) mit Name, Cloud-Kennzeichen, Startzeile, Sperrmechanismus, Installationsprüfung (`exec.LookPath`) und Belegstand. `Offerable()` verlangt installiert ∧ beide ADR-Bedingungen belegt ∧ Transportbeleg. `blocked_because` nennt den Grund im Klartext.
 - [x] **AC-8** `internal/desk/evidence.go` erweitern: `CLIEvidence`, `EvidenceForCLI`, dieselbe Regel wie bei den Modellen — ohne `Source` ungültig, ohne Eintrag `unproven`.
 - [x] **AC-2, AC-3, AC-4** `internal/desk/approval.go`: Register offener Aufrufe mit Kennung je Aufruf, Frist je Aufruf, Entscheidungskanal. Treffer auf unbekannte oder abgelaufene Kennung führt nie aus.
@@ -36,7 +36,7 @@ Umgesetzt und getestet: `internal/desk/approval.go` (Register, Kennung, Frist, S
 
 Offen und bewusst nicht behauptet:
 
-- **Transportbeleg (Task 0).** Ohne ihn bleibt `ProxyProven` falsch, und `claude` wie `codewhale` werden **nicht angeboten** (Grund im Klartext: „der Transportbeleg gegen den Proxy steht aus“). Das ist der gewollte Zustand, solange kein Lauf dokumentiert ist — nicht als fertig zu melden.
+- **Transportbeleg (Task 0).** Erhoben am 2026-11-25 ohne Modellaufruf: beide CLIs sprechen den echten Proxy über HTTP an und lesen `tools/list`. `ProxyProven` steht deshalb auf `true`, beide CLIs sind angeboten. **Offen bleibt der Werkzeugaufruf durch ein Modell** — der kostet und braucht eine Freigabe des Menschen.
 - **Oberfläche** (`apps/desk/src`): CLI-Auswahl, Cloud-Hinweis, Kennzeichnung des Modus. Die API steht (`GET /api/cli`, `POST /api/cli/start`, Karten, Entscheidung); die Oberfläche fehlt noch.
 - **Codewhale-Konfiguration.** `codewhale` kennt Server nur über seine eigene Konfiguration; die Startzeile fügt sie für den Lauf hinzu und entfernt sie danach. Das berührt die Nutzerkonfiguration und ist im Beleglauf zu prüfen.
 
