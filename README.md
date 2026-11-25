@@ -21,7 +21,7 @@ Architekturüberblick nach arc42: [`docs/arc42.md`](docs/arc42.md).
 - [Stand](#stand)
   - [Regeln](#regeln)
 - [Bauen](#bauen)
-  - [Alles bauen und lokal installieren (Linux)](#alles-bauen-und-lokal-installieren-linux)
+  - [Alles bauen und lokal installieren (Linux und macOS)](#alles-bauen-und-lokal-installieren-linux-und-macos)
 - [`sdd` — Kommandos](#sdd-kommandos)
   - [CI](#ci)
   - [Agenten (MCP)](#agenten-mcp)
