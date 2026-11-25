@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Behoben
+
+- **Build-Ziele hängen jetzt an ihren Quellen** (Issue [#35](https://github.com/Zheng-Bote/sdd_studio/issues/35)): `make install` kopierte vorhandene, aber veraltete Dateien — `bin/sdd`, `bin/sdd-desk` und das `.app`-Bundle hatten keine Voraussetzungen, galten damit als aktuell und wurden unverändert installiert. Wer eine Quelle änderte und `make install` fuhr, bekam das alte Ergebnis ohne jeden Hinweis. Jetzt hängen die Programme an ihren Go-Quellen sowie an `catalog/`, `handbuch/` und `templates/` (die `embed.go` einbettet), das Linux-Programm und das Bundle zusätzlich an den Tauri-Quellen; `make install` baut vor dem Kopieren. Ein Test hält die Abhängigkeiten fest.
+
 ### Geändert
 
 - **Arbeitsweise über Issues und Feature-Branches** (Issue [#33](https://github.com/Zheng-Bote/sdd_studio/issues/33)): `AGENTS.md` nennt jetzt neben dem SDD-Ablauf, **wie** gearbeitet wird — Issue mit Vorlage, Feature-Branch, Pull Request mit `Closes #<n>`, nie direkt auf dem Standard-Branch; gemergt wird vom Menschen. Die Regel steht im Template `templates/agents.md.tmpl` (also in jedem neuen Projekt, das `sdd init` oder `sdd adopt` anlegt), im Kurzblock für bestehende Agenten-Dateien und in der `AGENTS.md` dieses Repositories. Dazu der Grund: `pre-merge` läuft in CI nur bei einem Pull Request, ein Push auf `main` löst das Gate nicht aus.

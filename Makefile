@@ -40,6 +40,15 @@ GO_BINS  := bin/sdd bin/sdd-desk
 APP_OUT  := $(TAURI_DIR)/target/release/$(APP_BIN)
 WEBDIST  := internal/desk/webdist/index.html
 
+# Quellen, von denen die Ziele abhängen (Issue #35). Ohne sie hält make eine vorhandene Zieldatei für aktuell,
+# egal wie alt die Quellen sind — und `make install` kopiert dann Veraltetes.
+# Die Go-Programme sind schnell gebaut; die Dateiliste erspart trotzdem unnötige Läufe und macht `make -q` ehrlich.
+GO_SOURCES := go.mod $(shell find cmd internal -name '*.go' 2>/dev/null) $(shell test -f embed.go && echo embed.go)
+# In die Programme eingebettet (embed.go): Katalog, Handbuch und Templates.
+EMBEDDED   := $(shell find catalog handbuch templates -type f 2>/dev/null)
+# Die Desktop-Anwendung baut Tauri aus diesen Quellen.
+TAURI_SRC  := $(shell find $(TAURI_DIR)/src $(TAURI_DIR)/tauri.conf.json $(TAURI_DIR)/Cargo.toml -type f 2>/dev/null)
+
 # Das Bundle, das Tauri auf macOS packt: Verzeichnisname ist productName + ".app" aus tauri.conf.json
 # (eine Prüfung hält beides zusammen). Auf Linux bleibt es ungenutzt.
 #
@@ -87,26 +96,35 @@ ui: $(DESK_DIR)/node_modules/.package-lock.json
 
 # --- Go-Programme -----------------------------------------------------------------------------------------------
 
-cli:
+cli: bin/sdd bin/sdd-desk
+
+bin/sdd: $(GO_SOURCES) $(EMBEDDED)
 	@test -f $(WEBDIST) || { echo "Oberfläche fehlt: zuerst 'make ui' oder 'make'"; exit 1; }
 	$(GO) build $(GOFLAGS_BUILD) -o bin/sdd ./cmd/sdd
+
+# sdd-desk bettet die Oberfläche ein, deshalb hängt es zusätzlich an webdist.
+bin/sdd-desk: $(GO_SOURCES) $(EMBEDDED) $(WEBDIST)
+	@test -f $(WEBDIST) || { echo "Oberfläche fehlt: zuerst 'make ui' oder 'make'"; exit 1; }
 	$(GO) build $(GOFLAGS_BUILD) -o bin/sdd-desk ./cmd/sdd-desk
 
 # --- Desktop-Anwendung (Tauri) ----------------------------------------------------------------------------------
 
 # Die Oberfläche ist schon gebaut; als beforeBuildCommand laufen daher nur die Sidecars (statt desk:sidecars).
 # Auf macOS entsteht hier das .app-Bundle, auf Linux nur das Programm — deshalb $(BUNDLE_ARG).
+# desk-app bleibt ohne Dateiziel: Tauri entscheidet selbst, was neu kompiliert wird; ein Bundle-Ziel würde
+# `make` bei jedem Aufruf ausbremsen (Issue #35).
 desk-app: $(DESK_DIR)/node_modules/.package-lock.json
 	@test -f $(WEBDIST) || { echo "Oberfläche fehlt: zuerst 'make ui' oder 'make'"; exit 1; }
 	cd $(DESK_DIR) && $(NPM) run tauri -- build $(BUNDLE_ARG) \
 		--config '{"build":{"beforeBuildCommand":"node scripts/build-sidecars.mjs"}}'
 
-# make install ohne vorheriges make baut einmal alles.
-$(GO_BINS) $(APP_OUT):
+# Wer ein Dateiziel direkt anspricht (install-cli, install-desktop-linux, install-bundle-macos), bekommt es aktuell:
+# die Programme hängen an ihren Quellen, das Linux-Programm und das Bundle zusätzlich an allem, was Tauri einpackt.
+$(APP_OUT): $(GO_SOURCES) $(EMBEDDED) $(TAURI_SRC) $(WEBDIST)
 	$(MAKE) all
 
 ifeq ($(OS),Darwin)
-$(APP_BUNDLE_GOAL):
+$(APP_BUNDLE_GOAL): $(GO_SOURCES) $(EMBEDDED) $(TAURI_SRC) $(WEBDIST)
 	$(MAKE) all
 endif
 
@@ -114,11 +132,12 @@ endif
 
 # Je System andere Ziele: Linux legt Programm, Verknüpfung und Icons ab, macOS kopiert das .app-Bundle.
 # Gemeinsam ist sdd und sdd-desk auf dem PATH.
+# `all` steht bei jedem install-Ziel: sonst kopierte make eine vorhandene, aber veraltete Zieldatei (Issue #35).
 ifeq ($(OS),Darwin)
-install: install-cli install-bundle-macos
+install: all install-cli install-bundle-macos
 uninstall: uninstall-bundle-macos uninstall-cli
 else
-install: install-cli install-desktop-linux
+install: all install-cli install-desktop-linux
 uninstall: uninstall-desktop-linux uninstall-cli
 endif
 

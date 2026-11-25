@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // makeDryRun runs `make -n <target>` for one system and returns the commands it would run.
@@ -25,23 +26,33 @@ func makeDryRun(t *testing.T, osName, target string) string {
 		t.Fatal(err)
 	}
 	// Everything `make` would otherwise build or fetch: the Go binaries, the app, the Tauri node_modules marker,
-	// the embedded UI and the macOS bundle.
+	// the embedded UI and the macOS bundle. Sources get an older timestamp than the targets, so the dry run shows
+	// the install commands and not a build (since issue #35 the targets depend on their sources).
+	for _, rel := range []string{
+		"go.mod",
+		"embed.go",
+		"cmd/sdd/main.go",
+		"cmd/sdd-desk/main.go",
+		"internal/sddcore/x.go",
+		"catalog/catalog.yaml",
+		"handbuch/03-mechanismen.md",
+		"templates/agents.md.tmpl",
+		"apps/desk/package-lock.json",
+		"apps/desk/src-tauri/src/lib.rs",
+		"apps/desk/src-tauri/tauri.conf.json",
+		"apps/desk/src-tauri/Cargo.toml",
+	} {
+		writeAt(t, filepath.Join(dir, filepath.FromSlash(rel)), 1_000)
+	}
 	for _, rel := range []string{
 		"bin/sdd",
 		"bin/sdd-desk",
 		"apps/desk/src-tauri/target/release/sdd-desk-app",
-		"apps/desk/package-lock.json",
 		"apps/desk/node_modules/.package-lock.json",
 		"internal/desk/webdist/index.html",
 		"apps/desk/src-tauri/target/release/bundle/macos/SDD Studio Desktop.app/Contents/Info.plist",
 	} {
-		p := filepath.Join(dir, filepath.FromSlash(rel))
-		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(p, nil, 0o644); err != nil {
-			t.Fatal(err)
-		}
+		writeAt(t, filepath.Join(dir, filepath.FromSlash(rel)), 2_000)
 	}
 
 	bin := t.TempDir()
@@ -148,9 +159,9 @@ func TestMakeAppBuildsBundleOnlyOnDarwin(t *testing.T) {
 
 // tauriConf is the part of apps/desk/src-tauri/tauri.conf.json this test relies on.
 type tauriConf struct {
-	ProductName    string   `json:"productName"`
-	MainBinaryName string   `json:"mainBinaryName"`
-	Version        string   `json:"version"`
+	ProductName    string `json:"productName"`
+	MainBinaryName string `json:"mainBinaryName"`
+	Version        string `json:"version"`
 	Bundle         struct {
 		ExternalBin []string `json:"externalBin"`
 	} `json:"bundle"`
@@ -284,6 +295,116 @@ func TestInstallDocsCoverBothSystems(t *testing.T) {
 	for _, want := range []string{"Applications", "make uninstall"} {
 		if !strings.Contains(readme, want) {
 			t.Errorf("README must mention %q", want)
+		}
+	}
+}
+
+// --- Issue #35: the build targets must depend on their sources -------------------------------------------------
+
+// makeSandbox copies the Makefile into a temporary tree with fake sources, so the build rules can be questioned
+// without running a build.
+func makeSandbox(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	makefile, err := os.ReadFile("Makefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "Makefile"), makefile, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, rel := range []string{
+		"go.mod",
+		"cmd/sdd/main.go",
+		"cmd/sdd-desk/main.go",
+		"internal/sddcore/x.go",
+		"catalog/catalog.yaml",
+		"templates/agents.md.tmpl",
+	} {
+		writeAt(t, filepath.Join(dir, filepath.FromSlash(rel)), 1_000)
+	}
+	return dir
+}
+
+// writeAt writes a small file and sets its modification time, so "newer than" is deterministic instead of racing
+// the clock. An existing file keeps its content and only gets the new time.
+func writeAt(t *testing.T, path string, unix int64) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		if err := os.WriteFile(path, []byte("built\n"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ts := time.Unix(unix, 0)
+	if err := os.Chtimes(path, ts, ts); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// makeQuestion reports whether make considers the target up to date (0) or out of date (1). Recipes do not run.
+func makeQuestion(t *testing.T, dir, target string) int {
+	t.Helper()
+	err := exec.Command("make", "-C", dir, "-q", target).Run()
+	if err == nil {
+		return 0
+	}
+	if ee, ok := err.(*exec.ExitError); ok && ee.ExitCode() == 1 {
+		return 1
+	}
+	t.Fatalf("make -q %s: %v", target, err)
+	return -1
+}
+
+// Issue #35: bin/sdd must be rebuilt when a Go source is newer. Without a prerequisite, make calls an existing
+// binary up to date no matter how old the sources are — and make install then copies it.
+func TestBinaryDependsOnSources(t *testing.T) {
+	dir := makeSandbox(t)
+	binSdd := filepath.Join(dir, "bin", "sdd")
+
+	// The binary is newer than every source: nothing to do.
+	writeAt(t, binSdd, 2_000)
+	if got := makeQuestion(t, dir, "bin/sdd"); got != 0 {
+		t.Errorf("bin/sdd is up to date (exit %d), expected 0", got)
+	}
+
+	// A source changed afterwards: the binary is stale.
+	writeAt(t, filepath.Join(dir, "cmd", "sdd", "main.go"), 3_000)
+	if got := makeQuestion(t, dir, "bin/sdd"); got != 1 {
+		t.Errorf("bin/sdd must be stale after a source change (exit %d), expected 1", got)
+	}
+}
+
+// Issue #35: the catalog, the handbook and the templates are compiled into the binary (embed.go). A change there
+// makes both Go programs stale — that is how a new AGENTS.md template reaches sdd init.
+func TestBinaryDependsOnEmbeddedFiles(t *testing.T) {
+	dir := makeSandbox(t)
+	writeAt(t, filepath.Join(dir, "bin", "sdd"), 2_000)
+	if got := makeQuestion(t, dir, "bin/sdd"); got != 0 {
+		t.Fatalf("bin/sdd is up to date (exit %d), expected 0", got)
+	}
+
+	writeAt(t, filepath.Join(dir, "templates", "agents.md.tmpl"), 3_000)
+	if got := makeQuestion(t, dir, "bin/sdd"); got != 1 {
+		t.Errorf("bin/sdd must be stale after a template change (exit %d), expected 1", got)
+	}
+}
+
+// Issue #35: make install builds before it copies. The dependency on `all` is what guarantees a fresh build —
+// without it, an existing bin/sdd is copied unchanged no matter how old it is.
+func TestMakeInstallDependsOnAll(t *testing.T) {
+	data, err := os.ReadFile("Makefile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if !strings.HasPrefix(line, "install:") {
+			continue
+		}
+		if !strings.Contains(line, "all") {
+			t.Errorf("install must depend on all, got %q", line)
 		}
 	}
 }
