@@ -40,6 +40,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Bei pull_request ist der Standard-Ref der Merge-Commit in einem detached HEAD. Committen und Pushen
+          # scheitert dort ("You are not currently on a branch"), und ein Push des Merge-Commits würde einen
+          # Merge-Commit auf dem Branch ablegen. Der Head-Commit hält die Historie linear; das Ziel nennt der
+          # Push unten ausdrücklich.
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -58,6 +63,9 @@ jobs:
           python .github/actions/toc-action/insert_toc.py --files "$FILES" --collapsed "$COLLAPSED"
 
       - name: Commit changes
+        # Ein Pull Request aus einem Fork lässt sich mit dem Token dieses Repositorys nicht pushen; dort bleibt es
+        # beim Prüflauf, und der Bot committet nicht.
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -66,5 +74,5 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore: update Table of Contents"
-            git push
+            git push origin "HEAD:${{ github.head_ref || github.ref_name }}"
           fi
