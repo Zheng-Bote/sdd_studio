@@ -4,6 +4,10 @@ Alle nennenswerten Änderungen an SDD Studio (`sdd`). Das Format folgt [Keep a C
 
 ## [Unreleased]
 
+### Behoben
+
+- **Der CI-Workflow aus `sdd init` zeigt auf den erzeugenden Release-Tag:** `templates/workflow.yml.tmpl` trug den Action-Pin als Literal (`v0.7.0`) und blieb seit 0.7.0 stehen — ein frisch initialisiertes Projekt prüfte also mit einem zwei Minor-Versionen alten Stand. Das Template setzt den Tag jetzt aus `report.ToolVersion` (`uses: Zheng-Bote/sdd_studio@v<Version>`), und `TestInitWorkflowPinsToolVersion` hält beide Vorkommen im gerenderten Workflow fest.
+
 ## [0.9.1] — 2026-11-22
 
 Regelkatalog unverändert `1.3.0` mit 26 Regeln. Grundlage sind die Features `web-api-hardening` ([PRD](docs/archive/prd/web-api-hardening.md), [Tech Spec](docs/archive/design/web-api-hardening.md), [Plan](docs/archive/plans/web-api-hardening.md)), `mcpclient-lifecycle` ([PRD](docs/archive/prd/mcpclient-lifecycle.md), [Tech Spec](docs/archive/design/mcpclient-lifecycle.md), [Plan](docs/archive/plans/mcpclient-lifecycle.md)) und `clean-code-refactoring` ([PRD](docs/archive/prd/clean-code-refactoring.md), [Tech Spec](docs/archive/design/clean-code-refactoring.md), [Plan](docs/archive/plans/clean-code-refactoring.md)) sowie [ADR 0010](docs/adr/0010-lokale-agenten-clis-ueber-mcp-proxy.md).
